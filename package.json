@@ -1,0 +1,62 @@
+{
+   "name": "fhirhydrant",
+   "version": "1.0.0",
+   "description": "An MCP server for connecting AI clients to FHIR APIs.",
+   "author": "Joshua Faulkenberry <j@joshuafaulkenberry.com> (https://joshuafaulkenberry.com/)",
+   "license": "Unlicense",
+   "type": "module",
+   "bin": {
+      "fhirhydrant": "./.out/server.js"
+   },
+   "repository": {
+      "type": "git",
+      "url": "git+https://github.com/faulkj/fhirhydrant.git"
+   },
+   "bugs": {
+      "url": "https://github.com/faulkj/fhirhydrant/issues"
+   },
+   "homepage": "https://github.com/faulkj/fhirhydrant#readme",
+   "keywords": [
+      "fhir",
+      "mcp",
+      "model-context-protocol",
+      "smart-on-fhir",
+      "backend-services",
+      "hl7",
+      "healthcare",
+      "ehr",
+      "fhirclient",
+      "fhirstarterjs"
+   ],
+   "publishConfig": {
+      "access": "public",
+      "registry": "https://registry.npmjs.org/"
+   },
+   "engines": {
+      "node": ">=24"
+   },
+   "scripts": {
+      "check": "tsc --noEmit",
+      "build": "tsup ts/server.ts --format esm --out-dir .out --no-splitting --platform node --clean",
+      "start": "node .out/server.js",
+      "dev": "node --env-file=.env --experimental-strip-types --watch ts/server.ts",
+      "inspector": "npx @modelcontextprotocol/inspector"
+   },
+   "dependencies": {
+      "@cfworker/json-schema": "^4.1.1",
+      "@modelcontextprotocol/express": "2.0.0-alpha.2",
+      "@modelcontextprotocol/node": "2.0.0-alpha.2",
+      "@modelcontextprotocol/server": "2.0.0-alpha.2",
+      "express": "^5.2.1",
+      "fhirclient": "^2.6.3",
+      "fhirstarterjs": "^1.0.5",
+      "zod": "^4.4.3"
+   },
+   "devDependencies": {
+      "@types/express": "^5.0.6",
+      "@types/node": "^25.9.2",
+      "tsup": "^8.5.1",
+      "typescript": "^6.0.3"
+   }
+}
+
