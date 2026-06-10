@@ -49,28 +49,20 @@ docker run \
 
 ## Setup
 
-Copy the example env file and fill in your values:
-
-**Unix / macOS:**
-
-```sh
-cp .env.example .env
-```
-
-**Windows (PowerShell):**
-
-```powershell
-Copy-Item .env.example .env
-```
-
 Generate a private key if you don't have one:
 
 ```sh
-openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out private-1.pem
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out private.pem
 ```
 
 Host the corresponding public JWKS somewhere reachable by your FHIR auth server
 (e.g. a GitHub Gist), and register it along with your `FHIR_CLIENT_ID`.
+
+**From source:** copy `.env.example` to `.env` and fill in your values — `npm run dev` loads it automatically.
+
+**npm / npx (HTTP mode):** set env vars in your shell or process manager before running.
+
+**stdio mode:** pass env vars via the MCP client config's `env` block (see [Stdio](#stdio) below).
 
 ## Environment
 
@@ -270,9 +262,6 @@ Output goes to `.out/server.js`.
   Setting `DEBUG=true` enables verbose URLs which **may contain
   PHI** (patient names, identifiers, dates). Treat all logs as PHI-sensitive in
   production environments.
-- **Stdio vs HTTP:** Prefer stdio for local desktop clients where the MCP host
-  manages the process lifecycle. Use HTTP for remote/networked clients behind
-  TLS.
 - **Pagination URL validation:** The `fhir_fetch_page` tool validates that URLs
    match the configured FHIR server origin before fetching.
 - **PHI in tool responses:** FHIR resource data returned through MCP tool calls
