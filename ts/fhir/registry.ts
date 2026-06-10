@@ -62,10 +62,21 @@ const
    },
    makeHandler =
       (def: ResourceDefinition) => async (args: Record<string, unknown>) => {
+         const directId = isDirectRead(args, def.supportsDirectRead)
+         if (!directId && def.requireOneOf) {
+            const ok = def.requireOneOf.some((k) => {
+               const v = args[k]
+               return typeof v === "string" && v !== ""
+            })
+            if (!ok)
+               return {
+                  content: [{ type: "text" as const, text: `Search requires at least one of: ${def.requireOneOf.join(", ")}` }],
+                  isError: true,
+               }
+         }
          try {
             const
                client = createFhirClient(),
-               directId = isDirectRead(args, def.supportsDirectRead),
                url =
                   directId ?
                      `${def.resourceType}/${directId}`
@@ -126,6 +137,11 @@ const validatePageUrl = (url: string): string => {
    if (nextUrl.origin !== serverUrl.origin)
       throw new Error(
          `Pagination URL origin "${nextUrl.origin}" does not match FHIR server origin "${serverUrl.origin}"`,
+      )
+
+   if (!nextUrl.pathname.startsWith(serverUrl.pathname))
+      throw new Error(
+         `Pagination URL path "${nextUrl.pathname}" is outside FHIR server base path "${serverUrl.pathname}"`,
       )
 
    return nextUrl.toString()

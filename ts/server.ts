@@ -10,7 +10,10 @@ import { getDefinitionsPath, reloadDefinitions, getScopes } from "./fhir/definit
 import { registerAll, registerCoreTools } from "./fhir/registry.ts"
 
 const
-   SERVER_INFO = { name: "fhirhydrant", version: "1.0.0" } as const,
+   { version: pkgVersion } = JSON.parse(
+      readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "package.json"), "utf8"),
+   ) as { version: string },
+   SERVER_INFO = { name: "fhirhydrant", version: pkgVersion },
    SERVER_INSTRUCTIONS = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), "..", "instructions.md"),
       "utf8",
