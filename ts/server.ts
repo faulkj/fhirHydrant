@@ -9,7 +9,8 @@ import { startAuth, stopAuth, restartAuth } from "./fhir/auth.ts"
 import { getDefinitionsPath, reloadDefinitions, getScopes } from "./fhir/definitions.ts"
 import { jwksHandler } from "./fhir/jwks.ts"
 import { fetchMetadata } from "./fhir/metadata.ts"
-import { registerAll, registerCoreTools } from "./fhir/registry.ts"
+import { registerAll } from "./mcp/resources.ts"
+import { registerCoreTools } from "./mcp/core-tools.ts"
 
 const
    { version: pkgVersion } = JSON.parse(

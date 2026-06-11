@@ -30,6 +30,7 @@
    ],
    "files": [
       "bin",
+      "core-tools.json",
       "definitions.json",
       "instructions.md"
    ],

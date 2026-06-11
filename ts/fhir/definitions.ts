@@ -53,8 +53,6 @@ const parse = (): { definitions: ResourceDefinition[]; scopes: string[] } => {
             )
          }
 
-         const schema = z.object(shape)
-
          return {
             resourceType: entry.resourceType,
             toolName: entry.toolName,
@@ -62,7 +60,7 @@ const parse = (): { definitions: ResourceDefinition[]; scopes: string[] } => {
             supportsDirectRead: entry.supportsDirectRead,
             requireOneOf: entry.requireOneOf,
             searchParams: params,
-            searchSchema: schema,
+            searchSchema: z.object(shape),
          }
       }),
       scopes = definitions.map((d) =>
