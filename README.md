@@ -250,7 +250,7 @@ npm run build
 npm start
 ```
 
-Output goes to `.out/server.js`.
+Output goes to `bin/server.js`.
 
 ## Security notes
 

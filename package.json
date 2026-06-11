@@ -1,12 +1,12 @@
 {
    "name": "fhirhydrant",
-   "version": "0.1.0",
+   "version": "0.1.1",
    "description": "An MCP server for connecting AI clients to FHIR APIs.",
    "author": "Joshua Faulkenberry <j@joshuafaulkenberry.com> (https://joshuafaulkenberry.com/)",
    "license": "Unlicense",
    "type": "module",
    "bin": {
-      "fhirhydrant": "./.out/server.js"
+      "fhirhydrant": "bin/server.js"
    },
    "repository": {
       "type": "git",
@@ -29,7 +29,7 @@
       "fhirstarterjs"
    ],
    "files": [
-      ".out",
+      "bin",
       "definitions.json",
       "instructions.md"
    ],
@@ -42,9 +42,9 @@
    },
    "scripts": {
       "check": "tsc --noEmit",
-      "build": "tsup ts/server.ts --format esm --out-dir .out --no-splitting --platform node --clean",
+      "build": "tsup ts/server.ts --format esm --out-dir bin --no-splitting --platform node --clean",
       "prepublishOnly": "npm run build",
-      "start": "node .out/server.js",
+      "start": "node bin/server.js",
       "dev": "node --env-file=.env --experimental-strip-types --watch ts/server.ts",
       "inspector": "npx @modelcontextprotocol/inspector"
    },
@@ -68,4 +68,3 @@
       "uuid": ">=11.1.1"
    }
 }
-
