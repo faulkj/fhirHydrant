@@ -29,3 +29,12 @@ export const withRetry = async <T>(label: string, fn: () => Promise<T>, attempts
    }
    throw new Error("unreachable")
 }
+
+/** Returns the text unchanged or an error payload when it exceeds the byte limit. */
+export const enforceByteLimit = (text: string, limit: number): { text: string, isError?: true } => {
+   const bytes = Buffer.byteLength(text, "utf8")
+   return bytes <= limit ? { text } : {
+      text: `Response too large (${bytes} bytes, limit ${limit}). Retry with a narrower search, lower _count, date/category/status filters, or use paginate.`,
+      isError: true,
+   }
+}

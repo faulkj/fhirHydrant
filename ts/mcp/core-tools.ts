@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url"
 import { config } from "../config.ts"
 import { createFhirClient } from "../fhir/client.ts"
 import { fetchMetadata, getCapabilitySummary } from "../fhir/metadata.ts"
-import { withRetry } from "../utils.ts"
+import { withRetry, enforceByteLimit } from "../utils.ts"
 
 const
    // Probe cwd first, then bundled package root, then source layout fallback
@@ -78,8 +78,11 @@ export const registerCoreTools = (server: McpServer): void => {
                      `Bundle total=${(result as Record<string, unknown>).total ?? "?"}`
                   :  "ok"
             console.log(`[fhir] paginate OK ${summary}`)
+            const
+               shaped = enforceByteLimit(JSON.stringify(result, null, 2), config.fhirMaxResponseBytes)
             return {
-               content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }],
+               content: [{ type: "text" as const, text: shaped.text }],
+               ...(shaped.isError && { isError: true }),
             }
          } catch (err) {
             const message = err instanceof Error ? err.message : String(err)

@@ -36,6 +36,14 @@ const
          ?.split(",")
          .map((s) => s.trim())
          .filter(Boolean) || undefined,
+   parsePositiveInt = (key: string, fallback: number): number => {
+      const
+         raw = opt(key),
+         val = raw ? parseInt(raw, 10) : fallback
+      if (!Number.isFinite(val) || val < 1)
+         throw new Error(`Invalid ${key}="${raw}" — must be a positive integer`)
+      return val
+   },
    parseKeys = (): KeyPair[] => {
       const
          raw = get("FHIR_PRIVATE_KEY"),
@@ -81,9 +89,17 @@ export const config: Config = {
    transport: parseTransport(),
    debug: opt("DEBUG")?.toLowerCase() === "true",
    metadataMode: parseMetadataMode(),
+   fhirDefaultCount: parsePositiveInt("FHIR_DEFAULT_COUNT", 20),
+   fhirMaxCount: parsePositiveInt("FHIR_MAX_COUNT", 100),
+   fhirMaxResponseBytes: parsePositiveInt("FHIR_MAX_RESPONSE_BYTES", 65536),
 }
 
 if (!config.fhirKeys.some((k) => k.kid === config.fhirActiveKey))
    throw new Error(
       `FHIR_ACTIVE_KEY="${config.fhirActiveKey}" does not match any derived kid — available: ${config.fhirKeys.map((k) => k.kid).join(", ")}`,
+   )
+
+if (config.fhirDefaultCount > config.fhirMaxCount)
+   throw new Error(
+      `FHIR_DEFAULT_COUNT (${config.fhirDefaultCount}) must not exceed FHIR_MAX_COUNT (${config.fhirMaxCount})`,
    )

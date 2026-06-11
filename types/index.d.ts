@@ -48,6 +48,9 @@ interface Config {
    transport: "http" | "stdio"
    debug: boolean
    metadataMode: "strict" | "warn" | "off"
+   fhirDefaultCount: number
+   fhirMaxCount: number
+   fhirMaxResponseBytes: number
 }
 
 /** Getter-backed token response compatible with fhirclient — access_token always reflects the latest issued token. */

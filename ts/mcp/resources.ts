@@ -2,20 +2,11 @@ import type { McpServer } from "@modelcontextprotocol/server"
 import { config } from "../config.ts"
 import { getDefinitions } from "../fhir/definitions.ts"
 import { createFhirClient } from "../fhir/client.ts"
-import { withRetry } from "../utils.ts"
+import { withRetry, enforceByteLimit } from "../utils.ts"
+import { canShapeCount, buildSearchUrl } from "./shaping.ts"
 import { filterAndValidateDefinitions, checkRuntimeCapability } from "./validation.ts"
 
 const
-   buildSearchUrl = (
-      resourceType: string,
-      args: Record<string, unknown>,
-   ): string => {
-      const params = new URLSearchParams()
-      for (const [key, val] of Object.entries(args))
-         val !== undefined && val !== "" && params.append(key, String(val))
-      const qs = params.toString()
-      return qs ? `${resourceType}?${qs}` : resourceType
-   },
    isDirectRead = (
       args: Record<string, unknown>,
       supportsDirectRead: boolean,
@@ -60,11 +51,12 @@ const
          }
          try {
             const
+               shape = directId ? { allowed: false } : canShapeCount(def.resourceType),
                client = createFhirClient(),
                url =
                   directId ?
                      `${def.resourceType}/${directId}`
-                  :  buildSearchUrl(def.resourceType, args),
+                  :  buildSearchUrl(def.resourceType, args, shape.allowed),
                op = directId ? "read" : "search"
 
             config.debug ?
@@ -84,12 +76,19 @@ const
                   :  ((result as Record<string, unknown>)?.resourceType ??
                      "ok")
             console.log(`[fhir] ${def.resourceType} OK ${summary}`)
-            const text =
-               cap.warning ?
-                  `${cap.warning}\n\n${JSON.stringify(result, null, 2)}`
-               :  JSON.stringify(result, null, 2)
+            const
+               warnings = [
+                  cap.warning,
+                  shape.warn ? `Note: _count was injected but ${def.resourceType} does not advertise it in /metadata.` : undefined,
+               ].filter(Boolean),
+               prefix = warnings.length ? warnings.join("\n") + "\n\n" : "",
+               shaped = enforceByteLimit(
+                  `${prefix}${JSON.stringify(result, null, 2)}`,
+                  config.fhirMaxResponseBytes,
+               )
             return {
-               content: [{ type: "text" as const, text }],
+               content: [{ type: "text" as const, text: shaped.text }],
+               ...(shaped.isError && { isError: true }),
             }
          } catch (err) {
             const message = err instanceof Error ? err.message : String(err)

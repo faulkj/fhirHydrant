@@ -18,8 +18,16 @@ direct reads when a tool supports `_id`.
 Each tool maps to one FHIR resource type from `definitions.json`. Use `_id` for
 direct reads when supported, or provide search parameters for FHIR search.
 
-Tool results are returned as raw FHIR JSON and may include Bundles for searches
-or resources for direct reads.
+Tool results are usually returned as raw FHIR JSON and may include Bundles for
+searches or resources for direct reads. Some responses may include a short note
+before the JSON when the server allowed a vendor-specific or unadvertised search
+behavior.
+
+Search responses are shaped to avoid overly broad clinical data retrieval. If a
+tool returns `Response too large`, retry with narrower search parameters such as
+patient, encounter, category, code, date, status, or a lower `_count` when that
+parameter is available. Do not treat an oversized response error as evidence
+that no matching clinical data exists.
 
 Search results are FHIR Bundles that may contain a `link` array. If a `link`
 entry has `relation: "next"`, more results are available. Call `paginate`

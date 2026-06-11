@@ -133,9 +133,33 @@ To rotate:
 | `ALLOWED_HOSTS`           | —                     | Comma-separated hostnames for DNS rebinding protection            |
 | `DEBUG`                   | `false`               | Enable verbose FHIR request logging (**may log PHI** — see below) |
 | `FHIR_METADATA_MODE`      | `strict`              | How to handle `/metadata` mismatches: `strict` blocks calls to unadvertised params; `warn` logs warnings but allows calls with unadvertised params; both modes skip tools whose resource type is entirely absent from `/metadata`; `off` disables all metadata checks |
+| `FHIR_DEFAULT_COUNT`      | `20`                  | Default `_count` injected into searches when the resource advertises `_count` in `/metadata` |
+| `FHIR_MAX_COUNT`          | `100`                 | Maximum `_count` allowed — higher values from callers are capped to this |
+| `FHIR_MAX_RESPONSE_BYTES` | `65536`               | Universal byte-limit on tool responses — returns an error instead of the payload when exceeded |
 
 When both a derived URL and an explicit override are available, the explicit
 override takes precedence.
+
+### Response shaping
+
+fhirHydrant shapes FHIR search responses to manage token economy and minimize
+unnecessary PHI exposure in AI contexts:
+
+- **`_count` default/cap** — When a resource advertises `_count` in its
+  `/metadata` search parameters, fhirHydrant injects `FHIR_DEFAULT_COUNT` if
+  the caller omits `_count`, and caps any caller-supplied value to
+  `FHIR_MAX_COUNT`. In `strict` mode, resources that do not advertise `_count`
+  are left untouched. In `warn` mode, unadvertised `_count` is injected with a
+  visible warning in the response. When metadata is unavailable or
+  `FHIR_METADATA_MODE=off`, `_count` shaping applies to all searches.
+
+- **Byte limit** — `FHIR_MAX_RESPONSE_BYTES` is a universal backstop applied to
+  every tool response (including `paginate`). When the serialized response
+  exceeds this limit, the FHIR payload is withheld and an error is returned
+  advising the caller to narrow the search or paginate.
+
+- **Direct reads** (`_id` only) and **pagination** (`paginate` tool) are not
+  subject to `_count` shaping — only the byte limit applies.
 
 ## Definitions
 
