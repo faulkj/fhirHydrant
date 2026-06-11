@@ -27,11 +27,19 @@ export const filterAndValidateDefinitions = (defs: ResourceDefinition[]): Resour
          continue
       }
 
-      if (def.supportsDirectRead && !meta.interactions.has("read"))
-         console.warn(`[metadata] ${def.resourceType} does not advertise read — direct-read may fail`)
+      if (def.supportsDirectRead && !meta.interactions.has("read")) {
+         const reason = `${def.resourceType} does not advertise read interaction`
+         console.error(`[metadata] ${reason} — tool "${def.toolName}" skipped`)
+         skipped.push({ toolName: def.toolName, reason })
+         continue
+      }
 
-      if (!meta.interactions.has("search-type") && !meta.interactions.has("search"))
-         console.warn(`[metadata] ${def.resourceType} does not advertise search — search may fail`)
+      if (!meta.interactions.has("search-type") && !meta.interactions.has("search")) {
+         const reason = `${def.resourceType} does not advertise search interaction`
+         console.error(`[metadata] ${reason} — tool "${def.toolName}" skipped`)
+         skipped.push({ toolName: def.toolName, reason })
+         continue
+      }
 
       for (const param of Object.keys(def.searchParams)) {
          if (param === "_id") continue
