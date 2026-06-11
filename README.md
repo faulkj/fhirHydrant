@@ -132,6 +132,7 @@ To rotate:
 | `BIND_HOST`               | `127.0.0.1`           | Bind address for HTTP listener — set to `0.0.0.0` for container/LAN access |
 | `ALLOWED_HOSTS`           | —                     | Comma-separated hostnames for DNS rebinding protection            |
 | `DEBUG`                   | `false`               | Enable verbose FHIR request logging (**may log PHI** — see below) |
+| `FHIR_METADATA_MODE`      | `strict`              | How to handle `/metadata` mismatches: `strict` blocks calls to unadvertised params and skips tools for absent resource types; `warn` logs warnings but allows all calls; `off` disables all metadata checks |
 
 When both a derived URL and an explicit override are available, the explicit
 override takes precedence.
@@ -174,7 +175,11 @@ definitions file for changes:
 
 - Invalid JSON keeps the last valid snapshot
 - When scopes change, auth restarts automatically
-- New tools are available on the next MCP request
+- Behavioral changes (`requireOneOf`, `supportsDirectRead`, `searchParams`) are
+  picked up live on the next tool call
+- Adding or removing tools, or changing tool names or param names visible to the
+  MCP client, requires a server restart — those are baked into MCP tool
+  registration at startup
 
 In production, definitions are read once at startup.
 
@@ -266,6 +271,7 @@ Defined in [definitions.json](definitions.json). The default set:
 | Tool              | Description                                                       |
 | ----------------- | ----------------------------------------------------------------- |
 | `paginate`        | Fetch a single page of FHIR Bundle results using a pagination URL |
+| `capabilities`    | Return the cached FHIR server CapabilityStatement summary, including which resource types and search parameters are advertised, and which tools were skipped due to metadata mismatches |
 
 Search results are FHIR Bundles that may include pagination links. When a Bundle
 contains a `link` with `relation: "next"`, call `paginate` with that
@@ -277,9 +283,10 @@ link's `url` to fetch the next page. Repeat until no `next` link is present.
 npm run dev
 ```
 
-Watches `ts/server.ts` with native Node TS stripping. Edits to the active
-definitions file are picked up live without restart; if scopes change, auth
-restarts automatically.
+Watches `ts/server.ts` with native Node TS stripping. The active definitions
+file is watched live — behavioral changes (`requireOneOf`, `supportsDirectRead`,
+`searchParams`) take effect on the next tool call; scope changes restart auth
+automatically. Adding or removing tools requires a restart.
 
 ## Build & run
 
