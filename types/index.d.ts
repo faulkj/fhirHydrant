@@ -67,6 +67,20 @@ type SmartNamespace = {
 /** fhirclient instance type. */
 type FhirClient = ReturnType<typeof import("fhirclient").client>
 
+/** A single parameter definition in core-tools.json. */
+interface CoreToolParam {
+   type: "string" | "boolean"
+   optional?: boolean
+   description: string
+}
+
+/** A single entry in core-tools.json. */
+interface CoreToolDef {
+   name: string
+   description: string
+   params: Record<string, CoreToolParam>
+}
+
 /** Parsed capability metadata for a single FHIR resource type (internal fast-lookup shape). */
 interface ResourceMeta {
    interactions: Set<string>

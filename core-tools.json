@@ -1,0 +1,23 @@
+[
+   {
+      "name": "paginate",
+      "description": "Fetch a single page of FHIR Bundle results using a pagination URL. The url must come from a FHIR Bundle's link array where relation is \"next\". Do not construct pagination URLs manually — only use links returned by the FHIR server.",
+      "params": {
+         "url": {
+            "type": "string",
+            "description": "Pagination URL from a FHIR Bundle link[rel=next].url value"
+         }
+      }
+   },
+   {
+      "name": "capabilities",
+      "description": "Returns a summary of the FHIR server's capabilities from /metadata (CapabilityStatement). Shows supported resource types, their interactions, search parameters, and any tools that were skipped. Call this before clinical queries to understand what the server supports. Set refresh=true to re-fetch /metadata from the server.",
+      "params": {
+         "refresh": {
+            "type": "boolean",
+            "optional": true,
+            "description": "Re-fetch /metadata from the server before returning the summary"
+         }
+      }
+   }
+]

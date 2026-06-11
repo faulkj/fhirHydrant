@@ -5,6 +5,7 @@ import { getDefinitions } from "./definitions.ts"
 import { createFhirClient } from "./client.ts"
 import { withRetry } from "./utils.ts"
 import { filterAndValidateDefinitions, checkRuntimeCapability, fetchMetadata, getCapabilitySummary } from "./metadata.ts"
+import { loadCoreTools } from "./core-tools.ts"
 
 const
    buildSearchUrl = (
@@ -127,25 +128,26 @@ const validatePageUrl = (url: string): string => {
 
 /** Registers built-in infrastructure tools (e.g. pagination) on the server. */
 export const registerCoreTools = (server: McpServer): void => {
+   const tools = loadCoreTools()
+
+   const buildSchema = (params: Record<string, { type: string; optional?: boolean; description: string }>) => {
+      const shape: Record<string, z.ZodTypeAny> = {}
+      for (const [key, p] of Object.entries(params)) {
+         const base = p.type === "boolean" ? z.boolean() : z.string()
+         shape[key] = p.optional ? base.optional().describe(p.description) : base.describe(p.description)
+      }
+      return z.object(shape)
+   }
+
+   const def = (name: string) => tools.find((t) => t.name === name)!
+
    server.registerTool(
       "paginate",
-      {
-         description:
-            "Fetch a single page of FHIR Bundle results using a pagination URL. " +
-            'The url must come from a FHIR Bundle\'s link array where relation is "next". ' +
-            "Do not construct pagination URLs manually — only use links returned by the FHIR server.",
-         inputSchema: z.object({
-            url: z
-               .string()
-               .describe(
-                  "Pagination URL from a FHIR Bundle link[rel=next].url value",
-               ),
-         }),
-      },
-      async (args: { url: string }) => {
+      { description: def("paginate").description, inputSchema: buildSchema(def("paginate").params) },
+      async (args: Record<string, unknown>) => {
          try {
             const
-               validatedUrl = validatePageUrl(args.url),
+               validatedUrl = validatePageUrl(args["url"] as string),
                client = createFhirClient()
 
             config.debug ?
@@ -158,30 +160,19 @@ export const registerCoreTools = (server: McpServer): void => {
                   (
                      result &&
                      typeof result === "object" &&
-                     (result as Record<string, unknown>).resourceType ===
-                        "Bundle"
+                     (result as Record<string, unknown>).resourceType === "Bundle"
                   ) ?
                      `Bundle total=${(result as Record<string, unknown>).total ?? "?"}`
                   :  "ok"
             console.log(`[fhir] paginate OK ${summary}`)
             return {
-               content: [
-                  {
-                     type: "text" as const,
-                     text: JSON.stringify(result, null, 2),
-                  },
-               ],
+               content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }],
             }
          } catch (err) {
             const message = err instanceof Error ? err.message : String(err)
             console.error(`[fhir] paginate ERR ${message}`)
             return {
-               content: [
-                  {
-                     type: "text" as const,
-                     text: `${message}\n\nRetry with the same url to resume from this page.`,
-                  },
-               ],
+               content: [{ type: "text" as const, text: `${message}\n\nRetry with the same url to resume from this page.` }],
                isError: true,
             }
          }
@@ -190,35 +181,17 @@ export const registerCoreTools = (server: McpServer): void => {
 
    server.registerTool(
       "capabilities",
-      {
-         description:
-            "Returns a summary of the FHIR server's capabilities from /metadata (CapabilityStatement). " +
-            "Shows supported resource types, their interactions, search parameters, and any tools that were skipped. " +
-            "Call this before clinical queries to understand what the server supports. " +
-            "Set refresh=true to re-fetch /metadata from the server.",
-         inputSchema: z.object({
-            refresh: z
-               .boolean()
-               .optional()
-               .describe("Re-fetch /metadata from the server before returning the summary"),
-         }),
-      },
-      async (args: { refresh?: boolean }) => {
+      { description: def("capabilities").description, inputSchema: buildSchema(def("capabilities").params) },
+      async (args: Record<string, unknown>) => {
          try {
-            if (args.refresh) await fetchMetadata()
+            if (args["refresh"]) await fetchMetadata()
             const summary = getCapabilitySummary()
             if (!summary)
                return {
-                  content: [{
-                     type: "text" as const,
-                     text: "No /metadata available. The server may not support CapabilityStatement, or FHIR_METADATA_MODE is set to off.",
-                  }],
+                  content: [{ type: "text" as const, text: "No /metadata available. The server may not support CapabilityStatement, or FHIR_METADATA_MODE is set to off." }],
                }
             return {
-               content: [{
-                  type: "text" as const,
-                  text: JSON.stringify(summary, null, 2),
-               }],
+               content: [{ type: "text" as const, text: JSON.stringify(summary, null, 2) }],
             }
          } catch (err) {
             const message = err instanceof Error ? err.message : String(err)
