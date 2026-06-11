@@ -128,7 +128,7 @@ const validatePageUrl = (url: string): string => {
 /** Registers built-in infrastructure tools (e.g. pagination) on the server. */
 export const registerCoreTools = (server: McpServer): void => {
    server.registerTool(
-      "fhir_fetch_page",
+      "paginate",
       {
          description:
             "Fetch a single page of FHIR Bundle results using a pagination URL. " +
@@ -149,11 +149,11 @@ export const registerCoreTools = (server: McpServer): void => {
                client = createFhirClient()
 
             config.debug ?
-               console.log(`[fhir] fetch_page → ${validatedUrl}`)
-            :  console.log("[fhir] fetch_page")
+               console.log(`[fhir] paginate → ${validatedUrl}`)
+            :  console.log("[fhir] paginate")
 
             const
-               result = await withRetry("fetch_page", () => client.request(validatedUrl)),
+               result = await withRetry("paginate", () => client.request(validatedUrl)),
                summary =
                   (
                      result &&
@@ -163,7 +163,7 @@ export const registerCoreTools = (server: McpServer): void => {
                   ) ?
                      `Bundle total=${(result as Record<string, unknown>).total ?? "?"}`
                   :  "ok"
-            console.log(`[fhir] fetch_page OK ${summary}`)
+            console.log(`[fhir] paginate OK ${summary}`)
             return {
                content: [
                   {
@@ -174,7 +174,7 @@ export const registerCoreTools = (server: McpServer): void => {
             }
          } catch (err) {
             const message = err instanceof Error ? err.message : String(err)
-            console.error(`[fhir] fetch_page ERR ${message}`)
+            console.error(`[fhir] paginate ERR ${message}`)
             return {
                content: [
                   {

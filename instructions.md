@@ -22,7 +22,7 @@ Tool results are returned as raw FHIR JSON and may include Bundles for searches
 or resources for direct reads.
 
 Search results are FHIR Bundles that may contain a `link` array. If a `link`
-entry has `relation: "next"`, more results are available. Call `fhir_fetch_page`
+entry has `relation: "next"`, more results are available. Call `paginate`
 with that entry's `url` to fetch the next page. Repeat until no `next` link is
 present. Never construct pagination URLs manually — only use URLs returned by
 the FHIR server.

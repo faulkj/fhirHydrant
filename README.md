@@ -265,10 +265,10 @@ Defined in [definitions.json](definitions.json). The default set:
 
 | Tool              | Description                                                       |
 | ----------------- | ----------------------------------------------------------------- |
-| `fhir_fetch_page` | Fetch a single page of FHIR Bundle results using a pagination URL |
+| `paginate`        | Fetch a single page of FHIR Bundle results using a pagination URL |
 
 Search results are FHIR Bundles that may include pagination links. When a Bundle
-contains a `link` with `relation: "next"`, call `fhir_fetch_page` with that
+contains a `link` with `relation: "next"`, call `paginate` with that
 link's `url` to fetch the next page. Repeat until no `next` link is present.
 
 ## Dev
@@ -300,7 +300,7 @@ Output goes to `bin/server.js`.
   Setting `DEBUG=true` enables verbose URLs which **may contain
   PHI** (patient names, identifiers, dates). Treat all logs as PHI-sensitive in
   production environments.
-- **Pagination URL validation:** The `fhir_fetch_page` tool validates that URLs
+- **Pagination URL validation:** The `paginate` tool validates that URLs
    match the configured FHIR server origin before fetching.
 - **PHI in tool responses:** FHIR resource data returned through MCP tool calls
   contains PHI. Ensure your MCP client’s transcript storage and retention
