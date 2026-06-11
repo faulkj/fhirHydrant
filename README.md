@@ -31,23 +31,43 @@ npm install
 npm run build
 ```
 
-### Docker
+## Quick start
 
-```sh
-docker build -t fhirhydrant .
-docker run \
-   -v /host/path/key.pem:/run/secrets/fhir-key.pem:ro \
-   -e FHIR_BASE_URL=https://fhir.example.org \
-   -e FHIR_CLIENT_ID=your-client-id \
-   -e FHIR_PRIVATE_KEY=/run/secrets/fhir-key.pem \
-   -p 5000:5000 \
-   fhirhydrant
+The fastest way to get running with a desktop MCP client (Copilot, Claude, Cursor, etc.):
+
+**1. Get your credentials**
+
+- A FHIR R4 server URL, client ID, and RSA-2048 private key registered for SMART Backend Services
+- A publicly hosted JWKS containing the matching public key (e.g. a GitHub Gist)
+
+**2. Add to your MCP client config**
+
+```json
+{
+   "mcpServers": {
+      "fhirhydrant": {
+         "command": "npx",
+         "args": ["-y", "fhirhydrant"],
+         "env": {
+            "MCP_TRANSPORT": "stdio",
+            "FHIR_BASE_URL": "https://fhir.example.org",
+            "FHIR_CLIENT_ID": "your-client-id",
+            "FHIR_PRIVATE_KEY": "private-20260610.pem",
+            "FHIR_ACTIVE_KEY": "20260610",
+            "FHIR_JWKS_URL": "https://example.org/.well-known/jwks.json"
+         }
+      }
+   }
+}
 ```
 
-> **Docker key mounting:** `FHIR_PRIVATE_KEY=./private.pem` will not resolve
-> inside the container. Mount the key file and use the container path as shown.
+`FHIR_PRIVATE_KEY` is a comma-separated list of PEM file paths. The `kid` for each key is derived from its filename: `private-<kid>.pem`. Place PEM files in the directory you run your MCP client from, or use absolute paths.
 
-## Setup
+**3. Customize resources** *(optional)*
+
+Drop a `definitions.json` in your working directory to override the default FHIR resource set. See [Definitions](#definitions).
+
+
 
 Generate a private key if you don't have one:
 
@@ -74,14 +94,28 @@ See [.env.example](.env.example) for all variables.
 | ------------------ | --------------------------------------------------------------------------- |
 | `FHIR_BASE_URL`    | FHIR server base — `/api/FHIR/R4` and `/oauth2/token` are derived from this |
 | `FHIR_CLIENT_ID`   | Client ID registered with your FHIR auth server                             |
-| `FHIR_PRIVATE_KEY` | Path to your RSA private key PEM file (relative to cwd or absolute)         |
+| `FHIR_PRIVATE_KEY` | Comma-separated PEM file paths — kid derived from filename `private-<kid>.pem` |
+| `FHIR_ACTIVE_KEY`  | Which derived `kid` to use for signing JWT assertions                        |
 
 ### Commonly required
 
 | Variable        | Description                                           |
 | --------------- | ----------------------------------------------------- |
 | `FHIR_JWKS_URL` | Public JWKS URL registered with your FHIR auth server |
-| `FHIR_KEY_ID`   | `kid` value in your JWKS matching the private key     |
+
+### Key rotation
+
+`FHIR_PRIVATE_KEY` lists all private keys the app knows about.
+`FHIR_ACTIVE_KEY` selects which one signs JWT assertions. Your hosted JWKS
+should contain public keys for all listed PEM files so the FHIR auth server can
+verify any of them by `kid`. To rotate:
+
+1. Generate a new key: `openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out private-20260715.pem`
+2. Add the new public key to your hosted JWKS
+3. Add the new PEM to `FHIR_PRIVATE_KEY`: `private-20260610.pem,private-20260715.pem`
+4. Set `FHIR_ACTIVE_KEY=20260715` and redeploy
+5. After auth-server caches expire and old deployments are retired, remove the
+   old PEM from `FHIR_PRIVATE_KEY` and its public key from JWKS
 
 ### Optional
 
@@ -199,9 +233,9 @@ MCP client config:
             "MCP_TRANSPORT": "stdio",
             "FHIR_BASE_URL": "https://fhir.example.org",
             "FHIR_CLIENT_ID": "your-client-id",
-            "FHIR_PRIVATE_KEY": "/path/to/private-1.pem",
-            "FHIR_JWKS_URL": "https://example.org/.well-known/jwks.json",
-            "FHIR_KEY_ID": "key-1"
+            "FHIR_PRIVATE_KEY": "private-20260610.pem",
+            "FHIR_ACTIVE_KEY": "20260610",
+            "FHIR_JWKS_URL": "https://example.org/.well-known/jwks.json"
          }
       }
    }

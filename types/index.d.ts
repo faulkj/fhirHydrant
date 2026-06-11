@@ -1,6 +1,3 @@
-// Global ambient type declarations for fhirHydrant (fhirhydrant).
-// No imports needed — all types below are available project-wide.
-
 /** Raw shape of a single entry in definitions.json. */
 interface ResourceDefinitionRaw {
    resourceType: string
@@ -27,15 +24,23 @@ interface ValidationResult {
    errors: string[]
 }
 
+/** A private key and its derived kid (from PEM filename). */
+interface KeyPair {
+   /** Key identifier derived from the PEM filename: private-<kid>.pem → kid. */
+   kid: string
+   /** PEM file path as provided in FHIR_PRIVATE_KEY. */
+   privateKey: string
+}
+
 /** Validated runtime configuration shape — see config.ts. */
 interface Config {
    fhirBaseUrl: string
    readonly fhirServerUrl: string
    readonly fhirTokenEndpoint: string
    fhirClientId: string
-   fhirPrivateKey: string
+   fhirKeys: KeyPair[]
+   fhirActiveKey: string
    fhirJwksUrl: string | undefined
-   fhirKeyId: string | undefined
    port: number
    bindHost: string
    allowedHosts: string[] | undefined
@@ -60,8 +65,9 @@ type SmartNamespace = {
 /** fhirclient instance type. */
 type FhirClient = ReturnType<typeof import("fhirclient").client>
 
-/** Express request/response/next convenience aliases for MCP HTTP handler typing. */
+/** Express Request alias for MCP HTTP handler typing. */
 type Req = import("express").Request
+/** Express Response alias for MCP HTTP handler typing. */
 type Res = import("express").Response
+/** Express NextFunction alias for MCP HTTP handler typing. */
 type Next = import("express").NextFunction
-

@@ -4,15 +4,17 @@ import { getScopes } from "./definitions.ts"
 
 let starter!: InstanceType<typeof FHIRStarter>
 
+const activeKey = config.fhirKeys.find((k) => k.kid === config.fhirActiveKey)!
+
 /** Initialises FHIRStarter and acquires the first access token. Call once at startup. */
 export const startAuth = async (): Promise<void> => {
    starter = new FHIRStarter({
       clientId: config.fhirClientId,
-      privateKey: config.fhirPrivateKey,
+      privateKey: activeKey.privateKey,
       tokenEndpointUrl: config.fhirTokenEndpoint,
       scopes: getScopes(),
+      keyId: activeKey.kid,
       ...(config.fhirJwksUrl && { jwksUrl: config.fhirJwksUrl }),
-      ...(config.fhirKeyId && { keyId: config.fhirKeyId }),
    })
    await starter.start()
 }
