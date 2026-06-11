@@ -10,7 +10,7 @@ transports.
 
 - Node.js ≥ 24
 - A FHIR R4 server with SMART Backend Services (client credentials) support
-- An RSA-2048 private key and a publicly hosted JWKS
+- An RSA-2048 private key (JWKS can be self-hosted via the built-in `/jwks` endpoint or externally)
 
 ## Install
 
@@ -38,7 +38,7 @@ The fastest way to get running with a desktop MCP client (Copilot, Claude, Curso
 **1. Get your credentials**
 
 - A FHIR R4 server URL, client ID, and RSA-2048 private key registered for SMART Backend Services
-- A publicly hosted JWKS containing the matching public key (e.g. a GitHub Gist)
+- A publicly hosted JWKS — use the built-in `/jwks` endpoint (omit `FHIR_JWKS_URL`) or host one externally (e.g. a GitHub Gist)
 
 **2. Add to your MCP client config**
 
@@ -99,23 +99,27 @@ See [.env.example](.env.example) for all variables.
 
 ### Commonly required
 
-| Variable        | Description                                           |
-| --------------- | ----------------------------------------------------- |
-| `FHIR_JWKS_URL` | Public JWKS URL registered with your FHIR auth server |
+| Variable        | Description                                                                                                    |
+| --------------- | -------------------------------------------------------------------------------------------------------------- |
+| `FHIR_JWKS_URL` | External JWKS URL registered with your FHIR auth server. Omit to enable the built-in `/jwks` endpoint instead. |
 
 ### Key rotation
 
 `FHIR_PRIVATE_KEY` lists all private keys the app knows about.
-`FHIR_ACTIVE_KEY` selects which one signs JWT assertions. Your hosted JWKS
-should contain public keys for all listed PEM files so the FHIR auth server can
-verify any of them by `kid`. To rotate:
+`FHIR_ACTIVE_KEY` selects which one signs JWT assertions. The built-in `/jwks`
+endpoint (or your externally hosted JWKS) should contain public keys for all
+listed PEM files so the FHIR auth server can verify any of them by `kid`.
+To rotate:
 
 1. Generate a new key: `openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out private-20260715.pem`
-2. Add the new public key to your hosted JWKS
-3. Add the new PEM to `FHIR_PRIVATE_KEY`: `private-20260610.pem,private-20260715.pem`
+2. Add the new PEM to `FHIR_PRIVATE_KEY`: `private-20260610.pem,private-20260715.pem`
+3. Redeploy — the `/jwks` endpoint automatically includes all keys
 4. Set `FHIR_ACTIVE_KEY=20260715` and redeploy
 5. After auth-server caches expire and old deployments are retired, remove the
-   old PEM from `FHIR_PRIVATE_KEY` and its public key from JWKS
+   old PEM from `FHIR_PRIVATE_KEY`
+
+> If using an external JWKS (`FHIR_JWKS_URL`), manually add the new public key
+> to that JWKS before step 3.
 
 ### Optional
 
@@ -303,3 +307,8 @@ Output goes to `bin/server.js`.
   policies meet your compliance requirements.
 - **Health endpoint:** `GET /health` returns `{"status":"ok"}` for liveness
   probes. No authentication, no PHI.
+- **JWKS endpoint:** `GET /jwks` serves public keys derived from
+  `FHIR_PRIVATE_KEY` when `FHIR_JWKS_URL` is not set. No private key material
+  is exposed. When deploying behind Azure Container Apps EasyAuth, add `/jwks`
+  to the `excludedPaths` list so the FHIR authorization server can fetch it
+  unauthenticated.

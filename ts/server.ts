@@ -7,6 +7,7 @@ import { McpServer, StdioServerTransport } from "@modelcontextprotocol/server"
 import { config } from "./config.ts"
 import { startAuth, stopAuth, restartAuth } from "./fhir/auth.ts"
 import { getDefinitionsPath, reloadDefinitions, getScopes } from "./fhir/definitions.ts"
+import { jwksHandler } from "./fhir/jwks.ts"
 import { registerAll, registerCoreTools } from "./fhir/registry.ts"
 
 const
@@ -91,6 +92,12 @@ const
 
       app.get("/health", (_req: Req, res: Res) => res.json({ status: "ok" }))
 
+      if (!config.fhirJwksUrl) {
+         app.get("/jwks", jwksHandler)
+         console.log("[jwks] Serving JWKS at /jwks")
+      } else
+         console.log("[jwks] External JWKS URL configured — /jwks disabled")
+
       app.all("/mcp", async (req: Req, res: Res) => {
          const
             body = req.body as Record<string, unknown> | undefined,
@@ -108,9 +115,12 @@ const
          })
       })
 
-      const httpServer = app.listen(config.port, config.bindHost, () =>
-         console.log(`fhirhydrant listening on ${config.bindHost}:${config.port}`),
-      )
+      const httpServer = await new Promise<ReturnType<typeof app.listen>>((resolve) => {
+         const s = app.listen(config.port, config.bindHost, () => {
+            console.log(`fhirhydrant listening on ${config.bindHost}:${config.port}`)
+            resolve(s)
+         })
+      })
 
       return () =>
          new Promise<void>((resolve) => {
@@ -134,9 +144,13 @@ const
       }
    }
 
-await startAuth()
+const selfHostJwks = config.transport === "http" && !config.fhirJwksUrl
+
+if (!selfHostJwks) await startAuth()
 
 const close = config.transport === "stdio" ? await startStdio() : await startHttp()
+
+if (selfHostJwks) await startAuth()
 
 process.env["NODE_ENV"] !== "production" && startDefinitionsWatcher()
 
