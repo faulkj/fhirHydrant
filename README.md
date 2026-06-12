@@ -6,6 +6,9 @@ Authenticates via SMART Backend Services, exposes configurable resource tools
 with FHIR Bundle pagination, and supports both Streamable HTTP and stdio
 transports.
 
+> **PHI note:** FHIR data returned through MCP tool calls contains PHI. Ensure
+> your MCP client's transcript storage meets your compliance requirements.
+
 ## Requirements
 
 - Node.js ≥ 24
@@ -67,22 +70,7 @@ The fastest way to get running with a desktop MCP client (Copilot, Claude, Curso
 
 Drop a `definitions.json` in your working directory to override the default FHIR resource set. See [Definitions](#definitions).
 
-
-
-Generate a private key if you don't have one:
-
-```sh
-openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out private.pem
-```
-
-Host the corresponding public JWKS somewhere reachable by your FHIR auth server
-(e.g. a GitHub Gist), and register it along with your `FHIR_CLIENT_ID`.
-
-**From source:** copy `.env.example` to `.env` and fill in your values — `npm run dev` loads it automatically.
-
-**npm / npx (HTTP mode):** set env vars in your shell or process manager before running.
-
-**stdio mode:** pass env vars via the MCP client config's `env` block (see [Stdio](#stdio) below).
+**From source:** copy `.env.example` to `.env`, fill in values, run `npm run dev`.
 
 ## Environment
 
@@ -94,14 +82,14 @@ See [.env.example](.env.example) for all variables.
 | ------------------ | --------------------------------------------------------------------------- |
 | `FHIR_BASE_URL`    | FHIR server base — `/api/FHIR/R4` and `/oauth2/token` are derived from this |
 | `FHIR_CLIENT_ID`   | Client ID registered with your FHIR auth server                             |
-| `FHIR_PRIVATE_KEY` | Comma-separated PEM file paths — kid derived from filename `private-<kid>.pem` |
+| `FHIR_PRIVATE_KEY` | Comma-separated PEM file paths — kid derived from filename `private-<kid>.pem`; keep keys outside the repo (`.gitignore` excludes `*.pem`/`*.key`) |
 | `FHIR_ACTIVE_KEY`  | Which derived `kid` to use for signing JWT assertions                        |
 
 ### Commonly required
 
 | Variable        | Description                                                                                                    |
 | --------------- | -------------------------------------------------------------------------------------------------------------- |
-| `FHIR_JWKS_URL` | External JWKS URL registered with your FHIR auth server. Omit to enable the built-in `/jwks` endpoint instead. |
+| `FHIR_JWKS_URL` | External JWKS URL registered with your FHIR auth server. Omit to enable the built-in `/jwks` endpoint instead (no private material exposed). Behind Azure EasyAuth, add `/jwks` to `excludedPaths`. |
 
 ### Key rotation
 
@@ -130,36 +118,60 @@ To rotate:
 | `MCP_TRANSPORT`           | `http`                | `http` for Streamable HTTP, `stdio` for stdio                     |
 | `PORT`                    | `5000`                | HTTP listener port (1–65535)                                      |
 | `BIND_HOST`               | `127.0.0.1`           | Bind address for HTTP listener — set to `0.0.0.0` for container/LAN access |
-| `ALLOWED_HOSTS`           | —                     | Comma-separated hostnames for DNS rebinding protection            |
-| `DEBUG`                   | `false`               | Enable verbose FHIR request logging (**may log PHI** — see below) |
-| `FHIR_METADATA_MODE`      | `strict`              | How to handle `/metadata` mismatches: `strict` blocks calls to unadvertised params; `warn` logs warnings but allows calls with unadvertised params; both modes skip tools whose resource type is entirely absent from `/metadata`; `off` disables all metadata checks |
+| `ALLOWED_HOSTS`           | —                     | Comma-separated hostnames for DNS rebinding protection — set when exposing HTTP on a public network |
+| `DEBUG`                   | `false`               | Enable verbose FHIR request logging — **logs URLs that may contain PHI** (patient names, identifiers, dates). Treat all production logs as PHI-sensitive |
+| `FHIR_METADATA_MODE`      | `strict`              | `/metadata` mismatch handling: `strict` blocks unadvertised params, `warn` allows with warning, `off` disables checks. Both `strict` and `warn` skip entirely absent resource types |
 | `FHIR_DEFAULT_COUNT`      | `20`                  | Default `_count` injected into searches when the resource advertises `_count` in `/metadata` |
 | `FHIR_MAX_COUNT`          | `100`                 | Maximum `_count` allowed — higher values from callers are capped to this |
 | `FHIR_MAX_RESPONSE_BYTES` | `65536`               | Universal byte-limit on tool responses — returns an error instead of the payload when exceeded |
+| `FHIR_AUDIT_SINK`          | —                     | Comma-separated audit sinks: `console`, `file`, or both. Off when unset/empty |
+| `FHIR_AUDIT_FILE`          | `./audit.jsonl`       | JSONL audit log path (parent directory must exist) — used when `file` sink is active |
+| `FHIR_AUDIT_USER_HEADER`   | —                     | HTTP request header whose value is recorded as `user` in audit events (see [Audit user identity](#audit-user-identity)) |
 
 When both a derived URL and an explicit override are available, the explicit
 override takes precedence.
 
+### Audit
+
+fhirHydrant can emit structured, PHI-free audit events for every FHIR operation.
+Set `FHIR_AUDIT_SINK` to enable one or both sinks:
+
+- **`console`** — writes `[audit] { … }` JSON lines to stdout (stderr in stdio mode)
+- **`file`** — appends JSONL to `FHIR_AUDIT_FILE` (default `./audit.jsonl`)
+
+Each event includes timestamp, tool name, operation type, status, duration,
+response size, and pagination metadata — but never FHIR resource content.
+
+#### Audit user identity
+
+When fhirHydrant runs behind an authenticating reverse proxy (Azure EasyAuth,
+OAuth2 Proxy, etc.), set `FHIR_AUDIT_USER_HEADER` to the header your proxy
+injects with the authenticated user's identity. The header value is recorded as
+`user` in every audit event for that request.
+
+Common values:
+
+| Proxy | Header |
+| --- | --- |
+| Azure EasyAuth | `X-MS-CLIENT-PRINCIPAL-NAME` |
+| OAuth2 Proxy | `X-Auth-Request-Email` |
+| Cloudflare Access | `Cf-Access-Authenticated-User-Email` |
+
+> **Trust boundary:** This header is only meaningful when an upstream proxy
+> strips or overwrites it. Do not set this for unauthenticated deployments —
+> clients could spoof arbitrary values.
+
 ### Response shaping
 
-fhirHydrant shapes FHIR search responses to manage token economy and minimize
-unnecessary PHI exposure in AI contexts:
+fhirHydrant shapes search responses to manage token economy and limit PHI exposure:
 
-- **`_count` default/cap** — When a resource advertises `_count` in its
-  `/metadata` search parameters, fhirHydrant injects `FHIR_DEFAULT_COUNT` if
-  the caller omits `_count`, and caps any caller-supplied value to
-  `FHIR_MAX_COUNT`. In `strict` mode, resources that do not advertise `_count`
-  are left untouched. In `warn` mode, unadvertised `_count` is injected with a
-  visible warning in the response. When metadata is unavailable or
-  `FHIR_METADATA_MODE=off`, `_count` shaping applies to all searches.
+- **`_count` default/cap** — Injects `FHIR_DEFAULT_COUNT` when omitted, caps to
+  `FHIR_MAX_COUNT`. Behavior follows `FHIR_METADATA_MODE`: `strict` only
+  touches resources that advertise `_count`; `warn` injects with a warning;
+  `off` applies to all searches. Direct reads and pagination are exempt.
 
-- **Byte limit** — `FHIR_MAX_RESPONSE_BYTES` is a universal backstop applied to
-  every tool response (including `paginate`). When the serialized response
-  exceeds this limit, the FHIR payload is withheld and an error is returned
-  advising the caller to narrow the search or paginate.
-
-- **Direct reads** (`_id` only) and **pagination** (`paginate` tool) are not
-  subject to `_count` shaping — only the byte limit applies.
+- **Byte limit** — `FHIR_MAX_RESPONSE_BYTES` caps every tool response; exceeding
+  it returns an error advising the caller to narrow or paginate.
 
 ## Definitions
 
@@ -207,15 +219,6 @@ definitions file for changes:
 
 In production, definitions are read once at startup.
 
-### Safe onboarding checklist
-
-1. Update `definitions.json` with your resources
-2. Confirm generated SMART scopes match your intended access
-3. Update/re-register your backend client with the FHIR authorization server if
-   required scopes changed
-4. Test with least-privilege access
-5. Deploy
-
 ### Limitations
 
 - All `searchParams` values are string-only — no type enforcement or enums
@@ -230,6 +233,8 @@ In production, definitions are read once at startup.
 ### HTTP (default)
 
 Stateless Streamable HTTP — no session management required.
+Use a reverse proxy to terminate TLS when exposing HTTP beyond localhost.
+`GET /health` returns `{"status":"ok"}` for liveness probes (no auth, no PHI).
 
 ```
 POST http://localhost:5000/mcp
@@ -253,27 +258,7 @@ MCP client config:
 
 Set `MCP_TRANSPORT=stdio` to use stdio transport. In stdio mode, stdout is
 reserved for the MCP protocol — all logging is redirected to stderr.
-
-MCP client config:
-
-```json
-{
-   "mcpServers": {
-      "fhirhydrant": {
-         "command": "npx",
-         "args": ["fhirhydrant"],
-         "env": {
-            "MCP_TRANSPORT": "stdio",
-            "FHIR_BASE_URL": "https://fhir.example.org",
-            "FHIR_CLIENT_ID": "your-client-id",
-            "FHIR_PRIVATE_KEY": "private-20260610.pem",
-            "FHIR_ACTIVE_KEY": "20260610",
-            "FHIR_JWKS_URL": "https://example.org/.well-known/jwks.json"
-         }
-      }
-   }
-}
-```
+See the [Quick start](#quick-start) JSON block for a full stdio config example.
 
 Prefer stdio for local desktop clients, HTTP for remote/networked clients.
 
@@ -294,7 +279,7 @@ Defined in [definitions.json](definitions.json). The default set:
 
 | Tool              | Description                                                       |
 | ----------------- | ----------------------------------------------------------------- |
-| `paginate`        | Fetch a single page of FHIR Bundle results using a pagination URL |
+| `paginate`        | Fetch a single page of FHIR Bundle results using a pagination URL (validated against the FHIR server origin) |
 | `capabilities`    | Return the cached FHIR server CapabilityStatement summary, including which resource types and search parameters are advertised, and which tools were skipped due to metadata mismatches |
 
 Search results are FHIR Bundles that may include pagination links. When a Bundle
@@ -307,10 +292,8 @@ link's `url` to fetch the next page. Repeat until no `next` link is present.
 npm run dev
 ```
 
-Watches `ts/server.ts` with native Node TS stripping. The active definitions
-file is watched live — behavioral changes (`requireOneOf`, `supportsDirectRead`,
-`searchParams`) take effect on the next tool call; scope changes restart auth
-automatically. Adding or removing tools requires a restart.
+Watches `ts/server.ts` with native Node TS stripping. Definitions are watched
+live — see [Hot-reload](#hot-reload-dev-mode).
 
 ## Build & run
 
@@ -320,26 +303,3 @@ npm start
 ```
 
 Output goes to `bin/server.js`.
-
-## Security notes
-
-- **TLS:** Use a reverse proxy (nginx, Caddy) to terminate TLS for HTTP mode
-- **ALLOWED_HOSTS:** Set this when exposing HTTP mode on a public network
-- **Private keys:** Keep keys outside the package/project repo — `.gitignore`
-  already excludes `*.pem` and `*.key`
-- **PHI in logs:** Default logging does not include FHIR query parameters.
-  Setting `DEBUG=true` enables verbose URLs which **may contain
-  PHI** (patient names, identifiers, dates). Treat all logs as PHI-sensitive in
-  production environments.
-- **Pagination URL validation:** The `paginate` tool validates that URLs
-   match the configured FHIR server origin before fetching.
-- **PHI in tool responses:** FHIR resource data returned through MCP tool calls
-  contains PHI. Ensure your MCP client’s transcript storage and retention
-  policies meet your compliance requirements.
-- **Health endpoint:** `GET /health` returns `{"status":"ok"}` for liveness
-  probes. No authentication, no PHI.
-- **JWKS endpoint:** `GET /jwks` serves public keys derived from
-  `FHIR_PRIVATE_KEY` when `FHIR_JWKS_URL` is not set. No private key material
-  is exposed. When deploying behind Azure Container Apps EasyAuth, add `/jwks`
-  to the `excludedPaths` list so the FHIR authorization server can fetch it
-  unauthenticated.

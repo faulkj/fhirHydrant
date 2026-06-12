@@ -53,6 +53,7 @@ interface Config {
    fhirMaxResponseBytes: number
    auditSinks: AuditSinkName[]
    auditFile: string
+   auditUserHeader: string | undefined
 }
 
 /** Getter-backed token response compatible with fhirclient — access_token always reflects the latest issued token. */
@@ -112,6 +113,9 @@ interface CapabilitySummary {
    }>
 }
 
+/** Request-scoped audit context — carried via AsyncLocalStorage, merged into events automatically. */
+interface AuditContext { user?: string }
+
 /** Allowed audit sink names. */
 type AuditSinkName = "console" | "file"
 
@@ -145,6 +149,7 @@ interface AuditEvent {
    metadataBlocked?: boolean
    validationBlocked?: boolean
    httpStatus?: number
+   user?: string
 }
 
 /** Express Request alias for MCP HTTP handler typing. */

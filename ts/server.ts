@@ -5,7 +5,7 @@ import { basename, dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { McpServer, StdioServerTransport } from "@modelcontextprotocol/server"
 import { config } from "./config.ts"
-import { initAuditSinks } from "./audit.ts"
+import { initAuditSinks, withAuditContext } from "./audit.ts"
 import { startAuth, stopAuth, restartAuth } from "./fhir/auth.ts"
 import { getDefinitionsPath, reloadDefinitions, getScopes } from "./fhir/definitions.ts"
 import { jwksHandler } from "./fhir/jwks.ts"
@@ -23,7 +23,7 @@ const
       "utf8",
    ).trim(),
 
-   _ = initAuditSinks(config.auditSinks, config.auditFile),
+   _ = (initAuditSinks(config.auditSinks, config.auditFile), config.auditUserHeader && console.log(`[audit] User header: ${config.auditUserHeader}`)),
    makeServer = (): McpServer => {
       const s = new McpServer(SERVER_INFO, { instructions: SERVER_INSTRUCTIONS })
       registerAll(s)
@@ -112,7 +112,8 @@ const
             body = req.body as Record<string, unknown> | undefined,
             method = body?.method ?? req.method
          method && console.log(`[mcp] ${method}`)
-         await transport.handleRequest(req, res, req.body)
+         const user = config.auditUserHeader ? req.get(config.auditUserHeader)?.trim() || undefined : undefined
+         await withAuditContext(user ? { user } : {}, () => transport.handleRequest(req, res, req.body))
       })
 
       app.use((err: Error, _req: Req, res: Res, _next: Next) => {

@@ -1,4 +1,7 @@
 import { appendFile } from "node:fs/promises"
+import { AsyncLocalStorage } from "node:async_hooks"
+
+const auditContext = new AsyncLocalStorage<AuditContext>()
 
 let sinks: AuditSinkFn[] = []
 
@@ -17,9 +20,15 @@ export const initAuditSinks = (names: AuditSinkName[], filePath: string): void =
    sinks.length && console.log(`[audit] Active sinks: ${names.join(", ")}`)
 }
 
-/** Dispatches a structured audit event to all active sinks. */
+/** Runs `fn` within an audit context so emitAudit can merge request-scoped fields automatically. */
+export const withAuditContext = <T>(ctx: AuditContext, fn: () => T): T =>
+   auditContext.run(ctx, fn)
+
+/** Dispatches a structured audit event to all active sinks, merging request-scoped context. */
 export const emitAudit = (event: AuditEvent): void => {
-   for (const sink of sinks) sink(event)
+   const ctx = auditContext.getStore()
+   const merged = ctx?.user ? { user: ctx.user, ...event } : event
+   for (const sink of sinks) sink(merged)
 }
 
 /** Returns elapsed milliseconds since `start`. */

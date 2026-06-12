@@ -104,6 +104,7 @@ export const config: Config = {
    fhirMaxResponseBytes: parsePositiveInt("FHIR_MAX_RESPONSE_BYTES", 65536),
    auditSinks: parseAuditSinks(),
    auditFile: opt("FHIR_AUDIT_FILE") ?? "./audit.jsonl",
+   auditUserHeader: opt("FHIR_AUDIT_USER_HEADER")?.trim() || undefined,
 }
 
 if (!config.fhirKeys.some((k) => k.kid === config.fhirActiveKey))
