@@ -1,7 +1,7 @@
 {
    "name": "fhirhydrant",
    "version": "0.4.0",
-   "description": "An MCP server for connecting AI clients to FHIR APIs.",
+   "description": "A Node.js MCP server for connecting AI clients to FHIR APIs.",
    "author": "Joshua Faulkenberry <j@joshuafaulkenberry.com> (https://joshuafaulkenberry.com/)",
    "license": "Unlicense",
    "type": "module",
