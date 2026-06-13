@@ -1,6 +1,8 @@
 import type { McpServer } from "@modelcontextprotocol/server"
+import * as z from "zod"
 import { config } from "../config.ts"
-import { getDefinitions } from "../fhir/definitions.ts"
+import { getDefinitions, getsearchControls, buildShape } from "../fhir/definitions.ts"
+import { getResourceMeta } from "../fhir/metadata.ts"
 import { createFhirClient } from "../fhir/client.ts"
 import { withRetry, enforceByteLimit } from "../utils.ts"
 import { emitAudit, auditTime, errorStatus } from "../audit.ts"
@@ -9,20 +11,11 @@ import { responseNote, bundleStats } from "./response-notes.ts"
 import { filterAndValidateDefinitions, checkRuntimeCapability } from "./validation.ts"
 
 const
-   isDirectRead = (
-      args: Record<string, unknown>,
-      supportsDirectRead: boolean,
-   ): string | undefined => {
+   isDirectRead = (args: Record<string, unknown>, supportsDirectRead: boolean): string | undefined => {
       if (!supportsDirectRead) return undefined
-      const id =
-         typeof args["_id"] === "string" && args["_id"] ?
-            args["_id"]
-         :  undefined
+      const id = typeof args["_id"] === "string" && args["_id"] ? args["_id"] : undefined
       if (!id) return undefined
-      const otherKeys = Object.entries(args).some(
-         ([k, v]) => k !== "_id" && v !== undefined && v !== "",
-      )
-      return otherKeys ? undefined : id
+      return Object.entries(args).some(([k, v]) => k !== "_id" && v !== undefined && v !== "") ? undefined : id
    },
    makeHandler =
       (toolName: string) => async (args: Record<string, unknown>) => {
@@ -91,12 +84,40 @@ const
          }
       }
 
+const augmentSchema = (
+   def: ResourceDefinition, meta: ResourceMeta, controlParams: Record<string, string>,
+): { schema: z.ZodObject<z.ZodRawShape>; injected: string[] } => {
+   const merged = { ...def.searchParams }, injected: string[] = []
+   for (const [param, desc] of Object.entries(controlParams)) {
+      if (merged[param]) continue
+      if (param === "_include" || param === "_revinclude") {
+         const values = param === "_include" ? meta.includes : meta.revincludes
+         if (values.length === 0) continue
+         const hint = values.length > 10 ? values.slice(0, 10).join(", ") + ", …" : values.join(", ")
+         merged[param] = `${desc} (${hint})`
+      } else {
+         if (!meta.searchParams.has(param)) continue
+         merged[param] = desc
+      }
+      injected.push(param)
+   }
+   return injected.length > 0
+      ? { schema: z.object(buildShape(merged, def.resourceType, def.supportsDirectRead)), injected }
+      : { schema: def.searchSchema, injected }
+}
+
 /** Registers an MCP tool for every ResourceDefinition in the current snapshot. */
 export const registerAll = (server: McpServer): void => {
-   for (const def of filterAndValidateDefinitions(getDefinitions()))
+   const controlParams = getsearchControls()
+   for (const def of filterAndValidateDefinitions(getDefinitions())) {
+      const
+         meta = getResourceMeta(def.resourceType),
+         { schema, injected } = meta ? augmentSchema(def, meta, controlParams) : { schema: def.searchSchema, injected: [] as string[] }
+      config.debug && injected.length && console.log(`[definitions] ${def.resourceType}: injected ${injected.join(", ")}`)
       server.registerTool(
          def.toolName,
-         { description: def.description, inputSchema: def.searchSchema },
+         { description: def.description, inputSchema: schema },
          makeHandler(def.toolName),
       )
+   }
 }

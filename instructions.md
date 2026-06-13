@@ -17,6 +17,11 @@ direct reads when a tool supports `_id`.
 
 Each tool maps to one FHIR resource type from `definitions.json`. Use `_id` for
 direct reads when supported, or provide search parameters for FHIR search.
+Common search-control parameters like `_count`, `_sort`, `_summary`, `_elements`,
+`_include`, and `_revinclude` appear in a tool's schema only when the FHIR
+server's `/metadata` advertises them for that resource type. Use `_count` as the
+primary lever for managing oversized responses. Tool schemas are built at startup
+from `/metadata` — restart the server to pick up metadata changes.
 
 FHIR query results include a short plain-text header followed by unmodified FHIR
 JSON. The JSON may be a Bundle for searches and pagination, or a resource for

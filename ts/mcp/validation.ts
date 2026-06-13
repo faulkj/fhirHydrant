@@ -42,7 +42,7 @@ export const filterAndValidateDefinitions = (defs: ResourceDefinition[]): Resour
       }
 
       for (const param of Object.keys(def.searchParams)) {
-         if (param === "_id") continue
+         if (param === "_id" || param === "_include" || param === "_revinclude") continue
          if (!meta.searchParams.has(param))
             console.warn(`[metadata] ${def.resourceType}: "${param}" not in /metadata — calls using this param will be blocked in strict mode`)
       }
@@ -71,22 +71,34 @@ export const checkRuntimeCapability = (
       return { error: `${def.resourceType} is not advertised by this FHIR server's /metadata.` }
 
    if (!directId) {
-      const unadvertised: string[] = []
+      const unadvertised: string[] = [], badIncludes: string[] = [], badRevIncludes: string[] = []
       for (const [key, val] of Object.entries(args)) {
          if (key === "_id") continue
          if (val === undefined || val === "") continue
+         if (key === "_include") {
+            if (!meta.includes.includes(val as string) && !meta.includes.includes("*")) badIncludes.push(val as string)
+            continue
+         }
+         if (key === "_revinclude") {
+            if (!meta.revincludes.includes(val as string) && !meta.revincludes.includes("*")) badRevIncludes.push(val as string)
+            continue
+         }
          if (!meta.searchParams.has(key)) unadvertised.push(key)
       }
 
-      if (unadvertised.length > 0) {
-         const params = unadvertised.map((p) => `"${p}"`).join(", ")
+      const parts: string[] = []
+      if (unadvertised.length > 0)
+         parts.push(`search parameter ${unadvertised.map((p) => `"${p}"`).join(", ")} not advertised`)
+      if (badIncludes.length > 0)
+         parts.push(`_include value ${badIncludes.map((v) => `"${v}"`).join(", ")} not in advertised list`)
+      if (badRevIncludes.length > 0)
+         parts.push(`_revinclude value ${badRevIncludes.map((v) => `"${v}"`).join(", ")} not in advertised list`)
+
+      if (parts.length > 0) {
+         const msg = `${def.resourceType}: ${parts.join("; ")} — per /metadata`
          if (config.metadataMode === "strict")
-            return {
-               error: `${def.resourceType} search parameter ${params} not advertised by /metadata. Remove from definitions.json or set FHIR_METADATA_MODE=warn.`,
-            }
-         return {
-            warning: `Note: ${def.resourceType} search parameter ${params} not advertised by /metadata — this call may be vendor-specific.`,
-         }
+            return { error: `${msg}. Remove the unadvertised value or set FHIR_METADATA_MODE=warn.` }
+         return { warning: `Note: ${msg} — this call may be vendor-specific.` }
       }
    }
 

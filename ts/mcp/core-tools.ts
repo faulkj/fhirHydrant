@@ -30,8 +30,6 @@ const
          nextUrl = new URL(url, baseHref)
       if (nextUrl.origin !== serverUrl.origin)
          throw new Error(`Pagination URL origin "${nextUrl.origin}" does not match FHIR server origin "${serverUrl.origin}"`)
-      if (!nextUrl.pathname.startsWith(serverUrl.pathname))
-         throw new Error(`Pagination URL path "${nextUrl.pathname}" is outside FHIR server base path "${serverUrl.pathname}"`)
       return nextUrl.toString()
    }
 

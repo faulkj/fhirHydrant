@@ -55,19 +55,23 @@ export const fetchMetadata = async (): Promise<void> => {
             includes = Array.isArray(res.searchInclude)
                ? (res.searchInclude as string[]).filter(Boolean)
                : [],
+            revincludes = Array.isArray(res.searchRevInclude)
+               ? (res.searchRevInclude as string[]).filter(Boolean)
+               : [],
             operations = Array.isArray(res.operation)
                ? (res.operation as Array<Record<string, unknown>>)
                   .map((o) => o.name as string)
                   .filter(Boolean)
                : []
 
-         newIndex.set(type, { interactions, searchParams, includes, operations })
+         newIndex.set(type, { interactions, searchParams, includes, revincludes, operations })
          summaryResources.push({
             type,
             interactions: [...interactions],
             searchParams: [...searchParams],
             operations,
             includes,
+            revincludes,
          })
       }
 

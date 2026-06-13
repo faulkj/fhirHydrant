@@ -1,18 +1,36 @@
 const text = (value: unknown): string | undefined =>
    typeof value === "string" && value.trim() ? value.trim() : undefined
 
-/** Validates raw definitions array shape and returns cleaned entries + errors. */
+const empty: ValidationResult = { entries: [], searchControls: {}, errors: [] }
+
+/** Validates the raw definitions.json shape (object format) and returns cleaned entries + searchControls + errors. */
 export const validateDefinitions = (raw: unknown): ValidationResult => {
    const errors: string[] = []
 
-   if (!Array.isArray(raw))
-      return (errors.push("definitions.json must be a JSON array"), { entries: [], errors })
+   if (!raw || typeof raw !== "object" || Array.isArray(raw))
+      return (errors.push("definitions.json must be an object with resources and searchControls"), empty)
+
+   const root = raw as Record<string, unknown>
+
+   if (!Array.isArray(root.resources))
+      return (errors.push("definitions.json: resources must be an array"), empty)
+
+   const rawCtrl = root.searchControls
+   if (!rawCtrl || typeof rawCtrl !== "object" || Array.isArray(rawCtrl))
+      return (errors.push("definitions.json: searchControls must be an object"), empty)
+
+   const searchControls: Record<string, string> = {}
+   for (const [key, val] of Object.entries(rawCtrl as Record<string, unknown>))
+      if (typeof val === "string" && val.trim())
+         searchControls[key] = val.trim()
+      else if (val !== undefined)
+         errors.push(`searchControls: "${key}" must be a non-empty string`)
 
    const
       seen = new Set<string>(),
       entries: ResourceDefinitionRaw[] = []
 
-   for (const value of raw) {
+   for (const value of root.resources as unknown[]) {
       if (!value || typeof value !== "object" || Array.isArray(value)) {
          errors.push("definitions.json entries must be objects")
          continue
@@ -91,5 +109,5 @@ export const validateDefinitions = (raw: unknown): ValidationResult => {
       })
    }
 
-   return { entries, errors }
+   return { entries, searchControls, errors }
 }

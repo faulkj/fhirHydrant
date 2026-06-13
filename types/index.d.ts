@@ -19,9 +19,16 @@ interface ResourceDefinition {
    searchSchema: import("zod").ZodObject<import("zod").ZodRawShape>
 }
 
+/** Raw shape of the definitions.json file (object format). */
+interface DefinitionFileRaw {
+   searchControls: Record<string, string>
+   resources: ResourceDefinitionRaw[]
+}
+
 /** Return shape of validateDefinitions. */
 interface ValidationResult {
    entries: ResourceDefinitionRaw[]
+   searchControls: Record<string, string>
    errors: string[]
 }
 
@@ -92,6 +99,7 @@ interface ResourceMeta {
    interactions: Set<string>
    searchParams: Set<string>
    includes: string[]
+   revincludes: string[]
    operations: string[]
 }
 
@@ -106,6 +114,7 @@ interface CapabilitySummary {
       searchParams: string[]
       operations: string[]
       includes: string[]
+      revincludes: string[]
    }>
    skippedTools: Array<{
       toolName: string

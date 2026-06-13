@@ -185,6 +185,15 @@ Edit `definitions.json` directly when customizing resources.
 
 ### Definitions schema
 
+`definitions.json` is an object with two top-level keys:
+
+| Key                    | Type                     | Description                                                                                          |
+| ---------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------- |
+| `searchControls`  | `Record<string, string>` | User-editable descriptions for common FHIR search-control parameters (`_count`, `_sort`, `_summary`, `_elements`, `_include`, `_revinclude`). Each param is injected into a tool's schema only when the FHIR server's `/metadata` advertises it for that resource type. Omit a key to suppress injection even when metadata advertises it. |
+| `resources`            | `array`                  | Array of resource definitions (see below)                                                            |
+
+#### Resource entry fields
+
 | Field                | Type                     | Description                                                                                     |
 | -------------------- | ------------------------ | ----------------------------------------------------------------------------------------------- |
 | `resourceType`       | `string`                 | FHIR resource type (e.g. `AllergyIntolerance`)                                                  |
