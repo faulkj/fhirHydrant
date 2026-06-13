@@ -56,7 +56,7 @@ const
          names = raw?.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean) ?? [],
          good = names.filter((n): n is AuditSinkName => valid.has(n as AuditSinkName)),
          bad = names.filter((n) => !valid.has(n as AuditSinkName))
-      bad.length && console.warn(`📝 Ignoring unknown audit sinks: ${bad.join(", ")}`)
+      bad.length && console.warn(`📋 Ignoring unknown audit sinks: ${bad.join(", ")}`)
       return good
    },
    parseKeys = (): KeyPair[] => {
