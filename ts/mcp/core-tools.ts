@@ -58,8 +58,8 @@ export const registerCoreTools = (server: McpServer): void => {
                client = createFhirClient()
 
             config.debug ?
-               console.log(`[fhir] paginate → ${validatedUrl}`)
-            :  console.log("[fhir] paginate")
+               console.log(`🔥 paginate → ${validatedUrl}`)
+            :  console.log("🔥 paginate")
 
             const
                result = await withRetry("paginate", () => client.request(validatedUrl)),
@@ -68,7 +68,7 @@ export const registerCoreTools = (server: McpServer): void => {
                note = responseNote(result, json),
                prefix = note ? note + "\n\n" : "",
                shaped = enforceByteLimit(`${prefix}${json}`, config.fhirMaxResponseBytes)
-            console.log("[fhir] paginate OK")
+            console.log("🔥 paginate OK")
             emitAudit({
                ts: new Date().toISOString(), tool: "paginate", operation: "paginate",
                status: shaped.isError ? "truncated" : "ok", durationMs: auditTime(t0), httpStatus: 200,
@@ -81,7 +81,7 @@ export const registerCoreTools = (server: McpServer): void => {
             }
          } catch (err) {
             const message = err instanceof Error ? err.message : String(err)
-            console.error(`[fhir] paginate ERR ${message}`)
+            console.error(`🔥 paginate ERR ${message}`)
             emitAudit({ ts: new Date().toISOString(), tool: "paginate", operation: "paginate", status: "error", durationMs: auditTime(t0), httpStatus: errorStatus(err) })
             return {
                content: [{ type: "text" as const, text: `${message}\n\nRetry with the same url to resume from this page.` }],
@@ -111,7 +111,7 @@ export const registerCoreTools = (server: McpServer): void => {
             }
          } catch (err) {
             const message = err instanceof Error ? err.message : String(err)
-            console.error(`[metadata] capabilities ERR ${message}`)
+            console.error(`🏥 capabilities ERR ${message}`)
             emitAudit({ ts: new Date().toISOString(), tool: "capabilities", operation: "capabilities", status: "error", durationMs: auditTime(t0), httpStatus: errorStatus(err) })
             return {
                content: [{ type: "text" as const, text: message }],

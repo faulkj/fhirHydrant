@@ -26,7 +26,7 @@ export const jwksHandler = async (_req: Req, res: Res): Promise<void> => {
    try {
       res.type("application/json").send(await buildJwks())
    } catch (err) {
-      console.error("[jwks] Failed to build JWKS:", err instanceof Error ? err.message : err)
+      console.error("🔑 Failed to build JWKS:", err instanceof Error ? err.message : err)
       res.status(500).json({ error: "Failed to build JWKS" })
    }
 }

@@ -15,7 +15,7 @@ export const fetchMetadata = async (): Promise<void> => {
          raw = await withRetry("metadata", () => client.request("metadata")) as Record<string, unknown>
 
       if (raw?.resourceType !== "CapabilityStatement") {
-         console.warn("[metadata] Response is not a CapabilityStatement — skipping metadata gating")
+         console.warn("🏥 Response is not a CapabilityStatement — skipping metadata gating")
          return
       }
 
@@ -24,7 +24,7 @@ export const fetchMetadata = async (): Promise<void> => {
          serverRest = restEntries.find((r) => r.mode === "server") ?? restEntries[0]
 
       if (!serverRest) {
-         console.warn("[metadata] No rest entry found in CapabilityStatement — skipping metadata gating")
+         console.warn("🏥 No rest entry found in CapabilityStatement — skipping metadata gating")
          return
       }
 
@@ -83,10 +83,10 @@ export const fetchMetadata = async (): Promise<void> => {
          resources: summaryResources,
          skippedTools: skipped,
       }
-      console.log(`[metadata] Loaded CapabilityStatement — ${summaryResources.length} resource types`)
+      console.info(`🏥 Loaded CapabilityStatement — ${summaryResources.length} resource types`)
    } catch (err) {
       console.warn(
-         "[metadata] Could not fetch CapabilityStatement — skipping metadata gating:",
+         "🏥 Could not fetch CapabilityStatement — skipping metadata gating:",
          err instanceof Error ? err.message : err,
       )
    }

@@ -17,12 +17,12 @@ const shapeCount = (params: URLSearchParams, resourceType: string): { injected: 
       n = raw !== null ? parseInt(raw, 10) : NaN
    if (raw === null || !Number.isFinite(n) || n < 1) {
       params.set("_count", String(config.fhirDefaultCount))
-      config.debug && console.log(`[shaping] ${resourceType}: _count${raw === null ? ` not provided, defaulted to ${config.fhirDefaultCount}` : `="${raw}" invalid, replaced with ${config.fhirDefaultCount}`}`)
+      config.debug && console.log(`✂️ ${resourceType}: _count${raw === null ? ` not provided, defaulted to ${config.fhirDefaultCount}` : `="${raw}" invalid, replaced with ${config.fhirDefaultCount}`}`)
       return { injected: true, capped: false }
    }
    if (n > config.fhirMaxCount) {
       params.set("_count", String(config.fhirMaxCount))
-      config.debug && console.log(`[shaping] ${resourceType}: _count=${n} capped to ${config.fhirMaxCount}`)
+      config.debug && console.log(`✂️ ${resourceType}: _count=${n} capped to ${config.fhirMaxCount}`)
       return { injected: false, capped: true }
    }
    return { injected: false, capped: false }
@@ -43,7 +43,7 @@ export const buildSearchUrl = (
       countInjected = s.injected
       countCapped = s.capped
    } else {
-      config.debug && console.log(`[shaping] ${resourceType}: _count skipped (not advertised, strict mode)`)
+      config.debug && console.log(`✂️ ${resourceType}: _count skipped (not advertised, strict mode)`)
    }
    const qs = params.toString()
    return {

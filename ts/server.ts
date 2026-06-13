@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 
+// Patch console methods to prepend ISO timestamps
+for (const level of ["log", "info", "warn", "error"] as const) {
+   const original = console[level].bind(console)
+   console[level] = (...args: unknown[]) => original(new Date().toISOString().replace("T", " ").slice(0, 19), ...args)
+}
+
 import { readFileSync, watch } from "node:fs"
 import { basename, dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
@@ -23,7 +29,7 @@ const
       "utf8",
    ).trim(),
 
-   _ = (initAuditSinks(config.auditSinks, config.auditFile), config.auditUserHeader && console.log(`[audit] User header: ${config.auditUserHeader}`)),
+   _ = (initAuditSinks(config.auditSinks, config.auditFile), config.auditUserHeader && console.info(`📝 User header: ${config.auditUserHeader}`)),
    makeServer = (): McpServer => {
       const s = new McpServer(SERVER_INFO, { instructions: SERVER_INSTRUCTIONS })
       registerAll(s)
@@ -49,23 +55,23 @@ const
                prevScopes = getScopes().join(","),
                ok = reloadDefinitions()
             if (!ok) return
-            console.log(`[definitions] Reloaded from ${watchFile}`)
-            console.log("[definitions] Metadata cache may be stale — restart to re-validate against /metadata")
+            console.log(`📋 Reloaded from ${watchFile}`)
+            console.log("📋 Metadata cache may be stale — restart to re-validate against /metadata")
             if (getScopes().join(",") !== prevScopes) {
                if (restartingAuth)
                   return void console.log(
-                     "[definitions] Auth restart already in progress — skipping",
+                     "📋 Auth restart already in progress — skipping",
                   )
                restartingAuth = true
                try {
                   console.log(
-                     "[definitions] Scopes changed — restarting auth...",
+                     "📋 Scopes changed — restarting auth...",
                   )
                   await restartAuth()
-                  console.log("[definitions] Auth restarted with new scopes")
+                  console.info("📋 Auth restarted with new scopes")
                } catch (err) {
                   console.error(
-                     "[definitions] Auth restart failed:",
+                     "📋 Auth restart failed:",
                      err instanceof Error ? err.message : err,
                   )
                } finally {
@@ -74,7 +80,7 @@ const
             }
          }, 300)
       })
-      console.log(`[definitions] Watching ${watchFile} for changes`)
+      console.info(`📋 Watching ${watchFile} for changes`)
    },
 
    startHttp = async (): Promise<{
@@ -101,9 +107,9 @@ const
 
       if (!config.fhirJwksUrl) {
          app.get("/jwks", jwksHandler)
-         console.log("[jwks] Serving JWKS at /jwks")
+         console.info("🔑 Serving JWKS at /jwks")
       } else
-         console.log("[jwks] External JWKS URL configured — /jwks disabled")
+         console.info("🔑 External JWKS URL configured — /jwks disabled")
 
       app.all("/mcp", async (req: Req, res: Res) => {
          if (!mcpReady)
@@ -111,13 +117,13 @@ const
          const
             body = req.body as Record<string, unknown> | undefined,
             method = body?.method ?? req.method
-         method && console.log(`[mcp] ${method}`)
+         method && console.log(`🔌 ${method}`)
          const user = config.auditUserHeader ? req.get(config.auditUserHeader)?.trim() || undefined : undefined
          await withAuditContext(user ? { user } : {}, () => transport.handleRequest(req, res, req.body))
       })
 
       app.use((err: Error, _req: Req, res: Res, _next: Next) => {
-         console.error("[http] Request error:", err.message)
+         console.error("🌐 Request error:", err.message)
          res.status(400).json({
             jsonrpc: "2.0",
             error: { code: -32700, message: "Parse error" },
@@ -127,7 +133,7 @@ const
 
       const httpServer = await new Promise<ReturnType<typeof app.listen>>((resolve) => {
          const s = app.listen(config.port, config.bindHost, () => {
-            console.log(`fhirhydrant listening on ${config.bindHost}:${config.port}`)
+            console.info(`\x1b[34m🔥 fhirhydrant listening on ${config.bindHost}:${config.port}\x1b[0m`)
             resolve(s)
          })
       })
@@ -151,11 +157,12 @@ const
       close: () => Promise<void>
    }> => {
       console.log = (...args: unknown[]) => console.error(...args)
+      console.info = (...args: unknown[]) => console.error(...args)
       const transport = new StdioServerTransport()
       return {
          attach: async (s: McpServer) => {
             await s.connect(transport)
-            console.log("fhirhydrant running in stdio mode")
+            console.info("\x1b[34m🚒 fhirhydrant running in stdio mode\x1b[0m")
          },
          close: async () => {
             await transport.close()
@@ -183,7 +190,7 @@ let shutdownInProgress = false
 const shutdown = async (code = 0): Promise<void> => {
    if (shutdownInProgress) return
    shutdownInProgress = true
-   console.log("Shutting down...")
+   console.info("🛑 Shutting down...")
    stopAuth()
    await server.close()
    await close()

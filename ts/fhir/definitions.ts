@@ -31,7 +31,7 @@ export const buildShape = (
    )
    if (supportsDirectRead && !shape["_id"]) {
       shape["_id"] = z.string().optional().describe(`${resourceType} resource ID — performs direct read when provided alone`)
-      console.warn(`[definitions] "${resourceType}": auto-injected _id for supportsDirectRead`)
+      console.warn(`📋 "${resourceType}": auto-injected _id for supportsDirectRead`)
    }
    return shape
 }
@@ -83,7 +83,7 @@ export const reloadDefinitions = (): boolean => {
       return true
    } catch (err) {
       console.error(
-         "[definitions] Reload failed — keeping last valid snapshot:",
+         "📋 Reload failed — keeping last valid snapshot:",
          err instanceof Error ? err.message : err,
       )
       return false

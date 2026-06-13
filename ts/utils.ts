@@ -23,7 +23,7 @@ export const withRetry = async <T>(label: string, fn: () => Promise<T>, attempts
       } catch (err) {
          if (i + 1 >= attempts || !retryable(err)) throw err
          const delay = 1000 * 2 ** i
-         console.warn(`[fhir] ${label} transient error, retrying in ${delay}ms (${i + 1}/${attempts})`)
+         console.warn(`🔥 ${label} transient error, retrying in ${delay}ms (${i + 1}/${attempts})`)
          await new Promise((r) => setTimeout(r, delay))
       }
    }

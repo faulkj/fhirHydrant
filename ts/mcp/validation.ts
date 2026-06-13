@@ -22,21 +22,21 @@ export const filterAndValidateDefinitions = (defs: ResourceDefinition[]): Resour
 
       if (!meta) {
          const reason = `${def.resourceType} not in /metadata`
-         console.log(`[metadata] ${reason} — tool "${def.toolName}" skipped`)
+         console.warn(`🏥 ${reason} — tool "${def.toolName}" skipped`)
          skipped.push({ toolName: def.toolName, reason })
          continue
       }
 
       if (def.supportsDirectRead && !meta.interactions.has("read")) {
          const reason = `${def.resourceType} does not advertise read interaction`
-         console.error(`[metadata] ${reason} — tool "${def.toolName}" skipped`)
+         console.error(`🏥 ${reason} — tool "${def.toolName}" skipped`)
          skipped.push({ toolName: def.toolName, reason })
          continue
       }
 
       if (!meta.interactions.has("search-type") && !meta.interactions.has("search")) {
          const reason = `${def.resourceType} does not advertise search interaction`
-         console.error(`[metadata] ${reason} — tool "${def.toolName}" skipped`)
+         console.error(`🏥 ${reason} — tool "${def.toolName}" skipped`)
          skipped.push({ toolName: def.toolName, reason })
          continue
       }
@@ -44,7 +44,7 @@ export const filterAndValidateDefinitions = (defs: ResourceDefinition[]): Resour
       for (const param of Object.keys(def.searchParams)) {
          if (param === "_id" || param === "_include" || param === "_revinclude") continue
          if (!meta.searchParams.has(param))
-            console.warn(`[metadata] ${def.resourceType}: "${param}" not in /metadata — calls using this param will be blocked in strict mode`)
+            console.warn(`🏥 ${def.resourceType}: "${param}" not in /metadata — calls using this param will be blocked in strict mode`)
       }
 
       enabled.push(def)

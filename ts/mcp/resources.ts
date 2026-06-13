@@ -49,8 +49,8 @@ const
                url = directId ? `${def.resourceType}/${directId}` : search!.url
 
             config.debug ?
-               console.log(`[fhir] ${def.resourceType} ${op} → ${url}`)
-            :  console.log(`[fhir] ${def.resourceType} ${op}`)
+               console.log(`🔥 ${def.resourceType} ${op} → ${url}`)
+            :  console.log(`🔥 ${def.resourceType} ${op}`)
 
             const
                result = await withRetry(`${def.resourceType} ${op}`, () => client.request(url)),
@@ -63,7 +63,7 @@ const
                ].filter(Boolean),
                prefix = notes.length ? notes.join("\n") + "\n\n" : "",
                shaped = enforceByteLimit(`${prefix}${json}`, config.fhirMaxResponseBytes)
-            console.log(`[fhir] ${def.resourceType} OK`)
+            console.log(`🔥 ${def.resourceType} OK`)
             emitAudit({
                ts: new Date().toISOString(), tool: toolName, resourceType: def.resourceType, operation: op,
                status: shaped.isError ? "truncated" : "ok", durationMs: auditTime(t0), httpStatus: 200,
@@ -78,7 +78,7 @@ const
             }
          } catch (err) {
             const message = err instanceof Error ? err.message : String(err)
-            console.error(`[fhir] ${def.resourceType} ERR ${message}`)
+            console.error(`🔥 ${def.resourceType} ERR ${message}`)
             emitAudit({ ts: new Date().toISOString(), tool: toolName, resourceType: def.resourceType, operation: op, status: "error", durationMs: auditTime(t0), httpStatus: errorStatus(err) })
             return { content: [{ type: "text" as const, text: message }], isError: true }
          }
@@ -113,7 +113,7 @@ export const registerAll = (server: McpServer): void => {
       const
          meta = getResourceMeta(def.resourceType),
          { schema, injected } = meta ? augmentSchema(def, meta, controlParams) : { schema: def.searchSchema, injected: [] as string[] }
-      config.debug && injected.length && console.log(`[definitions] ${def.resourceType}: injected ${injected.join(", ")}`)
+      config.debug && injected.length && console.log(`📋 ${def.resourceType}: injected ${injected.join(", ")}`)
       server.registerTool(
          def.toolName,
          { description: def.description, inputSchema: schema },
