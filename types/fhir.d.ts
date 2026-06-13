@@ -1,0 +1,80 @@
+/** Raw shape of a single entry in config/definitions.json. */
+interface ResourceDefinitionRaw {
+   resourceType: string
+   toolName: string
+   description: string
+   supportsDirectRead: boolean
+   searchParams?: Record<string, string>
+   requireOneOf?: string[]
+   requireCombination?: string[][]
+}
+
+/** Describes a FHIR resource type and how it maps to an MCP tool. */
+interface ResourceDefinition {
+   resourceType: string
+   toolName: string
+   description: string
+   supportsDirectRead: boolean
+   requireOneOf?: string[]
+   requireCombination?: string[][]
+   searchParams: Record<string, string>
+   searchSchema: import("zod").ZodObject<import("zod").ZodRawShape>
+}
+
+/** Raw shape of the config/definitions.json file (object format). */
+interface DefinitionFileRaw {
+   searchControls: Record<string, string>
+   resources: ResourceDefinitionRaw[]
+}
+
+/** Return shape of validateDefinitions. */
+interface ValidationResult {
+   entries: ResourceDefinitionRaw[]
+   searchControls: Record<string, string>
+   errors: string[]
+}
+
+/** Getter-backed token response compatible with fhirclient — access_token always reflects the latest issued token. */
+type TokenResponse = {
+   token_type: "bearer"
+   readonly access_token: string | undefined
+   readonly expires_in: number | undefined
+}
+
+/** Shape of the object returned by calling the fhirclient smart() function — exposes the static client factory. */
+type SmartNamespace = {
+   client: (
+      state: object,
+   ) => InstanceType<typeof import("fhirclient/lib/Client.js").default>
+}
+
+/** fhirclient instance type. */
+type FhirClient = ReturnType<typeof import("fhirclient").client>
+
+/** Parsed capability metadata for a single FHIR resource type (internal fast-lookup shape). */
+interface ResourceMeta {
+   interactions: Set<string>
+   searchParams: Set<string>
+   includes: string[]
+   revincludes: string[]
+   operations: string[]
+}
+
+/** Trimmed, JSON-serializable summary of the FHIR server's CapabilityStatement. */
+interface CapabilitySummary {
+   serverUrl: string
+   fetchedAt: string
+   mode: Config["metadataMode"]
+   resources: Array<{
+      type: string
+      interactions: string[]
+      searchParams: string[]
+      operations: string[]
+      includes: string[]
+      revincludes: string[]
+   }>
+   skippedTools: Array<{
+      toolName: string
+      reason: string
+   }>
+}
