@@ -33,5 +33,9 @@
 
    "invalidDateParam": "\"{param}\" value \"{value}\" is not a valid FHIR date — expected YYYY, YYYY-MM, or YYYY-MM-DD with optional prefix (eq, ne, gt, lt, ge, le, sa, eb, ap)",
 
-   "responseTooLarge": "Response too large ({bytes} bytes, limit {limit}). Retry with a narrower search, lower _count, date/category/status filters, or use paginate."
+   "responseTooLarge": "Response too large ({bytes} bytes, limit {limit}). Retry with a narrower search, lower _count, date/category/status filters, or use paginate.",
+
+   "fhirpathFiltered": "Locally filtered by FHIRPath: {matchCount} node(s) returned from {sourceBytes}-byte response.",
+
+   "fhirpathError": "FHIRPath evaluation failed: {error}. Expression was not applied; raw response withheld to respect filter intent."
 }

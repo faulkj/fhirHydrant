@@ -26,6 +26,8 @@ interface AuditEvent {
    capWarning?: boolean
    metadataBlocked?: boolean
    validationBlocked?: boolean
+   fhirpathFiltered?: boolean
+   fhirpathMatchCount?: number
    httpStatus?: number
    user?: string
 }

@@ -6,12 +6,16 @@ import { getResourceMeta } from "../fhir/metadata.ts"
 import { filterAndValidateDefinitions } from "./validation.ts"
 import { makeHandler } from "./handler.ts"
 
+const LOCAL_CONTROLS = new Set(["fhirpath"])
+
 const augmentSchema = (
-   def: ResourceDefinition, meta: ResourceMeta, controlParams: Record<string, string>,
+   def: ResourceDefinition, meta: ResourceMeta | undefined, controlParams: Record<string, string>,
 ): { schema: z.ZodObject<z.ZodRawShape>; injected: string[] } => {
    const merged = { ...def.searchParams }, injected: string[] = []
    for (const [param, desc] of Object.entries(controlParams)) {
       if (merged[param]) continue
+      if (LOCAL_CONTROLS.has(param)) { merged[param] = desc; injected.push(param); continue }
+      else if (!meta) continue
       if (param === "_include" || param === "_revinclude") {
          const values = param === "_include" ? meta.includes : meta.revincludes
          if (values.length === 0) continue
@@ -34,7 +38,7 @@ export const registerAll = (server: McpServer): void => {
    for (const def of filterAndValidateDefinitions(getDefinitions())) {
       const
          meta = getResourceMeta(def.resourceType),
-         { schema, injected } = meta ? augmentSchema(def, meta, controlParams) : { schema: def.searchSchema, injected: [] as string[] }
+         { schema, injected } = augmentSchema(def, meta, controlParams)
       config.debug && injected.length && console.log(`📋 ${def.resourceType}: injected ${injected.join(", ")}`)
       server.registerTool(
          def.toolName,

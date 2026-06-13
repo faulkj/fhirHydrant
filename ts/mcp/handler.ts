@@ -7,6 +7,7 @@ import { emitAudit, auditTime, errorStatus } from "../audit.ts"
 import { canShapeCount, buildSearchUrl, rebuildWithCount } from "./shaping.ts"
 import { responseNote, bundleStats } from "./response-notes.ts"
 import { checkRuntimeCapability, validateDateArgs } from "./validation.ts"
+import { extractFhirPath, applyFhirPath } from "./fhirpath.ts"
 
 export const isDirectRead = (args: Record<string, unknown>, supportsDirectRead: boolean): string | undefined => {
    if (!supportsDirectRead) return undefined
@@ -25,6 +26,7 @@ export const makeHandler =
             isError: true,
          }
       const
+         fhirpathExpr = extractFhirPath(args),
          directId = isDirectRead(args, def.supportsDirectRead),
          op: AuditEvent["operation"] = directId ? "read" : "search",
          cap = checkRuntimeCapability(def, args, directId),
@@ -72,12 +74,25 @@ export const makeHandler =
             ? console.log(`🔥 ${def.resourceType} ${op} → ${url}`)
             : console.log(`🔥 ${def.resourceType} ${op}`)
 
-         let result: unknown, json: string, stats: ReturnType<typeof bundleStats>, shaped: ReturnType<typeof enforceByteLimit>
+         let result: unknown, json: string, stats: ReturnType<typeof bundleStats>, shaped: ReturnType<typeof enforceByteLimit>, filtered = false, matchCount = 0
          // eslint-disable-next-line no-constant-condition
          while (true) {
             result = await withRetry(`${def.resourceType} ${op}`, () => client.request(url))
             json = JSON.stringify(result, null, 2)
             stats = bundleStats(result, json)
+            const sourceBytes = Buffer.byteLength(json, "utf8")
+
+            if (fhirpathExpr) {
+               const fp = applyFhirPath(result, fhirpathExpr)
+               if ("error" in fp) {
+                  emitAudit({ ts: new Date().toISOString(), tool: toolName, resourceType: def.resourceType, operation: op, status: "error", durationMs: auditTime(t0), httpStatus: 200, fhirpathFiltered: true })
+                  return { content: [{ type: "text" as const, text: messages.fhirpathError.replace("{error}", fp.error) }], isError: true }
+               }
+               filtered = true
+               matchCount = fp.nodes.length
+               json = JSON.stringify(fp.nodes, null, 2)
+            }
+
             const
                notes = [
                   cap.warning,
@@ -89,6 +104,11 @@ export const makeHandler =
                         .replace("{limit}", String(config.fhirMaxResponseBytes))
                      : undefined,
                   responseNote(result, json),
+                  filtered
+                     ? messages.fhirpathFiltered
+                        .replace("{matchCount}", String(matchCount))
+                        .replace("{sourceBytes}", String(sourceBytes))
+                     : undefined,
                ].filter(Boolean),
                prefix = notes.length ? notes.join("\n") + "\n\n" : ""
             shaped = enforceByteLimit(`${prefix}${json}`, config.fhirMaxResponseBytes)
@@ -110,6 +130,7 @@ export const makeHandler =
             ...(search && { countInjected: search.countInjected, countCapped: search.countCapped, countSkipped: search.countSkipped }),
             ...(retries > 0 && { autoRetryCount: retries }),
             ...(cap.warning && { capWarning: true }),
+            ...(filtered && { fhirpathFiltered: true, fhirpathMatchCount: matchCount }),
          })
          return {
             content: [{ type: "text" as const, text: shaped.text }],

@@ -179,6 +179,17 @@ fhirHydrant shapes search responses to manage token economy and limit PHI exposu
   exempt. A note is prepended when a retry succeeds (e.g. `_count` reduced
   from 20 to 5).
 
+- **FHIRPath response filtering** — The optional `fhirpath` parameter accepts a
+  standard [FHIRPath](http://hl7.org/fhirpath/) expression that is evaluated
+  locally against the FHIR response after it arrives from the server. Matching
+  nodes are returned as a JSON array. Use this for client-side projection when
+  `_elements` or `_summary` are unavailable or insufficient. The expression
+  never reaches the FHIR server. If evaluation fails, the raw response is
+  withheld to respect the caller's filter intent. The `fhirpath` parameter is
+  also available on the `paginate` tool. Powered by HL7's
+  [`fhirpath`](https://github.com/nicktobey/fhirpath.js) reference
+  implementation with the R4 model context for full choice-type resolution.
+
 ## Customization
 
 Everything in `config/` is yours to edit — no source changes needed:
@@ -204,7 +215,7 @@ resource types to MCP tools. Edit that file directly when customizing resources.
 
 | Key                    | Type                     | Description                                                                                          |
 | ---------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------- |
-| `searchControls`  | `Record<string, string>` | User-editable descriptions for common FHIR search-control parameters (`_count`, `_sort`, `_summary`, `_elements`, `_include`, `_revinclude`). Each param is injected into a tool's schema only when the FHIR server's `/metadata` advertises it for that resource type. Omit a key to suppress injection even when metadata advertises it. |
+| `searchControls`  | `Record<string, string>` | User-editable descriptions for FHIR search-control parameters and local response controls. Server-side controls (`_count`, `_sort`, `_summary`, `_elements`, `_include`, `_revinclude`) are injected into a tool's schema only when the FHIR server's `/metadata` advertises them. Local controls (`fhirpath`) are always injected regardless of metadata. Omit a key to suppress injection. |
 | `resources`            | `array`                  | Array of resource definitions (see below)                                                            |
 
 #### Resource entry fields

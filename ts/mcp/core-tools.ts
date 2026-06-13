@@ -10,6 +10,7 @@ import { fetchMetadata, getCapabilitySummary } from "../fhir/metadata.ts"
 import { withRetry, enforceByteLimit, formatFhirError } from "../utils.ts"
 import { emitAudit, auditTime, errorStatus } from "../audit.ts"
 import { responseNote, bundleStats } from "./response-notes.ts"
+import { extractFhirPath, applyFhirPath } from "./fhirpath.ts"
 
 const
    coreToolsPath = (): string => {
@@ -56,7 +57,9 @@ export const registerCoreTools = (server: McpServer): void => {
       "paginate",
       { description: def("paginate").description, inputSchema: buildSchema(def("paginate").params) },
       async (args: Record<string, unknown>) => {
-         const t0 = Date.now()
+         const
+            fhirpathExpr = extractFhirPath(args),
+            t0 = Date.now()
          try {
             const
                validatedUrl = validatePageUrl(args["url"] as string),
@@ -66,12 +69,33 @@ export const registerCoreTools = (server: McpServer): void => {
                ? console.log(`🔥 paginate → ${validatedUrl}`)
                : console.log("🔥 paginate")
 
+            const result = await withRetry("paginate", () => client.request(validatedUrl))
+            let json = JSON.stringify(result, null, 2), filtered = false, matchCount = 0
             const
-               result = await withRetry("paginate", () => client.request(validatedUrl)),
-               json = JSON.stringify(result, null, 2),
                stats = bundleStats(result, json),
-               note = responseNote(result, json),
-               prefix = note ? note + "\n\n" : "",
+               sourceBytes = Buffer.byteLength(json, "utf8")
+
+            if (fhirpathExpr) {
+               const fp = applyFhirPath(result, fhirpathExpr)
+               if ("error" in fp) {
+                  emitAudit({ ts: new Date().toISOString(), tool: "paginate", operation: "paginate", status: "error", durationMs: auditTime(t0), httpStatus: 200, fhirpathFiltered: true })
+                  return { content: [{ type: "text" as const, text: messages.fhirpathError.replace("{error}", fp.error) }], isError: true }
+               }
+               filtered = true
+               matchCount = fp.nodes.length
+               json = JSON.stringify(fp.nodes, null, 2)
+            }
+
+            const
+               notes = [
+                  responseNote(result, json),
+                  filtered
+                     ? messages.fhirpathFiltered
+                        .replace("{matchCount}", String(matchCount))
+                        .replace("{sourceBytes}", String(sourceBytes))
+                     : undefined,
+               ].filter(Boolean),
+               prefix = notes.length ? notes.join("\n") + "\n\n" : "",
                shaped = enforceByteLimit(`${prefix}${json}`, config.fhirMaxResponseBytes)
             console.log("🔥 paginate OK")
             emitAudit({
@@ -79,6 +103,7 @@ export const registerCoreTools = (server: McpServer): void => {
                status: shaped.isError ? "truncated" : "ok", durationMs: auditTime(t0), httpStatus: 200,
                jsonBytes: Buffer.byteLength(json, "utf8"),
                ...(stats && { bundleEntries: stats.entries, bundleTotal: stats.total, hasNext: !!stats.nextUrl }),
+               ...(filtered && { fhirpathFiltered: true, fhirpathMatchCount: matchCount }),
             })
             return {
                content: [{ type: "text" as const, text: shaped.text }],

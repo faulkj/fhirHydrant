@@ -6,6 +6,11 @@
          "url": {
             "type": "string",
             "description": "Pagination URL from a FHIR Bundle link[rel=next].url value"
+         },
+         "fhirpath": {
+            "type": "string",
+            "optional": true,
+            "description": "FHIRPath expression evaluated locally against the FHIR response — use for client-side projection when _elements or _summary are unavailable or insufficient"
          }
       }
    },

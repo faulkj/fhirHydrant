@@ -54,6 +54,7 @@
       "@modelcontextprotocol/server": "2.0.0-alpha.2",
       "express": "^5.2.1",
       "fhirclient": "^2.6.3",
+      "fhirpath": "^4.11.0",
       "fhirstarterjs": "^1.0.5",
       "zod": "^4.4.3"
    },
