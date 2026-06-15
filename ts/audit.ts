@@ -28,7 +28,7 @@ export const withAuditContext = <T>(ctx: AuditContext, fn: () => T): T =>
 export const emitAudit = (event: AuditEvent): void => {
    const
       ctx = auditContext.getStore(),
-      merged = ctx?.user ? { user: ctx.user, ...event } : event
+      merged = ctx ? { ...ctx, ...event } : event
    for (const sink of sinks) sink(merged)
 }
 

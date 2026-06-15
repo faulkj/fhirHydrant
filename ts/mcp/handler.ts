@@ -49,7 +49,12 @@ export const makeHandler =
          let result: unknown, json: string, stats: ReturnType<typeof bundleStats>,
             shaped: ReturnType<typeof enforceByteLimit>, filtered = false, matchCount = 0, compacted = false
          while (true) { // eslint-disable-line no-constant-condition
-            result = await withRetry(`${def.resourceType} ${op}`, () => client.request(url))
+            result = await withRetry(
+               `${def.resourceType} ${op}`,
+               (signal) => client.request({ url, signal }),
+               3,
+               config.fhirRequestTimeoutMs,
+            )
             json = JSON.stringify(result, null, 2)
             stats = bundleStats(result, json)
             const sourceBytes = Buffer.byteLength(json, "utf8")

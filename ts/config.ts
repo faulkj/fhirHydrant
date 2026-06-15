@@ -29,6 +29,7 @@ export const config: Config = {
    auditSinks: parseAuditSinks(),
    auditFile: opt("FHIR_AUDIT_FILE") ?? "./audit.jsonl",
    auditUserHeader: opt("FHIR_AUDIT_USER_HEADER")?.trim() || undefined,
+   fhirRequestTimeoutMs: parsePositiveInt("FHIR_REQUEST_TIMEOUT_MS", 30000),
    paginationPaths: parsePaginationPaths(),
    responseMode: parseResponseMode(),
 }
@@ -36,6 +37,11 @@ export const config: Config = {
 if (!config.fhirKeys.some((k) => k.kid === config.fhirActiveKey))
    throw new Error(
       `FHIR_ACTIVE_KEY="${config.fhirActiveKey}" does not match any derived kid — available: ${config.fhirKeys.map((k) => k.kid).join(", ")}`,
+   )
+
+if (config.debug && process.env["NODE_ENV"]?.trim().toLowerCase() === "production")
+   throw new Error(
+      "DEBUG=true is not allowed when NODE_ENV=production — FHIR request URLs may contain PHI",
    )
 
 if (config.fhirDefaultCount > config.fhirMaxCount)

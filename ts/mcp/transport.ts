@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto"
 import { McpServer, StdioServerTransport } from "@modelcontextprotocol/server"
 import { config } from "../config.ts"
 import { withAuditContext } from "../audit.ts"
@@ -43,12 +44,14 @@ export const startHttp = async (): Promise<TransportHandle> => {
          method = body?.method as string | undefined,
          toolName = method === "tools/call" ? (body?.params as Record<string, unknown>)?.name as string | undefined : undefined
       method && console.log(toolName ? `🔨 ${toolName.charAt(0).toUpperCase()}${toolName.slice(1)}` : `🔌 ${method}`)
-      const user = config.auditUserHeader ? req.get(config.auditUserHeader)?.trim() || undefined : undefined
-      await withAuditContext(user ? { user } : {}, () => transport.handleRequest(req, res, req.body))
+      const
+         requestId = randomUUID(),
+         user = config.auditUserHeader ? req.get(config.auditUserHeader)?.trim() || undefined : undefined
+      await withAuditContext({ requestId, ...(user ? { user } : {}) }, () => transport.handleRequest(req, res, req.body))
    })
 
    app.use((err: Error, _req: Req, res: Res, _next: Next) => {
-      console.error("🌐 Request error:", err.message)
+      console.error("🌐 Request error: ", err.message)
       res.status(400).json({
          jsonrpc: "2.0",
          error: { code: -32700, message: "Parse error" },

@@ -34,7 +34,12 @@ export const addPaginate = (
                ? console.log(`🔥 paginate → ${validatedUrl}`)
                : console.log("🔥 paginate")
 
-            const result = await withRetry("paginate", () => client.request(validatedUrl))
+            const result = await withRetry(
+               "paginate",
+               (signal) => client.request({ url: validatedUrl, signal }),
+               3,
+               config.fhirRequestTimeoutMs,
+            )
             let json = JSON.stringify(result, null, 2), filtered = false, matchCount = 0, compacted = false
             const
                stats = bundleStats(result, json),

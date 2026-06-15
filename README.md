@@ -119,11 +119,12 @@ To rotate:
 | `PORT`                    | `5000`                | HTTP listener port (1–65535)                                      |
 | `BIND_HOST`               | `127.0.0.1`           | Bind address for HTTP listener — set to `0.0.0.0` for container/LAN access |
 | `ALLOWED_HOSTS`           | —                     | Comma-separated hostnames for DNS rebinding protection — set when exposing HTTP on a public network |
-| `DEBUG`                   | `false`               | Enable verbose FHIR request logging — **logs URLs that may contain PHI** (patient names, identifiers, dates). Treat all production logs as PHI-sensitive |
+| `DEBUG`                   | `false`               | Enable verbose FHIR request logging — **logs URLs that may contain PHI** (patient names, identifiers, dates). Treat all production logs as PHI-sensitive. **Blocked when `NODE_ENV=production`** — the bridge refuses to start |
 | `FHIR_METADATA_MODE`      | `strict`              | `/metadata` mismatch handling: `strict` blocks unadvertised params, `warn` allows with warning, `off` disables checks. Both `strict` and `warn` skip entirely absent resource types |
 | `FHIR_DEFAULT_COUNT`      | `20`                  | Default `_count` injected into searches when the resource advertises `_count` in `/metadata` |
 | `FHIR_MAX_COUNT`          | `100`                 | Maximum `_count` allowed — higher values from callers are capped to this |
 | `FHIR_MAX_RESPONSE_BYTES` | `65536`               | Universal byte-limit on tool responses — returns an error instead of the payload when exceeded |
+| `FHIR_REQUEST_TIMEOUT_MS` | `30000`               | Per-attempt timeout (ms) for outgoing FHIR requests — each retry attempt gets its own deadline via `AbortSignal.timeout()` |
 | `FHIR_AUDIT_SINK`          | —                     | Comma-separated audit sinks: `console`, `file`, or both. Off when unset/empty |
 | `FHIR_AUDIT_FILE`          | `./audit.jsonl`       | JSONL audit log path (parent directory must exist) — used when `file` sink is active |
 | `FHIR_PAGINATION_PATHS`     | —                     | Comma-separated path prefixes allowed in pagination URLs — the configured FHIR server path is always allowed; add aliases when the server returns next links with a different proxy prefix (e.g. `/FHIRProxy/api/FHIR/R4/`) |

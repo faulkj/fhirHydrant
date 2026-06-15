@@ -1,5 +1,8 @@
 /** Request-scoped audit context — carried via AsyncLocalStorage, merged into events automatically. */
-interface AuditContext { user?: string }
+interface AuditContext {
+   requestId?: string
+   user?: string
+}
 
 /** Allowed audit sink names. */
 type AuditSinkName = "console" | "file"
@@ -31,5 +34,7 @@ interface AuditEvent {
    responseMode?: ResponseMode
    compacted?: boolean
    httpStatus?: number
+   timedOut?: boolean
+   requestId?: string
    user?: string
 }

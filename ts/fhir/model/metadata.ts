@@ -12,7 +12,12 @@ export const fetchMetadata = async (): Promise<void> => {
    try {
       const
          client = createFhirClient(),
-         raw = await withRetry("metadata", () => client.request("metadata")) as Record<string, unknown>
+         raw = await withRetry(
+            "metadata",
+            (signal) => client.request({ url: "metadata", signal }),
+            3,
+            config.fhirRequestTimeoutMs,
+         ) as Record<string, unknown>
 
       if (raw?.resourceType !== "CapabilityStatement") {
          console.warn("🏥 Response is not a CapabilityStatement — skipping metadata gating")

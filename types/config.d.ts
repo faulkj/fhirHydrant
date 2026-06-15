@@ -33,6 +33,7 @@ interface Config {
    auditSinks: AuditSinkName[]
    auditFile: string
    auditUserHeader: string | undefined
+   fhirRequestTimeoutMs: number
    paginationPaths: string[]
    responseMode: ConfigResponseMode
 }

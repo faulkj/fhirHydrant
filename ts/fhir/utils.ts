@@ -17,12 +17,28 @@ export const retryable = (err: unknown): boolean => {
    return false
 }
 
-/** Retries an async operation with exponential backoff on transient errors. */
-export const withRetry = async <T>(label: string, fn: () => Promise<T>, attempts = 3): Promise<T> => {
+/** Returns true when an error was caused by an AbortSignal timeout. */
+const isTimeout = (err: unknown): boolean =>
+   err instanceof DOMException && err.name === "TimeoutError"
+   || err instanceof Error && err.name === "AbortError"
+
+/** Retries an async operation with exponential backoff on transient errors.
+ *  When `timeoutMs` is given each attempt gets its own AbortSignal.timeout(). */
+export const withRetry = async <T>(
+   label: string,
+   fn: (signal?: AbortSignal) => Promise<T>,
+   attempts = 3,
+   timeoutMs?: number,
+): Promise<T> => {
    for (let i = 0; i < attempts; i++) {
       try {
-         return await fn()
+         const signal = timeoutMs ? AbortSignal.timeout(timeoutMs) : undefined
+         return await fn(signal)
       } catch (err) {
+         if (isTimeout(err)) {
+            console.warn(`🔥 ${label} timed out after ${timeoutMs}ms (attempt ${i + 1}/${attempts})`)
+            throw err
+         }
          if (i + 1 >= attempts || !retryable(err)) throw err
          const delay = 1000 * 2 ** i
          console.warn(`🔥 ${label} transient error, retrying in ${delay}ms (${i + 1}/${attempts})`)
