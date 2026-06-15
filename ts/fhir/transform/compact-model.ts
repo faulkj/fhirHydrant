@@ -1,5 +1,6 @@
 import fhirpath_r4_model from "fhirpath/fhir-context/r4/index.js"
 
+/** Recursively compacts a FHIR value using R4 type metadata and registered simplifiers. */
 export const compactNode = (value: unknown, path: string, isRoot: boolean): unknown => {
    if (value === null || value === undefined) return undefined
    if (Array.isArray(value)) {

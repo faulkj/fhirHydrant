@@ -5,13 +5,13 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import messages from "../../config/messages.json" with { type: "json" }
 import { config } from "../config.ts"
-import { createFhirClient } from "../fhir/client.ts"
-import { fetchMetadata, getCapabilitySummary } from "../fhir/metadata.ts"
+import { createFhirClient } from "../fhir/auth/client.ts"
+import { fetchMetadata, getCapabilitySummary } from "../fhir/model/metadata.ts"
 import { withRetry, enforceByteLimit, formatFhirError } from "../fhir/utils.ts"
 import { emitAudit, auditTime, errorStatus } from "../audit.ts"
-import { responseNote, bundleStats } from "./response-notes.ts"
-import { extractFhirPath, applyFhirPath } from "./fhirpath.ts"
-import { extractResponseMode, compact } from "./compact.ts"
+import { responseNote, bundleStats } from "../fhir/transform/response-notes.ts"
+import { extractFhirPath, applyFhirPath } from "../fhir/transform/fhirpath.ts"
+import { extractResponseMode, compact } from "../fhir/transform/compact.ts"
 
 const
    coreToolsPath = (): string => {

@@ -15,11 +15,12 @@ export const getSearchControls = (): Record<string, string> => snapshot.searchCo
 
 const configDir = (): string => {
    const
-      bundled = join(dirname(fileURLToPath(import.meta.url)), "..", "config"),
-      source = join(dirname(fileURLToPath(import.meta.url)), "../..", "config")
+      bundled = join(dirname(fileURLToPath(import.meta.url)), "../..", "config"),
+      source = join(dirname(fileURLToPath(import.meta.url)), "../../..", "config")
    return existsSync(join(bundled, "resources.json")) ? bundled : source
 }
 
+/** Returns the absolute path to the config directory (bundled or source mode). */
 export const getConfigDir = (): string => configDir()
 
 /** Builds a Zod shape from search params, auto-injecting _id when needed. */

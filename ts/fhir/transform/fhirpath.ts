@@ -1,12 +1,14 @@
 import fhirpath from "fhirpath"
 import fhirpath_r4_model from "fhirpath/fhir-context/r4/index.js"
 
+/** Extracts and removes the fhirpath expression from tool args, or returns undefined. */
 export const extractFhirPath = (args: Record<string, unknown>): string | undefined => {
    const raw = args["fhirpath"]
    delete args["fhirpath"]
    return typeof raw === "string" && raw.trim() ? raw.trim() : undefined
 }
 
+/** Evaluates a FHIRPath expression against a result; returns matched nodes or an error string. */
 export const applyFhirPath = (
    result: unknown, expression: string,
 ): { nodes: unknown[] } | { error: string } => {

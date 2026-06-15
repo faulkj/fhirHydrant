@@ -1,5 +1,6 @@
 import { compactNode } from "./compact-model.ts"
 
+/** Extracts and removes responseMode from tool args; returns undefined (absent), null (invalid), or the mode string. */
 export const extractResponseMode = (args: Record<string, unknown>): ResponseMode | null | undefined => {
    const raw = args["responseMode"]
    delete args["responseMode"]
@@ -7,6 +8,7 @@ export const extractResponseMode = (args: Record<string, unknown>): ResponseMode
    return raw === "compact" || raw === "full" ? raw : null
 }
 
+/** Compacts a FHIR resource or Bundle, stripping noise and simplifying well-known datatypes. */
 export const compact = (data: unknown): unknown => {
    if (!data || typeof data !== "object") return data
    const r = data as Record<string, unknown>

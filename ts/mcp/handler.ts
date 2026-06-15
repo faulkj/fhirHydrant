@@ -1,15 +1,16 @@
 import messages from "../../config/messages.json" with { type: "json" }
 import { config } from "../config.ts"
-import { getDefinitions, getSearchControls } from "../fhir/definitions.ts"
-import { createFhirClient } from "../fhir/client.ts"
+import { getDefinitions, getSearchControls } from "../fhir/model/definitions.ts"
+import { createFhirClient } from "../fhir/auth/client.ts"
 import { withRetry, enforceByteLimit, formatFhirError } from "../fhir/utils.ts"
 import { emitAudit, auditTime, errorStatus } from "../audit.ts"
-import { canShapeCount, buildSearchUrl, rebuildWithCount } from "./shaping.ts"
-import { responseNote, bundleStats } from "./response-notes.ts"
+import { canShapeCount, buildSearchUrl, rebuildWithCount } from "../fhir/transform/shaping.ts"
+import { responseNote, bundleStats } from "../fhir/transform/response-notes.ts"
 import { checkRuntimeCapability, validateDateArgs } from "./validation.ts"
-import { extractFhirPath, applyFhirPath } from "./fhirpath.ts"
-import { extractResponseMode, compact } from "./compact.ts"
+import { extractFhirPath, applyFhirPath } from "../fhir/transform/fhirpath.ts"
+import { extractResponseMode, compact } from "../fhir/transform/compact.ts"
 
+/** Returns the resource ID for a direct read when exactly _id is set and the server supports it, otherwise undefined. */
 export const isDirectRead = (args: Record<string, unknown>, supportsDirectRead: boolean): string | undefined => {
    if (!supportsDirectRead) return undefined
    const id = typeof args["_id"] === "string" && args["_id"] ? args["_id"] : undefined
@@ -18,6 +19,7 @@ export const isDirectRead = (args: Record<string, unknown>, supportsDirectRead: 
    return Object.entries(args).some(([k, v]) => !ignore.has(k) && v !== undefined && v !== "") ? undefined : id
 }
 
+/** Returns an async MCP tool handler bound to the given resource tool name. */
 export const makeHandler =
    (toolName: string) => async (args: Record<string, unknown>) => {
       const def = getDefinitions().find((d) => d.toolName === toolName)

@@ -1,6 +1,6 @@
 import messages from "../../config/messages.json" with { type: "json" }
 import { config } from "../config.ts"
-import { isMetadataAvailable, getResourceMeta, setSkippedTools } from "../fhir/metadata.ts"
+import { isMetadataAvailable, getResourceMeta, setSkippedTools } from "../fhir/model/metadata.ts"
 
 /**
  * Filters definitions against cached /metadata.

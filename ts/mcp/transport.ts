@@ -1,13 +1,15 @@
 import { McpServer, StdioServerTransport } from "@modelcontextprotocol/server"
 import { config } from "../config.ts"
 import { withAuditContext } from "../audit.ts"
-import { jwksHandler } from "../fhir/jwks.ts"
+import { jwksHandler } from "../fhir/auth/jwks.ts"
 
+/** Handle returned by transport start functions; provides attach (bind server) and close operations. */
 export type TransportHandle = {
    attach: (s: McpServer) => Promise<void>
    close: () => Promise<void>
 }
 
+/** Starts the HTTP/SSE MCP transport and returns a handle to attach a server and shut down the listener. */
 export const startHttp = async (): Promise<TransportHandle> => {
    const
       { createMcpExpressApp } =
@@ -77,6 +79,7 @@ export const startHttp = async (): Promise<TransportHandle> => {
    }
 }
 
+/** Starts the stdio MCP transport and returns a handle to attach a server and close the connection. */
 export const startStdio = async (): Promise<TransportHandle> => {
    console.log = (...args: unknown[]) => console.error(...args)
    console.info = (...args: unknown[]) => console.error(...args)

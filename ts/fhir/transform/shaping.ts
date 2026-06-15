@@ -1,6 +1,7 @@
-import { config } from "../config.ts"
-import { isMetadataAvailable, getResourceMeta } from "../fhir/metadata.ts"
+import { config } from "../../config.ts"
+import { isMetadataAvailable, getResourceMeta } from "../model/metadata.ts"
 
+/** Returns whether _count injection/capping is allowed for the given resource type given current metadata mode. */
 export const canShapeCount = (resourceType: string): { allowed: boolean, warn?: boolean } => {
    if (!isMetadataAvailable() || config.metadataMode === "off")
       return { allowed: true }
@@ -28,6 +29,7 @@ const shapeCount = (params: URLSearchParams, resourceType: string): { injected: 
    return { injected: false, capped: false }
 }
 
+/** Builds a FHIR search URL from tool args, injecting and capping _count as configured. */
 export const buildSearchUrl = (
    resourceType: string,
    args: Record<string, unknown>,

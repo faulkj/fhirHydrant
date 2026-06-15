@@ -1,8 +1,8 @@
 import type { McpServer } from "@modelcontextprotocol/server"
 import * as z from "zod"
 import { config } from "../config.ts"
-import { getDefinitions, getSearchControls, buildShape } from "../fhir/definitions.ts"
-import { getResourceMeta } from "../fhir/metadata.ts"
+import { getDefinitions, getSearchControls, buildShape } from "../fhir/model/definitions.ts"
+import { getResourceMeta } from "../fhir/model/metadata.ts"
 import { filterAndValidateDefinitions } from "./validation.ts"
 import { makeHandler } from "./handler.ts"
 
