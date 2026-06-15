@@ -4,7 +4,7 @@ export { compactNode }
 
 const
    raw = fhirpath_r4_model as Record<string, unknown>,
-   p2t = raw.path2TypeWithoutElements as Record<string, string[]> | undefined,
+   p2t = raw.path2TypeWithoutElements as Record<string, string | string[]> | undefined,
    t2p = raw.type2Parent as Record<string, string> | undefined,
    modelOk = !!(p2t && t2p)
 
@@ -16,7 +16,7 @@ const
    resolveType = (path: string): string | undefined => {
       if (!modelOk) return undefined
       const types = p2t![path]
-      return types?.[0]
+      return Array.isArray(types) ? types[0] : types
    },
 
    isType = (type: string | undefined, ancestor: string): boolean => {
