@@ -50,3 +50,12 @@ it. For search Bundles, write expressions against the Bundle structure (e.g.
 `Bundle.entry.resource.name`). For direct reads, write expressions against the
 single resource (e.g. `Patient.name.given`). Prefer `_elements` or `_summary`
 when available — they reduce data at the source and save bandwidth.
+
+Search results default to compact mode, which strips FHIR noise (meta,
+extensions, narrative, contained resources) and simplifies data types for
+token efficiency while preserving clinical meaning. Compact responses keep
+native Bundle keys (`entry`, `link`) so pagination works normally. Use
+`responseMode=full` when you need raw FHIR structure — extensions,
+provenance, narrative, or full coding systems. Direct reads default to
+full. If `responseMode` is absent from the tool schema, compact is
+server-enforced.

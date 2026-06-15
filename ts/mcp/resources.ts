@@ -6,7 +6,7 @@ import { getResourceMeta } from "../fhir/metadata.ts"
 import { filterAndValidateDefinitions } from "./validation.ts"
 import { makeHandler } from "./handler.ts"
 
-const LOCAL_CONTROLS = new Set(["fhirpath"])
+const LOCAL_CONTROLS = new Set(["fhirpath", ...(config.responseMode !== "compact-locked" ? ["responseMode"] : [])])
 
 const augmentSchema = (
    def: ResourceDefinition, meta: ResourceMeta | undefined, controlParams: Record<string, string>,

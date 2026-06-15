@@ -31,6 +31,15 @@ const
          )
       return val as Config["metadataMode"]
    },
+   parseResponseMode = (): ConfigResponseMode => {
+      const val = opt("FHIR_RESPONSE_MODE")?.toLowerCase()
+      if (val === undefined) return undefined
+      if (val !== "compact" && val !== "full" && val !== "compact-locked")
+         throw new Error(
+            `Invalid FHIR_RESPONSE_MODE="${val}" — must be "compact", "full", or "compact-locked"`,
+         )
+      return val as ConfigResponseMode
+   },
    parseAllowedHosts = (): string[] | undefined =>
       opt("ALLOWED_HOSTS")
          ?.split(",")
@@ -111,6 +120,7 @@ export const config: Config = {
    auditFile: opt("FHIR_AUDIT_FILE") ?? "./audit.jsonl",
    auditUserHeader: opt("FHIR_AUDIT_USER_HEADER")?.trim() || undefined,
    paginationPaths: parsePaginationPaths(),
+   responseMode: parseResponseMode(),
 }
 
 if (!config.fhirKeys.some((k) => k.kid === config.fhirActiveKey))

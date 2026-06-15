@@ -79,6 +79,7 @@
       "_elements": "Comma-separated list of element names to include in each resource (e.g. name,birthDate)",
       "_include": "Include referenced resources in the response Bundle (e.g. Observation:patient)",
       "_revinclude": "Include resources that reference the matched resources (e.g. Provenance:target)",
-      "fhirpath": "FHIRPath expression evaluated locally against the FHIR response — use for client-side projection when _elements or _summary are unavailable or insufficient"
+      "fhirpath": "FHIRPath expression evaluated locally against the FHIR response — use for client-side projection when _elements or _summary are unavailable or insufficient",
+      "responseMode": "Response shape: compact (token-efficient) or full (raw FHIR JSON)"
    }
 }

@@ -128,6 +128,7 @@ To rotate:
 | `FHIR_AUDIT_FILE`          | `./audit.jsonl`       | JSONL audit log path (parent directory must exist) — used when `file` sink is active |
 | `FHIR_PAGINATION_PATHS`     | —                     | Comma-separated path prefixes allowed in pagination URLs — the configured FHIR server path is always allowed; add aliases when the server returns next links with a different proxy prefix (e.g. `/FHIRProxy/api/FHIR/R4/`) |
 | `FHIR_AUDIT_USER_HEADER`   | —                     | HTTP request header whose value is recorded as `user` in audit events (see [Audit user identity](#audit-user-identity)) |
+| `FHIR_RESPONSE_MODE`       | —                     | Default response shape: `compact` (token-efficient, all ops), `full` (raw FHIR, all ops), or `compact-locked` (compact always, `responseMode` param hidden from AI). Unset = searches default compact, direct reads default full |
 
 When both a derived URL and an explicit override are available, the explicit
 override takes precedence.
@@ -189,6 +190,16 @@ fhirHydrant shapes search responses to manage token economy and limit PHI exposu
   also available on the `paginate` tool. Powered by HL7's
   [`fhirpath`](https://github.com/nicktobey/fhirpath.js) reference
   implementation with the R4 model context for full choice-type resolution.
+
+- **Compact response mode** — The `responseMode` parameter (available on all
+  resource tools and `paginate`) controls whether responses use a compact
+  token-efficient format or raw FHIR JSON. Compact mode strips FHIR noise
+  (meta, extensions, narrative, contained resources) and simplifies data types
+  (e.g. CodeableConcept → `{coding:[{code,display}],text}`) using R4 model
+  metadata from the `fhirpath` dependency. Compact Bundles preserve native keys
+  (`entry`, `link`) for pagination compatibility. Searches default to compact;
+  direct reads default to full. Set `FHIR_RESPONSE_MODE` to override or lock
+  server-wide — `compact-locked` hides the parameter entirely.
 
 ## Customization
 

@@ -7,10 +7,11 @@ import messages from "../../config/messages.json" with { type: "json" }
 import { config } from "../config.ts"
 import { createFhirClient } from "../fhir/client.ts"
 import { fetchMetadata, getCapabilitySummary } from "../fhir/metadata.ts"
-import { withRetry, enforceByteLimit, formatFhirError } from "../utils.ts"
+import { withRetry, enforceByteLimit, formatFhirError } from "../fhir/utils.ts"
 import { emitAudit, auditTime, errorStatus } from "../audit.ts"
 import { responseNote, bundleStats } from "./response-notes.ts"
 import { extractFhirPath, applyFhirPath } from "./fhirpath.ts"
+import { extractResponseMode, compact } from "./compact.ts"
 
 const
    coreToolsPath = (): string => {
@@ -53,12 +54,22 @@ export const registerCoreTools = (server: McpServer): void => {
       },
       def = (name: string) => tools.find((t) => t.name === name)!
 
+   const paginateParams = config.responseMode === "compact-locked"
+      ? Object.fromEntries(Object.entries(def("paginate").params).filter(([k]) => k !== "responseMode"))
+      : def("paginate").params
+
    server.registerTool(
       "paginate",
-      { description: def("paginate").description, inputSchema: buildSchema(def("paginate").params) },
+      { description: def("paginate").description, inputSchema: buildSchema(paginateParams) },
       async (args: Record<string, unknown>) => {
          const
             fhirpathExpr = extractFhirPath(args),
+            explicit = extractResponseMode(args),
+            locked = config.responseMode === "compact-locked",
+            effectiveMode: ResponseMode = locked
+               ? "compact"
+               : explicit ?? (config.responseMode === "full" ? "full" : "compact"),
+            wasDefaulted = !locked && explicit === undefined,
             t0 = Date.now()
          try {
             const
@@ -70,7 +81,7 @@ export const registerCoreTools = (server: McpServer): void => {
                : console.log("🔥 paginate")
 
             const result = await withRetry("paginate", () => client.request(validatedUrl))
-            let json = JSON.stringify(result, null, 2), filtered = false, matchCount = 0
+            let json = JSON.stringify(result, null, 2), filtered = false, matchCount = 0, compacted = false
             const
                stats = bundleStats(result, json),
                sourceBytes = Buffer.byteLength(json, "utf8")
@@ -86,6 +97,11 @@ export const registerCoreTools = (server: McpServer): void => {
                json = JSON.stringify(fp.nodes, null, 2)
             }
 
+            if (effectiveMode === "compact" && !filtered) {
+               json = JSON.stringify(compact(JSON.parse(json)))
+               compacted = true
+            }
+
             const
                notes = [
                   responseNote(result, json),
@@ -94,6 +110,7 @@ export const registerCoreTools = (server: McpServer): void => {
                         .replace("{matchCount}", String(matchCount))
                         .replace("{sourceBytes}", String(sourceBytes))
                      : undefined,
+                  wasDefaulted && compacted ? messages.responseModeCompact : undefined,
                ].filter(Boolean),
                prefix = notes.length ? notes.join("\n") + "\n\n" : "",
                shaped = enforceByteLimit(`${prefix}${json}`, config.fhirMaxResponseBytes)
@@ -104,6 +121,8 @@ export const registerCoreTools = (server: McpServer): void => {
                jsonBytes: Buffer.byteLength(json, "utf8"),
                ...(stats && { bundleEntries: stats.entries, bundleTotal: stats.total, hasNext: !!stats.nextUrl }),
                ...(filtered && { fhirpathFiltered: true, fhirpathMatchCount: matchCount }),
+               responseMode: effectiveMode,
+               ...(compacted && { compacted: true }),
             })
             return {
                content: [{ type: "text" as const, text: shaped.text }],

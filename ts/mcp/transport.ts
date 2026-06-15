@@ -1,7 +1,7 @@
 import { McpServer, StdioServerTransport } from "@modelcontextprotocol/server"
-import { config } from "./config.ts"
-import { withAuditContext } from "./audit.ts"
-import { jwksHandler } from "./fhir/jwks.ts"
+import { config } from "../config.ts"
+import { withAuditContext } from "../audit.ts"
+import { jwksHandler } from "../fhir/jwks.ts"
 
 export type TransportHandle = {
    attach: (s: McpServer) => Promise<void>

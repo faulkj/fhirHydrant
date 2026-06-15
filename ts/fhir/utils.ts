@@ -1,4 +1,4 @@
-import messages from "../config/messages.json" with { type: "json" }
+import messages from "../../config/messages.json" with { type: "json" }
 
 /** Checks whether an error is transient and eligible for retry. */
 export const retryable = (err: unknown): boolean => {

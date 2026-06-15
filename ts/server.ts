@@ -17,7 +17,7 @@ import { getDefinitionsPath, reloadDefinitions, getScopes } from "./fhir/definit
 import { fetchMetadata } from "./fhir/metadata.ts"
 import { registerAll } from "./mcp/resources.ts"
 import { registerCoreTools } from "./mcp/core-tools.ts"
-import { startHttp, startStdio } from "./transport.ts"
+import { startHttp, startStdio } from "./mcp/transport.ts"
 
 const
    { version: pkgVersion } = JSON.parse(

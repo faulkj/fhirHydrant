@@ -6,6 +6,12 @@ interface KeyPair {
    privateKey: string
 }
 
+/** Per-call response shape: compact (token-efficient) or full (raw FHIR JSON). */
+type ResponseMode = "compact" | "full"
+
+/** Server-wide response mode from FHIR_RESPONSE_MODE env var. */
+type ConfigResponseMode = ResponseMode | "compact-locked" | undefined
+
 /** Validated runtime configuration shape — see config.ts. */
 interface Config {
    fhirBaseUrl: string
@@ -28,4 +34,5 @@ interface Config {
    auditFile: string
    auditUserHeader: string | undefined
    paginationPaths: string[]
+   responseMode: ConfigResponseMode
 }

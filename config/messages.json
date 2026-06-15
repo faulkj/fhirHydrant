@@ -37,5 +37,7 @@
 
    "fhirpathFiltered": "Locally filtered by FHIRPath: {matchCount} node(s) returned from {sourceBytes}-byte response.",
 
-   "fhirpathError": "FHIRPath evaluation failed: {error}. Expression was not applied; raw response withheld to respect filter intent."
+   "fhirpathError": "FHIRPath evaluation failed: {error}. Expression was not applied; raw response withheld to respect filter intent.",
+
+   "responseModeCompact": "Compact mode applied — pass responseMode=full for raw FHIR JSON."
 }

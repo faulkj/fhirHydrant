@@ -28,6 +28,8 @@ interface AuditEvent {
    validationBlocked?: boolean
    fhirpathFiltered?: boolean
    fhirpathMatchCount?: number
+   responseMode?: ResponseMode
+   compacted?: boolean
    httpStatus?: number
    user?: string
 }

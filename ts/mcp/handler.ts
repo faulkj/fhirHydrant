@@ -2,12 +2,13 @@ import messages from "../../config/messages.json" with { type: "json" }
 import { config } from "../config.ts"
 import { getDefinitions, getsearchControls } from "../fhir/definitions.ts"
 import { createFhirClient } from "../fhir/client.ts"
-import { withRetry, enforceByteLimit, formatFhirError } from "../utils.ts"
+import { withRetry, enforceByteLimit, formatFhirError } from "../fhir/utils.ts"
 import { emitAudit, auditTime, errorStatus } from "../audit.ts"
 import { canShapeCount, buildSearchUrl, rebuildWithCount } from "./shaping.ts"
 import { responseNote, bundleStats } from "./response-notes.ts"
 import { checkRuntimeCapability, validateDateArgs } from "./validation.ts"
 import { extractFhirPath, applyFhirPath } from "./fhirpath.ts"
+import { extractResponseMode, compact } from "./compact.ts"
 
 export const isDirectRead = (args: Record<string, unknown>, supportsDirectRead: boolean): string | undefined => {
    if (!supportsDirectRead) return undefined
@@ -27,9 +28,15 @@ export const makeHandler =
          }
       const
          fhirpathExpr = extractFhirPath(args),
+         explicit = extractResponseMode(args),
          directId = isDirectRead(args, def.supportsDirectRead),
          op: AuditEvent["operation"] = directId ? "read" : "search",
          cap = checkRuntimeCapability(def, args, directId),
+         locked = config.responseMode === "compact-locked",
+         effectiveMode: ResponseMode = locked
+            ? "compact"
+            : explicit ?? (config.responseMode === "full" ? "full" : config.responseMode === "compact" ? "compact" : directId ? "full" : "compact"),
+         wasDefaulted = !locked && explicit === undefined,
          t0 = Date.now()
       if (cap.error) {
          emitAudit({ ts: new Date().toISOString(), tool: toolName, resourceType: def.resourceType, operation: op, status: "blocked", durationMs: auditTime(t0), metadataBlocked: true })
@@ -74,7 +81,7 @@ export const makeHandler =
             ? console.log(`🔥 ${def.resourceType} ${op} → ${url}`)
             : console.log(`🔥 ${def.resourceType} ${op}`)
 
-         let result: unknown, json: string, stats: ReturnType<typeof bundleStats>, shaped: ReturnType<typeof enforceByteLimit>, filtered = false, matchCount = 0
+         let result: unknown, json: string, stats: ReturnType<typeof bundleStats>, shaped: ReturnType<typeof enforceByteLimit>, filtered = false, matchCount = 0, compacted = false
          // eslint-disable-next-line no-constant-condition
          while (true) {
             result = await withRetry(`${def.resourceType} ${op}`, () => client.request(url))
@@ -93,6 +100,11 @@ export const makeHandler =
                json = JSON.stringify(fp.nodes, null, 2)
             }
 
+            if (effectiveMode === "compact" && !filtered) {
+               json = JSON.stringify(compact(JSON.parse(json)))
+               compacted = true
+            }
+
             const
                notes = [
                   cap.warning,
@@ -109,6 +121,7 @@ export const makeHandler =
                         .replace("{matchCount}", String(matchCount))
                         .replace("{sourceBytes}", String(sourceBytes))
                      : undefined,
+                  wasDefaulted && compacted ? messages.responseModeCompact : undefined,
                ].filter(Boolean),
                prefix = notes.length ? notes.join("\n") + "\n\n" : ""
             shaped = enforceByteLimit(`${prefix}${json}`, config.fhirMaxResponseBytes)
@@ -131,6 +144,8 @@ export const makeHandler =
             ...(retries > 0 && { autoRetryCount: retries }),
             ...(cap.warning && { capWarning: true }),
             ...(filtered && { fhirpathFiltered: true, fhirpathMatchCount: matchCount }),
+            responseMode: effectiveMode,
+            ...(compacted && { compacted: true }),
          })
          return {
             content: [{ type: "text" as const, text: shaped.text }],

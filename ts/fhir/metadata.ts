@@ -1,6 +1,6 @@
 import { config } from "../config.ts"
 import { createFhirClient } from "./client.ts"
-import { withRetry } from "../utils.ts"
+import { withRetry } from "./utils.ts"
 
 let
    cache: CapabilitySummary | null = null,
