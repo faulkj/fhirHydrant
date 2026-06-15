@@ -58,7 +58,7 @@ export const startHttp = async (): Promise<TransportHandle> => {
          const displayHost = config.bindHost === "0.0.0.0" || config.bindHost === "127.0.0.1" 
             ? "localhost" 
             : config.bindHost
-         console.info(`\x1b[34m🔥 fhirhydrant listening on http://${displayHost}:${config.port}\x1b[0m`)
+         console.info(`\x1b[34m🔥 fhirhydrant listening on http://${displayHost}:${config.port}/mcp\x1b[0m`)
          resolve(s)
       })
    })
