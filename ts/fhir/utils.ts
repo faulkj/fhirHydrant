@@ -35,13 +35,10 @@ export const withRetry = async <T>(
          const signal = timeoutMs ? AbortSignal.timeout(timeoutMs) : undefined
          return await fn(signal)
       } catch (err) {
-         if (isTimeout(err)) {
-            console.warn(`🔥 ${label} timed out after ${timeoutMs}ms (attempt ${i + 1}/${attempts})`)
-            throw err
-         }
-         if (i + 1 >= attempts || !retryable(err)) throw err
+         const timedOut = isTimeout(err)
+         if (i + 1 >= attempts || (!timedOut && !retryable(err))) throw err
          const delay = 1000 * 2 ** i
-         console.warn(`🔥 ${label} transient error, retrying in ${delay}ms (${i + 1}/${attempts})`)
+         console.warn(`🔥 ${label} ${timedOut ? "timed out" : "transient error"}, retrying in ${delay}ms (${i + 1}/${attempts})`)
          await new Promise((r) => setTimeout(r, delay))
       }
    }

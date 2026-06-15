@@ -110,7 +110,7 @@ const validatePageUrl = (url: string): string => {
       throw new Error(messages.paginationOriginMismatch
          .replace("{actual}", nextUrl.origin)
          .replace("{expected}", serverUrl.origin))
-         
+
    const
       basePath = serverUrl.pathname.replace(/\/*$/, "/"),
       prefixes = [...(basePath.length > 1 ? [basePath] : []), ...config.paginationPaths]
