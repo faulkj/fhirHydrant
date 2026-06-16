@@ -36,4 +36,5 @@ interface Config {
    fhirRequestTimeoutMs: number
    paginationPaths: string[]
    responseMode: ConfigResponseMode
+   fhirTerminologyBaseUrl?: string
 }

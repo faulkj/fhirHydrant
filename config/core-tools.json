@@ -29,5 +29,43 @@
             "description": "Re-fetch /metadata from the server before returning the summary"
          }
       }
+   },
+   {
+      "name": "terminology_lookup",
+      "description": "Look up a single medical code in a terminology system and return its display name, version, and properties. Use this when you already have a specific code (e.g. LOINC 2160-0 or SNOMED 73211009) and need to know what it means. system accepts \"loinc\" or \"snomed\".",
+      "params": {
+         "system": {
+            "type": "string",
+            "description": "Target terminology system: \"loinc\" or \"snomed\""
+         },
+         "code": {
+            "type": "string",
+            "description": "The code to look up (e.g. \"2160-0\" for LOINC, \"73211009\" for SNOMED)"
+         }
+      }
+   },
+   {
+      "name": "code_search",
+      "description": "Search a terminology system for codes matching a text filter. Use this when you need to find codes by name or description (e.g. \"glucose\" in LOINC or \"myocardial infarction\" in SNOMED). Returns matching code/display pairs. LOINC results support paging via offset — increment offset by count to retrieve subsequent pages. system accepts \"loinc\" or \"snomed\".",
+      "params": {
+         "system": {
+            "type": "string",
+            "description": "Target terminology system: \"loinc\" or \"snomed\""
+         },
+         "filter": {
+            "type": "string",
+            "description": "Text to search for (e.g. \"glucose\", \"diabetes mellitus\")"
+         },
+         "count": {
+            "type": "number",
+            "optional": true,
+            "description": "Maximum results to return (default 10, max 50)"
+         },
+         "offset": {
+            "type": "number",
+            "optional": true,
+            "description": "Starting position for paged results (default 0). Increment by count for subsequent pages."
+         }
+      }
    }
 ]

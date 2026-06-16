@@ -15,8 +15,9 @@ interface AuditEvent {
    ts: string
    tool: string
    resourceType?: string
-   operation: "search" | "read" | "paginate" | "capabilities"
+   operation: "search" | "read" | "paginate" | "capabilities" | "lookup" | "expand"
    status: "ok" | "truncated" | "error" | "blocked"
+   system?: string
    durationMs: number
    jsonBytes?: number
    bundleEntries?: number

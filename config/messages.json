@@ -39,5 +39,20 @@
 
    "fhirpathError": "FHIRPath evaluation failed: {error}. Expression was not applied; raw response withheld to respect filter intent.",
 
-   "responseModeCompact": "Compact mode applied — pass responseMode=full for raw FHIR JSON."
+   "responseModeCompact": "Compact mode applied — pass responseMode=full for raw FHIR JSON.",
+
+   "terminologyInvalidSystem": "Invalid system \"{system}\" — expected \"loinc\" or \"snomed\"",
+   
+   "terminologyInvalidCount": "Invalid count \"{count}\" — must be a positive integer (max 50)",
+   
+   "terminologyLookupNotFound": "No concept found in {system} for code \"{code}\"",
+   
+   "terminologySearchNoResults": "No matches found in {system} for \"{filter}\"",
+
+   "terminologyNoMoreResults": "No more results in {system} for \"{filter}\" at offset {offset}",
+
+   "terminologyInvalidOffset": "Invalid offset \"{offset}\" — must be a non-negative integer",
+   
+   "terminologyError": "Terminology service error: {message}"
 }
+ 

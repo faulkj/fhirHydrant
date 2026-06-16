@@ -130,6 +130,7 @@ To rotate:
 | `FHIR_PAGINATION_PATHS`     | —                     | Comma-separated path prefixes allowed in pagination URLs — the configured FHIR server path is always allowed; add aliases when the server returns next links with a different proxy prefix (e.g. `/FHIRProxy/api/FHIR/R4/`) |
 | `FHIR_AUDIT_USER_HEADER`   | —                     | HTTP request header whose value is recorded as `user` in audit events (see [Audit user identity](#audit-user-identity)) |
 | `FHIR_RESPONSE_MODE`       | —                     | Default response shape: `compact` (token-efficient, all ops), `full` (raw FHIR, all ops), or `compact-locked` (compact always, `responseMode` param hidden from AI). Unset = searches default compact, direct reads default full |
+| `FHIR_TERMINOLOGY_BASE_URL` | —                     | FHIR terminology server base URL — enables `terminology_lookup` and `code_search` tools. Use `https://tx.fhir.org/r4` for the public HL7 reference server |
 
 When both a derived URL and an explicit override are available, the explicit
 override takes precedence.
@@ -348,6 +349,17 @@ Defined in [config/resources.json](config/resources.json). The default set:
 | ----------------- | ----------------------------------------------------------------- |
 | `paginate`        | Fetch a single page of FHIR Bundle results using a pagination URL (validated against the FHIR server origin) |
 | `capabilities`    | Return the cached FHIR server CapabilityStatement summary, including which resource types and search parameters are advertised, and which tools were skipped due to metadata mismatches |
+
+### Terminology tools
+
+Set `FHIR_TERMINOLOGY_BASE_URL` to enable two terminology tools that query a FHIR terminology server for LOINC and SNOMED CT codes. These tools do not use your clinical FHIR credentials — they call the configured terminology server directly.
+
+| Tool                  | Description                                                              |
+| --------------------- | ------------------------------------------------------------------------ |
+| `terminology_lookup`  | Look up a single code and return its display name, version, and status   |
+| `code_search`         | Search for codes matching a text filter (default 10 results, max 50)     |
+
+The public HL7 reference server (`https://tx.fhir.org/r4`) supports both systems with no authentication. You can also point at a private or internal terminology server.
 
 Search results are FHIR Bundles that may include pagination links. When a Bundle
 contains a `link` with `relation: "next"`, call `paginate` with that

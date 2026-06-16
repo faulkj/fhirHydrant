@@ -32,6 +32,7 @@ export const config: Config = {
    fhirRequestTimeoutMs: parsePositiveInt("FHIR_REQUEST_TIMEOUT_MS", 30000),
    paginationPaths: parsePaginationPaths(),
    responseMode: parseResponseMode(),
+   fhirTerminologyBaseUrl: (opt("FHIR_TERMINOLOGY_BASE_URL")?.replace(/\/+$/, "") || undefined),
 }
 
 if (!config.fhirKeys.some((k) => k.kid === config.fhirActiveKey))

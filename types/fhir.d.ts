@@ -60,6 +60,16 @@ interface ResourceMeta {
    operations: string[]
 }
 
+/** Single entry in the terminology search cache — holds filtered results and fetch state. */
+interface TerminologySearchCacheEntry {
+   items: string[]
+   codes: Set<string>
+   nextRawOffset: number
+   exhausted: boolean
+   createdAt: number
+   accessedAt: number
+}
+
 /** Trimmed, JSON-serializable summary of the FHIR server's CapabilityStatement. */
 interface CapabilitySummary {
    serverUrl: string

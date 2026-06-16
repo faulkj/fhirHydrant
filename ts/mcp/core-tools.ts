@@ -6,6 +6,8 @@ import { fileURLToPath } from "node:url"
 import { config } from "../config.ts"
 import { addPaginate } from "./tools/paginate.ts"
 import { addCapabilities } from "./tools/capabilities.ts"
+import { addTerminologyLookup } from "./tools/terminology-lookup.ts"
+import { addCodeSearch } from "./tools/code-search.ts"
 
 const
    coreToolsPath = (): string => {
@@ -21,7 +23,7 @@ const
    buildSchema = (params: Record<string, { type: string; optional?: boolean; description: string }>) => {
       const shape: Record<string, z.ZodTypeAny> = {}
       for (const [key, p] of Object.entries(params)) {
-         const base = p.type === "boolean" ? z.boolean() : z.string()
+         const base = p.type === "boolean" ? z.boolean() : p.type === "number" ? z.number() : z.string()
          shape[key] = p.optional ? base.optional().describe(p.description) : base.describe(p.description)
       }
       return z.object(shape)
@@ -38,4 +40,9 @@ export const registerCoreTools = (server: McpServer): void => {
 
    addPaginate(server, def("paginate").description, buildSchema(paginateParams))
    addCapabilities(server, def("capabilities").description, buildSchema(def("capabilities").params))
+
+   if (config.fhirTerminologyBaseUrl) {
+      addTerminologyLookup(server, def("terminology_lookup").description, buildSchema(def("terminology_lookup").params))
+      addCodeSearch(server, def("code_search").description, buildSchema(def("code_search").params))
+   }
 }

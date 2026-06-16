@@ -1,6 +1,6 @@
 /** A single parameter definition in config/core-tools.json. */
 interface CoreToolParam {
-   type: "string" | "boolean"
+   type: "string" | "boolean" | "number"
    optional?: boolean
    description: string
 }
