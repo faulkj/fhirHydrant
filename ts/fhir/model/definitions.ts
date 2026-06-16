@@ -3,6 +3,7 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import * as z from "zod"
 import { validateResources } from "./validate-definitions.ts"
+import { config } from "../../config.ts"
 
 /** Returns the current valid set of generated FHIR resource definitions. */
 export const getDefinitions = (): ResourceDefinition[] => snapshot.definitions
@@ -76,11 +77,16 @@ const parse = (): DefinitionsSnapshot => {
             searchSchema: z.object(buildShape(params, entry.resourceType, entry.supportsDirectRead)),
          }
       }),
-      scopes = definitions.map((d) =>
-         d.supportsDirectRead
-            ? `system/${d.resourceType}.rs`
-            : `system/${d.resourceType}.s`,
-      )
+      scopes = definitions.map((d) => {
+         const letters = [
+            config.writeCapabilities.has("create") ? "c" : "",
+            d.supportsDirectRead ? "r" : "",
+            config.writeCapabilities.has("update") || config.writeCapabilities.has("patch") ? "u" : "",
+            config.writeCapabilities.has("delete") ? "d" : "",
+            "s",
+         ].join("")
+         return `system/${d.resourceType}.${letters}`
+      })
    return { definitions, scopes, searchControls }
 }
 

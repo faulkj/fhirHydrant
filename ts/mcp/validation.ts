@@ -1,62 +1,24 @@
 import messages from "../../config/messages.json" with { type: "json" }
 import { config } from "../config.ts"
-import { isMetadataAvailable, getResourceMeta, setSkippedTools } from "../fhir/model/metadata.ts"
+import { isMetadataAvailable, getResourceMeta } from "../fhir/model/metadata.ts"
 
 /**
- * Filters definitions against cached /metadata.
- * - Removes tools whose resourceType is entirely absent from metadata (all modes).
- * - Logs a warning for unadvertised searchParams (enforcement is deferred to checkRuntimeCapability).
- * - Returns definitions unchanged when metadata is unavailable or mode is "off".
+ * Returns the full set of actions available for a resource definition,
+ * considering both the FHIR_WRITE_CAPABILITIES env var and /metadata interactions.
+ * Stateless — recomputed on every call so metadata refreshes take effect immediately.
  */
-export const filterAndValidateDefinitions = (defs: ResourceDefinition[]): ResourceDefinition[] => {
-   if (!isMetadataAvailable() || config.metadataMode === "off") {
-      setSkippedTools([])
-      return defs
-   }
-
+export const getEnabledActions = (def: ResourceDefinition): ToolAction[] => {
    const
-      enabled: ResourceDefinition[] = [],
-      skipped: CapabilitySummary["skippedTools"] = []
-
-   for (const def of defs) {
-      const meta = getResourceMeta(def.resourceType)
-
-      if (!meta) {
-         const reason = `${def.resourceType} not in /metadata`
-         console.warn(`🏥 ${reason} — tool "${def.toolName}" skipped`)
-         skipped.push({ toolName: def.toolName, reason })
-         continue
-      }
-
-      if (def.supportsDirectRead && !meta.interactions.has("read")) {
-         const reason = `${def.resourceType} does not advertise read interaction`
-         console.error(`🏥 ${reason} — tool "${def.toolName}" skipped`)
-         skipped.push({ toolName: def.toolName, reason })
-         continue
-      }
-
-      if (!meta.interactions.has("search-type") && !meta.interactions.has("search")) {
-         const reason = `${def.resourceType} does not advertise search interaction`
-         console.error(`🏥 ${reason} — tool "${def.toolName}" skipped`)
-         skipped.push({ toolName: def.toolName, reason })
-         continue
-      }
-
-      for (const param of Object.keys(def.searchParams)) {
-         if (param === "_id" || param === "_include" || param === "_revinclude") continue
-         if (!meta.searchParams.has(param))
-            console.warn(`🏥 ${def.resourceType}: "${param}" not in /metadata — calls using this param will be blocked in strict mode`)
-      }
-
-      enabled.push(def)
-   }
-
-   setSkippedTools(skipped)
-   return enabled
+      actions: ToolAction[] = [],
+      checkMeta = isMetadataAvailable() && config.metadataMode !== "off",
+      meta = checkMeta ? getResourceMeta(def.resourceType) : undefined
+   if (def.supportsDirectRead) actions.push("read")
+   actions.push("search")
+   for (const w of config.writeCapabilities)
+      if (config.metadataMode === "off" || (checkMeta && meta?.interactions.has(writeInteraction[w])))
+         actions.push(w)
+   return actions
 }
-
-const FHIR_DATE = /^(eq|ne|gt|lt|ge|le|sa|eb|ap)?\d{4}(-\d{2}(-\d{2})?)?$/
-const isDateParam = (name: string): boolean => name === "date" || name === "birthdate" || name.endsWith("-date")
 
 /** Validates date-typed search params. Returns an error string for the first malformed value, or undefined if all are valid. */
 export const validateDateArgs = (args: Record<string, unknown>): string | undefined => {
@@ -85,9 +47,11 @@ export const checkRuntimeCapability = (
       return { error: messages.resourceNotAdvertised.replace("{resourceType}", def.resourceType) }
 
    if (!directId) {
-      const unadvertised: string[] = [], badIncludes: string[] = [], badRevIncludes: string[] = []
+      const
+         mcpOnly = new Set(["action", "body", "fhirpath", "responseMode"]),
+         unadvertised: string[] = [], badIncludes: string[] = [], badRevIncludes: string[] = []
       for (const [key, val] of Object.entries(args)) {
-         if (key === "_id") continue
+         if (key === "_id" || mcpOnly.has(key)) continue
          if (val === undefined || val === "") continue
          if (key === "_include") {
             if (!meta.includes.includes(val as string) && !meta.includes.includes("*")) badIncludes.push(val as string)
@@ -120,3 +84,11 @@ export const checkRuntimeCapability = (
 
    return {}
 }
+
+const
+   FHIR_DATE = /^(eq|ne|gt|lt|ge|le|sa|eb|ap)?\d{4}(-\d{2}(-\d{2})?)?$/,
+   isDateParam = (name: string): boolean => name === "date" || name === "birthdate" || name.endsWith("-date"),
+
+   writeInteraction: Record<WriteAction, string> = {
+      create: "create", update: "update", patch: "patch", delete: "delete"
+   }

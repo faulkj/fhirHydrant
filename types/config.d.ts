@@ -1,3 +1,9 @@
+/** The four FHIR write interactions that can be enabled via FHIR_WRITE_CAPABILITIES. */
+type WriteAction = "create" | "update" | "patch" | "delete"
+
+/** All possible action values a resource tool can execute. */
+type ToolAction = "search" | "read" | WriteAction
+
 /** A private key and its derived kid (from PEM filename). */
 interface KeyPair {
    /** Key identifier derived from the PEM filename: private-<kid>.pem → kid. */
@@ -37,4 +43,5 @@ interface Config {
    paginationPaths: string[]
    responseMode: ConfigResponseMode
    fhirTerminologyBaseUrl?: string
+   writeCapabilities: Set<WriteAction>
 }

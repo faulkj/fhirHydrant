@@ -10,6 +10,7 @@ import { checkRuntimeCapability } from "./validation.ts"
 import { extractFhirPath, applyFhirPath } from "../fhir/transform/fhirpath.ts"
 import { extractResponseMode, resolveResponseMode, compact } from "../fhir/transform/compact.ts"
 import { validateResourceRequest } from "./request-guards.ts"
+import { isWriteOp, executeWrite } from "./handler-write.ts"
 
 /** Returns an async MCP tool handler bound to the given resource tool name. */
 export const makeHandler =
@@ -26,9 +27,9 @@ export const makeHandler =
          t0 = Date.now(),
          guard = validateResourceRequest(def, args, toolName, t0)
       if (!guard.ok) return guard.response
-      const
-         { directId, op } = guard,
-         resolved = resolveResponseMode(explicit, directId)
+      const { directId, op } = guard
+      if (isWriteOp(op)) return executeWrite(toolName, def, op, args, t0, guard.parsedBody)
+      const resolved = resolveResponseMode(explicit, directId)
       if (!resolved)
          return { content: [{ type: "text" as const, text: "Invalid responseMode — must be \"compact\" or \"full\"" }], isError: true }
       const

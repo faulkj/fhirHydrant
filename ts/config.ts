@@ -1,7 +1,7 @@
 import {
    get, opt, parseTransport, parsePort, parseMetadataMode,
    parseResponseMode, parseAllowedHosts, parsePaginationPaths,
-   parsePositiveInt, parseAuditSinks, parseKeys,
+   parsePositiveInt, parseAuditSinks, parseKeys, parseWriteCapabilities,
 } from "./config-parsers.ts"
 
 /** Validated runtime configuration loaded from environment variables. */
@@ -33,6 +33,7 @@ export const config: Config = {
    paginationPaths: parsePaginationPaths(),
    responseMode: parseResponseMode(),
    fhirTerminologyBaseUrl: (opt("FHIR_TERMINOLOGY_BASE_URL")?.replace(/\/+$/, "") || undefined),
+   writeCapabilities: parseWriteCapabilities(),
 }
 
 if (!config.fhirKeys.some((k) => k.kid === config.fhirActiveKey))

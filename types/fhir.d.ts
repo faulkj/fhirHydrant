@@ -82,6 +82,7 @@ interface CapabilitySummary {
       operations: string[]
       includes: string[]
       revincludes: string[]
+      enabledOperations?: ToolAction[]
    }>
    skippedTools: Array<{
       toolName: string

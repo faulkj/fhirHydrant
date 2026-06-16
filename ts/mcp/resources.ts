@@ -1,16 +1,20 @@
 import type { McpServer } from "@modelcontextprotocol/server"
 import * as z from "zod"
+import messages from "../../config/messages.json" with { type: "json" }
 import { config } from "../config.ts"
 import { getDefinitions, getSearchControls, buildShape } from "../fhir/model/definitions.ts"
 import { getResourceMeta } from "../fhir/model/metadata.ts"
-import { filterAndValidateDefinitions } from "./validation.ts"
+import { filterAndValidateDefinitions } from "./filter-definitions.ts"
+import { getEnabledActions } from "./validation.ts"
 import { makeHandler } from "./handler.ts"
 
-const LOCAL_CONTROLS = new Set(["fhirpath", ...(config.responseMode !== "compact-locked" ? ["responseMode"] : [])])
+const
+   LOCAL_CONTROLS = new Set(["fhirpath", ...(config.responseMode !== "compact-locked" ? ["responseMode"] : [])]),
+   WRITE_WITH_BODY = new Set<ToolAction>(["create", "update", "patch"])
 
 const augmentSchema = (
    def: ResourceDefinition, meta: ResourceMeta | undefined, controlParams: Record<string, string>,
-): { schema: z.ZodObject<z.ZodRawShape>; injected: string[] } => {
+): { schema: z.ZodObject<z.ZodRawShape>; injected: string[]; description: string } => {
    const merged = { ...def.searchParams }, injected: string[] = []
    for (const [param, desc] of Object.entries(controlParams)) {
       if (merged[param]) continue
@@ -27,9 +31,36 @@ const augmentSchema = (
       }
       injected.push(param)
    }
-   return injected.length > 0
-      ? { schema: z.object(buildShape(merged, def.resourceType, def.supportsDirectRead)), injected }
-      : { schema: def.searchSchema, injected }
+
+   const
+      actions = getEnabledActions(def),
+      hasWrites = actions.some((a) => WRITE_WITH_BODY.has(a)),
+      shape: Record<string, z.ZodTypeAny> = { ...buildShape(merged, def.resourceType, def.supportsDirectRead) }
+
+   if (actions.length > 1 || hasWrites) {
+      shape["action"] = z.enum(actions as [string, ...string[]])
+         .optional()
+         .describe(`Operation to perform: ${actions.join(", ")}. Omit for search/read (default behavior).`)
+      injected.push("action")
+   }
+   if (hasWrites) {
+      shape["body"] = z.string()
+         .optional()
+         .describe("Full FHIR resource JSON for create/update, or JSON Patch array (RFC 6902) for patch")
+      injected.push("body")
+   }
+
+   const
+      writeActions = actions.filter((a): a is WriteAction => WRITE_WITH_BODY.has(a) || a === "delete"),
+      writeHints = writeActions
+         .map((a) => (messages[`writeAction${a[0].toUpperCase()}${a.slice(1)}` as keyof typeof messages] as string)
+            .replace("{resourceType}", def.resourceType))
+         .join(" "),
+      description = writeHints
+         ? `${def.description} ${writeHints}`
+         : def.description
+
+   return { schema: z.object(shape), injected, description }
 }
 
 /** Registers an MCP tool for every ResourceDefinition in the current snapshot. */
@@ -38,11 +69,11 @@ export const registerAll = (server: McpServer): void => {
    for (const def of filterAndValidateDefinitions(getDefinitions())) {
       const
          meta = getResourceMeta(def.resourceType),
-         { schema, injected } = augmentSchema(def, meta, controlParams)
+         { schema, injected, description } = augmentSchema(def, meta, controlParams)
       config.debug && injected.length && console.log(`📋 ${def.resourceType}: injected ${injected.join(", ")}`)
       server.registerTool(
          def.toolName,
-         { description: def.description, inputSchema: schema },
+         { description, inputSchema: schema },
          makeHandler(def.toolName),
       )
    }

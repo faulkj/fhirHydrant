@@ -1,4 +1,7 @@
+/** Scores a LOINC concept's display against a search query for relevance ranking */
 export { scoreLoinc }
+
+/** Scores a SNOMED concept's display against a search query for relevance ranking */
 export { scoreSnomed }
 
 // ── helpers ──────────────────────────────────────────────────────────

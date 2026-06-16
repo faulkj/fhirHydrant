@@ -2,8 +2,10 @@ import type { McpServer } from "@modelcontextprotocol/server"
 import type { z } from "zod"
 import messages from "../../../config/messages.json" with { type: "json" }
 import { fetchMetadata, getCapabilitySummary } from "../../fhir/model/metadata.ts"
+import { getDefinitions } from "../../fhir/model/definitions.ts"
 import { formatFhirError } from "../../fhir/utils.ts"
 import { emitAudit, auditTime, errorStatus } from "../../audit.ts"
+import { getEnabledActions } from "../validation.ts"
 
 /** Registers the capabilities tool for querying the FHIR server's CapabilityStatement. */
 export const addCapabilities = (
@@ -23,9 +25,18 @@ export const addCapabilities = (
                   content: [{ type: "text" as const, text: messages.capabilitiesUnavailable }],
                }
             }
+            const
+               defsByType = new Map(getDefinitions().map((d) => [d.resourceType, d])),
+               enriched = {
+                  ...summary,
+                  resources: summary.resources.map((r) => {
+                     const def = defsByType.get(r.type)
+                     return { ...r, enabledOperations: def ? getEnabledActions(def) : [] }
+                  }),
+               }
             emitAudit({ ts: new Date().toISOString(), tool: "capabilities", operation: "capabilities", status: "ok", durationMs: auditTime(t0), ...(args["refresh"] ? { httpStatus: 200 } : {}) })
             return {
-               content: [{ type: "text" as const, text: JSON.stringify(summary, null, 2) }],
+               content: [{ type: "text" as const, text: JSON.stringify(enriched, null, 2) }],
             }
          } catch (err) {
             const { log, client } = formatFhirError(err)

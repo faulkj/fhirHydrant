@@ -37,7 +37,7 @@ export const buildSearchUrl = (
 ): { url: string, countInjected: boolean, countCapped: boolean, countSkipped: boolean } => {
    const params = new URLSearchParams()
    for (const [key, val] of Object.entries(args))
-      val !== undefined && val !== "" && params.append(key, String(val))
+      key !== "action" && key !== "body" && val !== undefined && val !== "" && params.append(key, String(val))
    let countInjected = false, countCapped = false
    const countSkipped = !applyCount
    if (applyCount) {

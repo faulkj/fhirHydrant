@@ -16,6 +16,7 @@ const
       return Number.isInteger(n) && n >= min ? (max !== undefined ? Math.min(n, max) : n) : undefined
    }
 
+/** Registers the code_search tool for LOINC/SNOMED ValueSet expansion */
 export const addCodeSearch = (
    server: McpServer, description: string, inputSchema: z.ZodObject<z.ZodRawShape>,
 ): void => {

@@ -1,5 +1,18 @@
 import { basename } from "node:path"
 
+/** Parses FHIR_WRITE_CAPABILITIES into a validated Set of write actions; empty when unset. */
+export const parseWriteCapabilities = (): Set<WriteAction> => {
+   const
+      valid = new Set<WriteAction>(["create", "update", "patch", "delete"]),
+      raw = opt("FHIR_WRITE_CAPABILITIES")
+   if (!raw) return new Set()
+   const actions = raw.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean)
+   for (const a of actions)
+      if (!valid.has(a as WriteAction))
+         throw new Error(`Invalid FHIR_WRITE_CAPABILITIES value "${a}" — allowed: ${[...valid].join(", ")}`)
+   return new Set(actions as WriteAction[])
+}
+
 /** Reads a required env var; throws if absent or empty. */
 export const get = (key: string): string => {
    const val = process.env[key]

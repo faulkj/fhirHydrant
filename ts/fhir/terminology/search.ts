@@ -1,4 +1,7 @@
+/** Searches LOINC codes with server-side pagination, local caching, and fallback broadening */
 export { loincSearch }
+
+/** Searches SNOMED codes via ValueSet/$expand with relevance scoring */
 export { snomedSearch }
 
 import { config } from "../../config.ts"

@@ -2,9 +2,9 @@
 
 A Node.js MCP server written in TypeScript for connecting healthcare AI clients to FHIR APIs.
 
-Authenticates via SMART Backend Services, exposes configurable resource tools
-with FHIR Bundle pagination, and supports Streamable HTTP and stdio
-transports.
+Authenticates via SMART Backend Services, exposes
+configurable resource tools with search and full CRUD operations, FHIR Bundle pagination, and supports Streamable HTTP and
+stdio transports.
 
 > **PHI note:** FHIR data returned through MCP tool calls contains PHI. Ensure
 > your MCP client's transcript storage meets your compliance requirements.
@@ -130,6 +130,7 @@ To rotate:
 | `FHIR_PAGINATION_PATHS`     | —                     | Comma-separated path prefixes allowed in pagination URLs — the configured FHIR server path is always allowed; add aliases when the server returns next links with a different proxy prefix (e.g. `/FHIRProxy/api/FHIR/R4/`) |
 | `FHIR_AUDIT_USER_HEADER`   | —                     | HTTP request header whose value is recorded as `user` in audit events (see [Audit user identity](#audit-user-identity)) |
 | `FHIR_RESPONSE_MODE`       | —                     | Default response shape: `compact` (token-efficient, all ops), `full` (raw FHIR, all ops), or `compact-locked` (compact always, `responseMode` param hidden from AI). Unset = searches default compact, direct reads default full |
+| `FHIR_WRITE_CAPABILITIES`   | —                     | Comma-separated write operations to enable: `create`, `update`, `patch`, `delete`. Unset = read-only. Operations are further gated by `/metadata` — only interactions the server advertises are exposed |
 | `FHIR_TERMINOLOGY_BASE_URL` | —                     | FHIR terminology server base URL — enables `terminology_lookup` and `code_search` tools. Use `https://tx.fhir.org/r4` for the public HL7 reference server |
 
 When both a derived URL and an explicit override are available, the explicit
@@ -207,6 +208,56 @@ fhirHydrant shapes search responses to manage token economy and limit PHI exposu
   (`entry`, `link`) for pagination compatibility. Searches default to compact;
   direct reads default to full. Set `FHIR_RESPONSE_MODE` to override or lock
   server-wide — `compact-locked` hides the parameter entirely.
+
+### Write operations
+
+By default, fhirHydrant is read-only. Set `FHIR_WRITE_CAPABILITIES` to enable
+write operations:
+
+```sh
+FHIR_WRITE_CAPABILITIES=create,update,patch,delete
+```
+
+Each resource tool gains an optional `action` parameter whose enum only includes
+operations that pass **both** gates:
+
+1. **Env var** — the interaction must be listed in `FHIR_WRITE_CAPABILITIES`
+2. **`/metadata`** — the FHIR server must advertise the interaction for that resource type
+
+When `action` is omitted, existing search/read behavior is unchanged.
+
+#### Actions
+
+| Action   | Required params | Description |
+| -------- | --------------- | ----------- |
+| `create` | `body`          | POST a new resource. `body` is full FHIR JSON; `body.resourceType` must match the tool |
+| `update` | `_id`, `body`   | PUT a complete replacement. `body.id` is set from `_id` if absent |
+| `patch`  | `_id`, `body`   | PATCH with a JSON Patch array (RFC 6902), e.g. `[{"op":"replace","path":"/status","value":"final"}]` |
+| `delete` | `_id`           | DELETE the resource. No `body` required |
+
+#### SMART scopes
+
+Scopes are derived dynamically from `FHIR_WRITE_CAPABILITIES`:
+
+| Capabilities enabled | Example scope |
+| --- | --- |
+| None (default) | `system/Patient.rs` |
+| `create` | `system/Patient.crs` |
+| `create,update,patch,delete` | `system/Patient.cruds` |
+
+> **Note:** SMART on FHIR v2 has no separate letter for `patch` — it maps to
+> `u` (update). The `u` scope is requested if either `update` or `patch` is enabled.
+
+#### Safety model
+
+- **No env var = no writes** — all tools remain read-only with identical behavior
+- **Metadata gating** — even with the env var set, a write action is only
+  exposed if the FHIR server's `/metadata` advertises that interaction for the
+  resource type
+- **Input validation** — body JSON is parsed and validated before any FHIR call:
+  resourceType match, `_id`/`body.id` consistency, JSON Patch array format
+- **Audit** — write operations emit the same structured audit events as reads,
+  with the operation field set to `create`, `update`, `patch`, or `delete`
 
 ## Customization
 
@@ -336,12 +387,16 @@ Prefer stdio for local desktop clients, HTTP for remote/networked clients.
 
 Defined in [config/resources.json](config/resources.json). The default set:
 
-| Tool          | Resource    | Direct read |
-| ------------- | ----------- | ----------- |
-| `patient`     | Patient     | Yes         |
-| `observation` | Observation | Yes         |
-| `condition`   | Condition   | Yes         |
-| `encounter`   | Encounter   | Yes         |
+| Tool          | Resource    | Direct read | Write support |
+| ------------- | ----------- | ----------- | ------------- |
+| `patient`     | Patient     | Yes         | When enabled  |
+| `observation` | Observation | Yes         | When enabled  |
+| `condition`   | Condition   | Yes         | When enabled  |
+| `encounter`   | Encounter   | Yes         | When enabled  |
+
+Write support active when `FHIR_WRITE_CAPABILITIES` is set and the FHIR
+server advertises the interaction in `/metadata`. See
+[Write operations](#write-operations) below.
 
 ### Built-in tools
 

@@ -65,3 +65,15 @@ FHIR search parameter as a comma-separated list. For example, use `observation`
 with `code: "41651-1,2345-7"` to search for Observations matching either code in
 one FHIR call. Do not make many separate FHIR calls when one comma-separated
 token search can safely answer the question.
+
+## Write Operations
+
+Some tools may include an `action` parameter when write operations are enabled.
+The `action` enum only lists operations the server actually supports for that
+resource — check the tool's schema. Omitting `action` preserves normal
+search/read behavior. Each tool's description explains its available write
+actions and required parameters.
+
+Always confirm destructive operations (update, patch, delete) with the user
+before executing. For create, verify the user has provided all required fields
+for the resource type.

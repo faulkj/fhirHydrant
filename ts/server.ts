@@ -33,7 +33,11 @@ const
    SERVER_INFO = { name: "fhirhydrant", version: pkgVersion },
    SERVER_INSTRUCTIONS = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "config", "instructions.md"), "utf8").trim(),
 
-   _ = (initAuditSinks(config.auditSinks, config.auditFile), config.auditUserHeader && console.info(`📋 User header: ${config.auditUserHeader}`)),
+   _ = (
+      initAuditSinks(config.auditSinks, config.auditFile),
+      config.auditUserHeader && console.info(`📋 User header: ${config.auditUserHeader}`),
+      config.writeCapabilities.size > 0 && console.warn(`\x1b[31m⚠️  Write capabilities enabled: ${[...config.writeCapabilities].join(", ")}\x1b[0m`)
+   ),
    makeServer = (): McpServer => {
       const s = new McpServer(SERVER_INFO, { instructions: SERVER_INSTRUCTIONS })
       registerAll(s)

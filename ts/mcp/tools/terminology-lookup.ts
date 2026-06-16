@@ -6,6 +6,7 @@ import { withRetry, formatFhirError } from "../../fhir/utils.ts"
 import { emitAudit, auditTime, errorStatus } from "../../audit.ts"
 import { resolveSystem, txFetch } from "../../fhir/terminology/systems.ts"
 
+/** Registers the terminology_lookup tool for CodeSystem/$lookup queries */
 export const addTerminologyLookup = (
    server: McpServer, description: string, inputSchema: z.ZodObject<z.ZodRawShape>,
 ): void => {
