@@ -288,7 +288,20 @@ In production, definitions are read once at startup.
 
 Stateless Streamable HTTP — no session management required.
 Use a reverse proxy to terminate TLS when exposing HTTP beyond localhost.
-`GET /health` returns `{"status":"ok"}` for liveness probes (no auth, no PHI).
+`GET /health` returns a liveness/readiness snapshot (no auth required, no PHI):
+
+```json
+{
+   "status": "ok",
+   "mcp": true,
+   "metadata": true,
+   "tools": 4,
+   "auth": true,
+   "tokenExpiresIn": 287
+}
+```
+
+`mcp: false` means the server is still initializing. `auth: false` or a low `tokenExpiresIn` indicates a token problem. `metadata: false` means the FHIR `/metadata` fetch has not yet completed or failed.
 
 ```
 POST http://localhost:5000/mcp

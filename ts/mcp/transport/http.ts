@@ -2,6 +2,9 @@ import { randomUUID } from "node:crypto"
 import { config } from "../../config.ts"
 import { withAuditContext } from "../../audit.ts"
 import { jwksHandler } from "../../fhir/auth/jwks.ts"
+import { getTokenResponse } from "../../fhir/auth/auth.ts"
+import { isMetadataAvailable } from "../../fhir/model/metadata.ts"
+import { getDefinitions } from "../../fhir/model/definitions.ts"
 
 /** Starts the Streamable HTTP MCP transport and returns a handle to attach a server and shut down the listener. */
 export const startHttp = async (): Promise<TransportHandle> => {
@@ -22,7 +25,17 @@ export const startHttp = async (): Promise<TransportHandle> => {
    let mcpReady = false
    let connectedServer: import("@modelcontextprotocol/server").McpServer | undefined
 
-   app.get("/health", (_req: Req, res: Res) => res.json({ status: "ok" }))
+   app.get("/health", (_req: Req, res: Res) => {
+      const token = getTokenResponse()
+      res.json({
+         status: "ok",
+         mcp: mcpReady,
+         metadata: isMetadataAvailable(),
+         tools: getDefinitions().length,
+         auth: token.access_token !== undefined,
+         ...(token.expires_in !== undefined && { tokenExpiresIn: token.expires_in }),
+      })
+   })
 
    if (!config.fhirJwksUrl) {
       app.get("/jwks", jwksHandler)
