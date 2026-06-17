@@ -1,8 +1,8 @@
 # fhirHydrant
 
-A fully configurable, open-source Node.js MCP server for FHIR APIs across
-multiple FHIR versions. It connects MCP-compatible clients to clinical data over
-SMART on FHIR v2 Backend Services using signed JWT client credentials.
+A fully configurable, open-source Node.js MCP server for R4+ FHIR APIs. It
+connects MCP-compatible clients to clinical data over SMART on FHIR v2 Backend
+Services using signed JWT client credentials.
 
 fhirHydrant turns FHIR resources, named operations, terminology lookups, and
 pagination into MCP tools. The default resources and operations are starting
@@ -22,7 +22,7 @@ be expanded, trimmed, or replaced through config files without source changes.
 - Optional terminology tools, PHI-free audit events, and stdio or Streamable
   HTTP transport
 
-> **PHI note:** FHIR data returned through MCP tool calls may contain PHI.
+> **Note:** FHIR data returned through MCP tool calls may contain PHI.
 > Make sure your MCP client's transcript storage and logging behavior match
 > your compliance requirements.
 
@@ -170,8 +170,8 @@ Set `FHIR_TERMINOLOGY_BASE_URL` to enable:
 | `code_search` | Searches codes by text filter with paging support |
 
 These tools call the configured terminology server directly. They do not use
-the clinical FHIR server credentials. HL7's public reference terminology server
-supports `https://tx.fhir.org/r4` and `https://tx.fhir.org/r5`.
+the clinical FHIR server credentials. Use a terminology endpoint that matches
+your selected FHIR release, such as `https://tx.fhir.org/r4`.
 
 ## Metadata And Scope Gating
 
@@ -210,7 +210,8 @@ when the FHIR server advertises them.
 
 Compact output is AI-oriented JSON, not canonical FHIR. It drops or simplifies
 FHIR noise and common datatypes such as `meta`, narrative, extensions,
-`CodeableConcept`, `Reference`, `Quantity`, and R5 `CodeableReference`.
+`CodeableConcept`, `Reference`, `Quantity`, and newer datatypes such as
+`CodeableReference`.
 FHIRPath runs locally; the FHIR server never sees the expression. If evaluation
 fails, the raw response is withheld and an error is returned.
 
@@ -265,7 +266,7 @@ See [.env.example](.env.example) for a complete sample.
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `FHIR_VERSION` | `R4` | `R4`, `R4B`, or `R5`; controls derived URL, FHIRPath model, and compact model metadata |
+| `FHIR_VERSION` | `R4` | Active R4+ FHIR release; controls derived URL, FHIRPath model, and compact model metadata |
 | `FHIR_SERVER_URL` | `<base>/api/FHIR/<FHIR_VERSION>` | Explicit FHIR API URL override |
 | `FHIR_TOKEN_URL` | `<base>/oauth2/token` | Explicit token endpoint override |
 | `FHIR_JWKS_URL` | unset | External JWKS URL. Omit in HTTP mode to enable built-in `/jwks` |
@@ -281,7 +282,7 @@ See [.env.example](.env.example) for a complete sample.
 | `FHIR_RESPONSE_MODE` | unset | `compact`, `full`, or `compact-locked`; unset means search defaults compact and direct reads default full |
 | `FHIR_WRITE_CAPABILITIES` | unset | Comma-separated write actions: `create`, `update`, `patch`, `delete` |
 | `FHIR_OPERATIONS` | unset | Comma-separated operation keys; `none` disables all catalog operations. Default catalog: `everything`, `lastn`, `validate`, `docref`, `expand`, `lookup`, `translate`, `summary`, `match` |
-| `FHIR_TERMINOLOGY_BASE_URL` | unset | Enables terminology tools, e.g. `https://tx.fhir.org/r4` or `/r5` |
+| `FHIR_TERMINOLOGY_BASE_URL` | unset | Enables terminology tools, e.g. `https://tx.fhir.org/r4` |
 | `FHIR_PAGINATION_PATHS` | unset | Extra allowed path prefixes for pagination links, e.g. `FHIRProxy` |
 | `FHIR_AUDIT_SINK` | unset | `console`, `file`, or both |
 | `FHIR_AUDIT_FILE` | `./audit.jsonl` | JSONL file used when the `file` audit sink is enabled |
@@ -293,11 +294,12 @@ URLs.
 
 ## FHIR Version Support
 
-Set `FHIR_VERSION` to `R4`, `R4B`, or `R5`. It controls the derived FHIR API
-URL, FHIRPath model context, and compact response model metadata. R4B uses the
-R4 FHIRPath model. For R5 terminology, use a matching terminology server such
-as `https://tx.fhir.org/r5`. Startup logs hint when explicit FHIR or
-terminology URLs appear to reference a different version.
+Set `FHIR_VERSION` to select the active R4+ FHIR release. It controls the
+derived FHIR API URL, FHIRPath model context, and compact response model
+metadata. Some releases may use the nearest compatible FHIRPath model. For
+terminology, use an endpoint that matches the selected FHIR release. Startup
+logs hint when explicit FHIR or terminology URLs appear to reference a
+different version.
 
 ## Customizing Tools And Messages
 
