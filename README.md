@@ -5,7 +5,8 @@ A Node.js MCP server for FHIR R4 APIs. Connects any MCP-compatible AI client to 
 - Search, read, create, update, patch, delete
 - Named operations — $everything, $lastn, $validate, $docref (config-driven, extensible)
 - Terminology lookups (LOINC, SNOMED via any FHIR terminology server)
-- FHIRPath response filtering, compact token-efficient shaping, auto-retry on oversized bundles
+- Compact response mode — strips FHIR noise for token economy without losing clinical meaning
+- FHIRPath response filtering, auto-retry on oversized bundles
 - Structured PHI-free audit logging with request correlation
 - CapabilityStatement-aware — tools, params, and operations gated by /metadata + SMART scopes
 - Built-in JWKS hosting, key rotation, automatic token refresh
