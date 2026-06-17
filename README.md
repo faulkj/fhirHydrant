@@ -1,37 +1,68 @@
 # fhirHydrant
 
-A Node.js MCP server for FHIR APIs (R4, R4B, R5). Connects any MCP-compatible AI client to clinical data over SMART on FHIR v2 Backend Services.
+A fully configurable, open-source Node.js MCP server for FHIR APIs across
+multiple FHIR versions. It connects MCP-compatible clients to clinical data over
+SMART on FHIR v2 Backend Services using signed JWT client credentials.
 
-- Search, read, create, update, patch, delete
-- Named operations — $everything, $lastn, $validate, $docref (config-driven, extensible)
-- Terminology lookups (LOINC, SNOMED via any FHIR terminology server)
-- Compact response mode — strips FHIR noise for token economy without losing clinical meaning
-- FHIRPath response filtering, auto-retry on oversized bundles
-- Structured PHI-free audit logging with request correlation
-- CapabilityStatement-aware — tools, params, and operations gated by /metadata + SMART scopes
-- Built-in JWKS hosting, key rotation, automatic token refresh
-- Streamable HTTP and stdio transports
+fhirHydrant turns FHIR resources, named operations, terminology lookups, and
+pagination into MCP tools. The default resources and operations are starting
+points: resources, operations, search controls, instructions, and messages can
+be expanded, trimmed, or replaced through config files without source changes.
 
-> **PHI note:** FHIR data returned through MCP tool calls contains PHI. Ensure
-> your MCP client's transcript storage meets your compliance requirements.
+- SMART Backend Services auth with JWKS hosting, key rotation, token refresh,
+  and dynamic scopes
+- Configurable resource tools for search, direct read, and optional
+  metadata-gated CRUD
+- Config-driven named operations for clinical data, terminology, IPS, patient
+  matching, validation, and custom workflows
+- CapabilityStatement-aware tools, search controls, operation gating, and
+  runtime scope checks
+- Token economy features: compact responses, FHIRPath filtering, byte limits,
+  `_count` shaping, and oversized Bundle retry
+- Optional terminology tools, PHI-free audit events, and stdio or Streamable
+  HTTP transport
 
-## Requirements
+> **PHI note:** FHIR data returned through MCP tool calls may contain PHI.
+> Make sure your MCP client's transcript storage and logging behavior match
+> your compliance requirements.
 
-- Node.js ≥ 24
-- A FHIR server (R4, R4B, or R5) with [SMART Backend Services](http://hl7.org/fhir/smart-app-launch/backend-services.html) (SMART on FHIR v2, client credentials + signed JWT assertion) support
-- An RSA-2048 private key (JWKS can be self-hosted via the built-in `/jwks` endpoint or externally)
+## Contents
 
-## Install
+- [Quick Start](#quick-start)
+- [Tools](#tools)
+- [Metadata And Scope Gating](#metadata-and-scope-gating)
+- [Token Economy And Response Shaping](#token-economy-and-response-shaping)
+- [Audit Events](#audit-events)
+- [SMART Backend Auth And Keys](#smart-backend-auth-and-keys)
+- [Environment Variables](#environment-variables)
+- [FHIR Version Support](#fhir-version-support)
+- [Customizing Tools And Messages](#customizing-tools-and-messages)
+- [Transports](#transports)
+- [Development](#development)
 
-### npm / npx (recommended)
+## Quick Start
+
+### Requirements
+
+- Node.js >= 24
+- A supported FHIR server with SMART Backend Services support
+- A SMART Backend Services client registration
+- An RSA-2048 private key whose public key is available through JWKS
+
+The stdio transport usually needs an externally hosted JWKS URL. The built-in
+`/jwks` endpoint is available only when fhirHydrant runs over HTTP.
+
+### Install
 
 ```sh
+# install globally
 npm install -g fhirhydrant
-# or run directly:
+
+# or run without installing
 npx fhirhydrant
 ```
 
-### From source
+Run from source:
 
 ```sh
 git clone https://github.com/faulkj/fhirhydrant.git
@@ -40,16 +71,9 @@ npm install
 npm run build
 ```
 
-## Quick start
+### MCP Client Config
 
-The fastest way to get running with a desktop MCP client (Copilot, Claude, Cursor, etc.):
-
-**1. Get your credentials**
-
-- A FHIR server URL, client ID, and RSA-2048 private key registered for SMART Backend Services
-- A publicly hosted JWKS — use the built-in `/jwks` endpoint (omit `FHIR_JWKS_URL`) or host one externally (e.g. a GitHub Gist)
-
-**2. Add to your MCP client config**
+For desktop MCP clients, stdio is usually the simplest transport:
 
 ```json
 {
@@ -70,353 +94,261 @@ The fastest way to get running with a desktop MCP client (Copilot, Claude, Curso
 }
 ```
 
-`FHIR_PRIVATE_KEY` is a comma-separated list of PEM file paths. The `kid` for each key is derived from its filename: `private-<kid>.pem`. Place PEM files in the directory you run your MCP client from, or use absolute paths.
+`FHIR_PRIVATE_KEY` is a comma-separated list of PEM file paths. Each `kid` is
+derived from the filename: `private-<kid>.pem`.
 
-**3. Customize resources** *(optional)*
+## Tools
 
-Edit [config/resources.json](config/resources.json) to customize the default FHIR resource set. See [Definitions](#definitions).
+fhirHydrant registers tools from configuration and runtime capability checks.
+The exact list depends on `config/resources.json`, granted SMART scopes,
+`/metadata`, write settings, operation settings, and terminology settings.
 
-**From source:** copy `.env.example` to `.env`, fill in values, run `npm run dev`.
+| Tool or family | Available when | Purpose |
+| --- | --- | --- |
+| Resource tools | Resource is configured and allowed by metadata/scopes | Search, direct-read, and optionally CRUD FHIR resources |
+| `capabilities` | Always registered | Inspect CapabilityStatement summary, registered tools, skipped tools, search params, operations, and metadata notes |
+| `paginate` | Always registered | Fetch the next page of a FHIR Bundle using a server-returned `next` URL |
+| `operate` | At least one named operation passes gating | Invoke configured FHIR named operations for clinical data, terminology, IPS, matching, validation, or custom workflows |
+| `terminology_lookup` | `FHIR_TERMINOLOGY_BASE_URL` is set | Look up one LOINC or SNOMED CT code |
+| `code_search` | `FHIR_TERMINOLOGY_BASE_URL` is set | Search LOINC or SNOMED CT codes by text |
 
-## Environment
+### Resource Tools
 
-See [.env.example](.env.example) for all variables.
+Resource tools are generated from [config/resources.json](config/resources.json).
+The shipped config covers common clinical, administrative, medication,
+practitioner, organization, and document resources. You can expand, trim, or
+replace the resource set without source changes.
 
-### Required
+Each resource tool supports configured search params, optional direct reads
+with `_id`, `fhirpath`, and, unless compact-locked, `responseMode`. Direct read
+only happens when `_id` is the only non-empty argument; `_id` plus other params
+stays a search so caller intent is not silently discarded.
 
-| Variable           | Description                                                                 |
-| ------------------ | --------------------------------------------------------------------------- |
-| `FHIR_BASE_URL`    | FHIR server base — `/api/FHIR/<FHIR_VERSION>` and `/oauth2/token` are derived from this |
-| `FHIR_CLIENT_ID`   | Client ID registered with your FHIR auth server                             |
-| `FHIR_PRIVATE_KEY` | Comma-separated PEM file paths — kid derived from filename `private-<kid>.pem`; keep keys outside the repo (`.gitignore` excludes `*.pem`/`*.key`) |
-| `FHIR_ACTIVE_KEY`  | Which derived `kid` to use for signing JWT assertions                        |
-
-### Optional
-
-| Variable                  | Default                          | Description                                                       |
-| ------------------------- | -------------------------------- | ----------------------------------------------------------------- |
-| `FHIR_JWKS_URL`           | —                                | External JWKS URL registered with your FHIR auth server. Omit to enable the built-in `/jwks` endpoint instead (no private material exposed). Behind Azure EasyAuth, add `/jwks` to `excludedPaths` |
-| `FHIR_VERSION`            | `R4`                             | FHIR version: `R4`, `R4B`, or `R5` — determines the model used for FHIRPath evaluation and response compaction |
-| `FHIR_SERVER_URL`         | `<base>/api/FHIR/<FHIR_VERSION>` | Override the derived FHIR API URL for non-standard server layouts |
-| `FHIR_TOKEN_URL`          | `<base>/oauth2/token` | Override the derived token endpoint URL                           |
-| `MCP_TRANSPORT`           | `http`                | `http` for stateless Streamable HTTP, `stdio` for stdio |
-| `PORT`                    | `5000`                | HTTP listener port (1–65535)                                      |
-| `BIND_HOST`               | `127.0.0.1`           | Bind address for HTTP listener — set to `0.0.0.0` for container/LAN access |
-| `ALLOWED_HOSTS`           | —                     | Comma-separated hostnames for DNS rebinding protection — set when exposing HTTP on a public network |
-| `DEBUG`                   | `false`               | Enable verbose FHIR request logging — **logs URLs that may contain PHI** (patient names, identifiers, dates). Treat all production logs as PHI-sensitive. **Blocked when `NODE_ENV=production`** — the bridge refuses to start |
-| `FHIR_METADATA_MODE`      | `strict`              | `/metadata` mismatch handling: `strict` blocks unadvertised params, `warn` allows with warning, `off` disables checks. Both `strict` and `warn` skip entirely absent resource types |
-| `FHIR_DEFAULT_COUNT`      | `20`                  | Default `_count` injected into searches when the resource advertises `_count` in `/metadata` |
-| `FHIR_MAX_COUNT`          | `100`                 | Maximum `_count` allowed — higher values from callers are capped to this |
-| `FHIR_MAX_RESPONSE_BYTES` | `65536`               | Universal byte-limit on tool responses — returns an error instead of the payload when exceeded |
-| `FHIR_REQUEST_TIMEOUT_MS` | `30000`               | Per-attempt timeout (ms) for outgoing FHIR requests — each retry attempt gets its own deadline via `AbortSignal.timeout()` |
-| `FHIR_AUDIT_SINK`          | —                     | Comma-separated audit sinks: `console`, `file`, or both. Off when unset/empty |
-| `FHIR_AUDIT_FILE`          | `./audit.jsonl`       | JSONL audit log path (parent directory must exist) — used when `file` sink is active |
-| `FHIR_PAGINATION_PATHS`     | —                     | Comma-separated path prefixes allowed in pagination URLs — the configured FHIR server path is always allowed; add aliases when the server returns next links with a different proxy prefix (e.g. `FHIRProxy`) |
-| `FHIR_AUDIT_USER_HEADER`   | —                     | HTTP request header whose value is recorded as `user` in audit events (see [Audit user identity](#audit-user-identity)) |
-| `FHIR_RESPONSE_MODE`       | —                     | Default response shape: `compact` (token-efficient, all ops), `full` (raw FHIR, all ops), or `compact-locked` (compact always, `responseMode` param hidden from AI). Unset = searches default compact, direct reads default full |
-| `FHIR_WRITE_CAPABILITIES`   | —                     | Comma-separated write operations to enable: `create`, `update`, `patch`, `delete`. Unset = read-only. Operations are further gated by `/metadata` — only interactions the server advertises are exposed |
-| `FHIR_OPERATIONS`           | —                     | Comma-separated operation catalog keys to enable (e.g. `everything,lastn`). Leading `$` is optional. Set to `none` to disable all operations. Unset = all catalog operations enabled. Operations are further gated by `/metadata` |
-| `FHIR_TERMINOLOGY_BASE_URL` | —                     | FHIR terminology server base URL — enables `terminology_lookup` and `code_search` tools. Use `https://tx.fhir.org/r4` (or `/r5` for R5) for the public HL7 reference server |
-
-When both a derived URL and an explicit override are available, the explicit
-override takes precedence.
-
-### Key rotation
-
-`FHIR_PRIVATE_KEY` lists all private keys the app knows about.
-`FHIR_ACTIVE_KEY` selects which one signs JWT assertions. The built-in `/jwks`
-endpoint (or your externally hosted JWKS) should contain public keys for all
-listed PEM files so the FHIR auth server can verify any of them by `kid`.
-To rotate:
-
-1. Generate a new key: `openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out private-20260715.pem`
-2. Add the new PEM to `FHIR_PRIVATE_KEY`: `private-20260610.pem,private-20260715.pem`
-3. Redeploy — the `/jwks` endpoint automatically includes all keys
-4. Set `FHIR_ACTIVE_KEY=20260715` and redeploy
-5. After auth-server caches expire and old deployments are retired, remove the
-   old PEM from `FHIR_PRIVATE_KEY`
-
-> If using an external JWKS (`FHIR_JWKS_URL`), manually add the new public key
-> to that JWKS before step 3.
-
-### Changing FHIR versions
-
-Set `FHIR_VERSION` to `R4` (default), `R4B`, or `R5`. This controls:
-
-- **Server URL** — the derived URL changes to `<base>/api/FHIR/<version>` (unless overridden by `FHIR_SERVER_URL`)
-- **FHIRPath model** — queries use the matching `fhirpath` model context (R4B uses the R4 model)
-- **Response compaction** — type-aware simplifiers use the selected model, including `CodeableReference` support in R5
-
-When switching versions, review `FHIR_SERVER_URL` and
-`FHIR_TERMINOLOGY_BASE_URL` to ensure they reference the correct version
-endpoints. fhirHydrant logs a diagnostic hint at startup when it detects a
-likely URL mismatch.
-
-### Audit
-
-fhirHydrant can emit structured, PHI-free audit events for every FHIR operation.
-Set `FHIR_AUDIT_SINK` to enable one or both sinks:
-
-- **`console`** — writes `[audit] { … }` JSON lines to stdout (stderr in stdio mode)
-- **`file`** — appends JSONL to `FHIR_AUDIT_FILE` (default `./audit.jsonl`)
-
-Each event includes timestamp, tool name, operation type, status, duration,
-response size, and pagination metadata — but never FHIR resource content.
-HTTP requests are assigned a `requestId` (UUID) that propagates into every
-audit event for that request, enabling end-to-end correlation.
-
-#### Audit user identity
-
-When fhirHydrant runs behind an authenticating reverse proxy (Azure EasyAuth,
-OAuth2 Proxy, etc.), set `FHIR_AUDIT_USER_HEADER` to the header your proxy
-injects with the authenticated user's identity. The header value is recorded as
-`user` in every audit event for that request.
-
-Common values:
-
-| Proxy | Header |
-| --- | --- |
-| Azure EasyAuth | `X-MS-CLIENT-PRINCIPAL-NAME` |
-| OAuth2 Proxy | `X-Auth-Request-Email` |
-| Cloudflare Access | `Cf-Access-Authenticated-User-Email` |
-
-> **Trust boundary:** This header is only meaningful when an upstream proxy
-> strips or overwrites it. Do not set this for unauthenticated deployments —
-> clients could spoof arbitrary values.
-
-### Response shaping
-
-fhirHydrant shapes search responses to manage token economy and limit PHI exposure:
-
-- **`_count` default/cap** — Injects `FHIR_DEFAULT_COUNT` when omitted, caps to
-  `FHIR_MAX_COUNT`. Behavior follows `FHIR_METADATA_MODE`: `strict` only
-  touches resources that advertise `_count`; `warn` injects with a warning;
-  `off` applies to all searches. Direct reads and pagination are exempt.
-
-- **Byte limit with auto-retry** — `FHIR_MAX_RESPONSE_BYTES` caps every tool
-  response. When a search Bundle exceeds the limit, the server automatically
-  retries with `_count` halved (repeatedly, down to `_count=1`). If even a
-  single entry exceeds the limit, the original "too large" error is returned.
-  Auto-retry applies only to search Bundles — direct reads and pagination are
-  exempt. A note is prepended when a retry succeeds (e.g. `_count` reduced
-  from 20 to 5).
-
-- **FHIRPath response filtering** — The optional `fhirpath` parameter accepts a
-  standard [FHIRPath](http://hl7.org/fhirpath/) expression that is evaluated
-  locally against the FHIR response after it arrives from the server. Matching
-  nodes are returned as a JSON array. Use this for client-side projection when
-  `_elements` or `_summary` are unavailable or insufficient. The expression
-  never reaches the FHIR server. If evaluation fails, the raw response is
-  withheld to respect the caller's filter intent. The `fhirpath` parameter is
-  also available on the `paginate` tool. Powered by HL7's
-  [`fhirpath`](https://github.com/nicktobey/fhirpath.js) reference
-  implementation with the version-matched model context for full choice-type resolution.
-
-- **Compact response mode** — The `responseMode` parameter (available on all
-  resource tools, `paginate`, and `operate`) controls whether responses use a compact
-  token-efficient format or raw FHIR JSON. **Compact output is AI-oriented JSON,
-  not canonical FHIR** — it is intentionally lossy, optimised for token
-  efficiency, and should not be round-tripped back to a FHIR server. Compact
-  mode strips FHIR noise (meta, extensions, narrative, contained resources) and
-  simplifies data types (e.g. CodeableConcept → `{coding:[{code,display}],text}`,
-  Reference → `"Patient/pat-1"`, Quantity → `{value,unit}`) using
-  version-matched model metadata from the `fhirpath` dependency. Compact Bundles preserve native keys
-  (`entry`, `link`) for pagination compatibility. Searches default to compact;
-  direct reads default to full. Set `FHIR_RESPONSE_MODE` to override or lock
-  server-wide — `compact-locked` hides the parameter entirely.
-
-### Write operations
-
-By default, fhirHydrant is read-only. Set `FHIR_WRITE_CAPABILITIES` to enable
-write operations:
+Resource tools are search/read by default. Set `FHIR_WRITE_CAPABILITIES` to
+enable metadata-gated CRUD actions:
 
 ```sh
 FHIR_WRITE_CAPABILITIES=create,update,patch,delete
 ```
 
-Each resource tool gains an optional `action` parameter whose enum only includes
-operations that pass **both** gates:
+| Action | Required params | FHIR call |
+| --- | --- | --- |
+| `create` | `body` | `POST /ResourceType` |
+| `update` | `_id`, `body` | `PUT /ResourceType/{id}` |
+| `patch` | `_id`, `body` | `PATCH /ResourceType/{id}` with JSON Patch |
+| `delete` | `_id` | `DELETE /ResourceType/{id}` |
 
-1. **Env var** — the interaction must be listed in `FHIR_WRITE_CAPABILITIES`
-2. **`/metadata`** — the FHIR server must advertise the interaction for that resource type
+Write bodies are validated before the FHIR call: `body.resourceType` must match
+the tool resource, `body.id` must match `_id` for update when present, and patch
+requires a JSON Patch array. Scopes are derived from enabled capabilities:
+read/search uses `system/Patient.rs`, create/read/search uses
+`system/Patient.crs`, and full write support uses `system/Patient.cruds`.
+SMART v2 has no separate patch letter, so patch maps to `u`.
 
-When `action` is omitted, existing search/read behavior is unchanged.
+### Core Tools
 
-#### Actions
+`capabilities` returns the cached CapabilityStatement summary, registered and
+skipped tools, search params, operations, and metadata notes. 
 
-| Action   | Required params | Description |
-| -------- | --------------- | ----------- |
-| `create` | `body`          | POST a new resource. `body` is full FHIR JSON; `body.resourceType` must match the tool |
-| `update` | `_id`, `body`   | PUT a complete replacement. `body.id` is set from `_id` if absent |
-| `patch`  | `_id`, `body`   | PATCH with a JSON Patch array (RFC 6902), e.g. `[{"op":"replace","path":"/status","value":"final"}]` |
-| `delete` | `_id`           | DELETE the resource. No `body` required |
+`paginate` fetches one Bundle page using a server-returned `next` URL validated 
+against the FHIR origin and allowed path prefixes.
 
-#### SMART scopes
+### Named Operations
 
-Scopes are derived dynamically from `FHIR_WRITE_CAPABILITIES`:
+The `operate` tool invokes FHIR named operations from `config/operations.json`.
+The shipped operation catalog covers clinical aggregation, validation, document
+lookup, terminology operations, IPS generation, and patient matching. You can
+expand, trim, replace, or disable the operation catalog without source changes.
 
-| Capabilities enabled | Example scope |
+### Terminology Tools
+
+Set `FHIR_TERMINOLOGY_BASE_URL` to enable:
+
+| Tool | Description |
 | --- | --- |
-| None (default) | `system/Patient.rs` |
-| `create` | `system/Patient.crs` |
-| `create,update,patch,delete` | `system/Patient.cruds` |
+| `terminology_lookup` | Looks up one LOINC or SNOMED CT code |
+| `code_search` | Searches codes by text filter with paging support |
 
-> **Note:** SMART on FHIR v2 has no separate letter for `patch` — it maps to
-> `u` (update). The `u` scope is requested if either `update` or `patch` is enabled.
+These tools call the configured terminology server directly. They do not use
+the clinical FHIR server credentials. HL7's public reference terminology server
+supports `https://tx.fhir.org/r4` and `https://tx.fhir.org/r5`.
 
-#### Safety model
+## Metadata And Scope Gating
 
-- **No env var = no writes** — all tools remain read-only with identical behavior
-- **Metadata gating** — even with the env var set, a write action is only
-  exposed if the FHIR server's `/metadata` advertises that interaction for the
-  resource type
-- **Input validation** — body JSON is parsed and validated before any FHIR call:
-  resourceType match, `_id`/`body.id` consistency, JSON Patch array format
-- **Audit** — write operations emit the same structured audit events as reads,
-  with the operation field set to `create`, `update`, `patch`, or `delete`
+Unless `FHIR_METADATA_MODE=off`, fhirHydrant fetches the FHIR server's
+CapabilityStatement at startup. In `strict` mode:
 
-### FHIR Named Operations (`operate`)
+- Resource tools are registered only when the resource type is present in
+  `/metadata`
+- Server-side search controls such as `_count`, `_sort`, `_summary`,
+  `_elements`, `_include`, and `_revinclude` are exposed only when advertised
+- Search params are blocked when the server does not advertise them
+- Write actions require both `FHIR_WRITE_CAPABILITIES` and matching
+  CapabilityStatement interactions
+- Named operations require the target resource type to exist and the granted
+  SMART scope to allow the resource
 
-The `operate` tool invokes FHIR named operations — server-side logic that goes
-beyond simple CRUD. It uses a catalog (`config/operations.json`) that ships with
-four operations:
+In `warn` mode, unadvertised params are allowed with a warning, but absent
+resource types are still skipped. SMART scopes are also checked at runtime, so a
+tool can exist in the schema and still be blocked by the granted token scope.
 
-| Key | FHIR Operation | Resource | Level | Method |
-|-----|---------------|----------|-------|--------|
-| `everything` | `$everything` | Patient | instance | GET |
-| `lastn` | `$lastn` | Observation | type | GET |
-| `validate` | `$validate` | *(any)* | type/instance | POST |
-| `docref` | `$docref` | DocumentReference | type | GET |
+## Token Economy And Response Shaping
 
-#### Usage examples
+FHIR responses are often much larger than an MCP client needs. fhirHydrant
+shapes responses for token economy after retrieval, using server-side controls
+when the FHIR server advertises them.
 
-```json
-// Patient's full record
-{ "operation": "everything", "id": "123", "params": { "_type": "Condition,Observation" } }
+| Feature | Behavior |
+| --- | --- |
+| `_count` default/cap | Injects `FHIR_DEFAULT_COUNT` when allowed and caps caller values at `FHIR_MAX_COUNT` |
+| Byte limit | `FHIR_MAX_RESPONSE_BYTES` limits every tool response |
+| Auto-retry | Oversized search Bundles retry with smaller `_count` down to 1 |
+| FHIRPath | `fhirpath` filters the returned FHIR JSON locally and returns matching nodes as an array |
+| Compact mode | `responseMode=compact` strips common FHIR envelope noise and simplifies datatypes |
+| Full mode | `responseMode=full` returns raw FHIR JSON |
+| Locked compact | `FHIR_RESPONSE_MODE=compact-locked` hides `responseMode` from the tool schema |
 
-// Last 3 vitals
-{ "operation": "lastn", "params": { "patient": "Patient/123", "category": "vital-signs", "max": "3" } }
+Compact output is AI-oriented JSON, not canonical FHIR. It drops or simplifies
+FHIR noise and common datatypes such as `meta`, narrative, extensions,
+`CodeableConcept`, `Reference`, `Quantity`, and R5 `CodeableReference`.
+FHIRPath runs locally; the FHIR server never sees the expression. If evaluation
+fails, the raw response is withheld and an error is returned.
 
-// Validate a resource
-{ "operation": "validate", "resourceType": "Patient", "body": "{\"resourceType\":\"Patient\", ...}" }
+## Audit Events
 
-// Find documents
-{ "operation": "docref", "params": { "patient": "Patient/123" } }
-```
+Set `FHIR_AUDIT_SINK` to `console`, `file`, or both.
 
-#### Gating
+Audit events include timestamp, tool, resource type when applicable, operation,
+status, duration, response size, pagination summary, request ID, and optional
+proxy-authenticated user. They do not include FHIR resource content by default.
 
-Operations are gated at three levels:
-1. **`FHIR_OPERATIONS` env var** — restrict which catalog entries are enabled
-2. **`/metadata`** — in strict mode, the target *resource type* must exist in the CapabilityStatement (unadvertised operation names are allowed — most servers don't list them)
-3. **SMART scopes** — the target resource must be allowed by granted scopes
+When running behind an authenticating proxy, set `FHIR_AUDIT_USER_HEADER` to
+the trusted identity header injected by that proxy:
 
-#### Adding custom operations
+Common headers: Azure EasyAuth `X-MS-CLIENT-PRINCIPAL-NAME`, OAuth2 Proxy
+`X-Auth-Request-Email`, Cloudflare Access
+`Cf-Access-Authenticated-User-Email`.
 
-Add entries to `config/operations.json` following the existing schema. Each entry
-needs: `key`, `operation` (with `$`), `resource`, `level`, `method`, `params`,
-`bundleResponse`, `auditOperation`, and `affectsState`. The catalog file
-hot-reloads in development, but adding/removing operations changes the tool
-schema and description — restart the server to pick those up.
+Only use this when the proxy strips or overwrites inbound copies of that
+header. Otherwise clients can spoof arbitrary audit users.
 
-## Customization
+## SMART Backend Auth And Keys
 
-Everything in `config/` is yours to edit — no source changes needed:
+fhirHydrant uses SMART Backend Services: client credentials plus a signed JWT
+assertion. This is backend FHIR access, not browser-based SMART standalone
+launch; there is no interactive redirect/login flow in the MCP path.
+
+Private keys come from `FHIR_PRIVATE_KEY`; `FHIR_ACTIVE_KEY` chooses the signer.
+In HTTP mode, the built-in `/jwks` endpoint exposes public keys for all
+configured private keys when `FHIR_JWKS_URL` is unset.
+
+Key rotation is additive: generate a new `private-<kid>.pem`, add it to
+`FHIR_PRIVATE_KEY`, redeploy so JWKS includes both keys, set
+`FHIR_ACTIVE_KEY` to the new kid, redeploy, then remove the old key after
+auth-server caches and old deployments have expired. If using external JWKS,
+publish the new public key before switching `FHIR_ACTIVE_KEY`.
+
+## Environment Variables
+
+See [.env.example](.env.example) for a complete sample.
+
+### Required
+
+| Variable | Description |
+| --- | --- |
+| `FHIR_BASE_URL` | Base URL used to derive the FHIR server URL and token URL |
+| `FHIR_CLIENT_ID` | SMART Backend Services client ID |
+| `FHIR_PRIVATE_KEY` | Comma-separated PEM paths; `kid` is derived from `private-<kid>.pem` |
+| `FHIR_ACTIVE_KEY` | Which derived `kid` signs JWT assertions |
+
+### Optional
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `FHIR_VERSION` | `R4` | `R4`, `R4B`, or `R5`; controls derived URL, FHIRPath model, and compact model metadata |
+| `FHIR_SERVER_URL` | `<base>/api/FHIR/<FHIR_VERSION>` | Explicit FHIR API URL override |
+| `FHIR_TOKEN_URL` | `<base>/oauth2/token` | Explicit token endpoint override |
+| `FHIR_JWKS_URL` | unset | External JWKS URL. Omit in HTTP mode to enable built-in `/jwks` |
+| `MCP_TRANSPORT` | `http` | `http` or `stdio` |
+| `PORT` | `5000` | HTTP listener port |
+| `BIND_HOST` | `127.0.0.1` | HTTP bind address |
+| `ALLOWED_HOSTS` | unset | Comma-separated hostnames for DNS rebinding protection |
+| `FHIR_METADATA_MODE` | `strict` | `strict`, `warn`, or `off` for `/metadata` validation |
+| `FHIR_DEFAULT_COUNT` | `20` | Default `_count` injected into searches when allowed |
+| `FHIR_MAX_COUNT` | `100` | Maximum `_count`; caller values above this are capped |
+| `FHIR_MAX_RESPONSE_BYTES` | `65536` | Byte limit for tool responses |
+| `FHIR_REQUEST_TIMEOUT_MS` | `30000` | Per-attempt timeout for outgoing FHIR requests |
+| `FHIR_RESPONSE_MODE` | unset | `compact`, `full`, or `compact-locked`; unset means search defaults compact and direct reads default full |
+| `FHIR_WRITE_CAPABILITIES` | unset | Comma-separated write actions: `create`, `update`, `patch`, `delete` |
+| `FHIR_OPERATIONS` | unset | Comma-separated operation keys; `none` disables all catalog operations. Default catalog: `everything`, `lastn`, `validate`, `docref`, `expand`, `lookup`, `translate`, `summary`, `match` |
+| `FHIR_TERMINOLOGY_BASE_URL` | unset | Enables terminology tools, e.g. `https://tx.fhir.org/r4` or `/r5` |
+| `FHIR_PAGINATION_PATHS` | unset | Extra allowed path prefixes for pagination links, e.g. `FHIRProxy` |
+| `FHIR_AUDIT_SINK` | unset | `console`, `file`, or both |
+| `FHIR_AUDIT_FILE` | `./audit.jsonl` | JSONL file used when the `file` audit sink is enabled |
+| `FHIR_AUDIT_USER_HEADER` | unset | Proxy-authenticated user header copied into audit events |
+| `DEBUG` | `false` | Verbose FHIR request logging; blocked when `NODE_ENV=production` |
+
+Explicit `FHIR_SERVER_URL` and `FHIR_TOKEN_URL` values always win over derived
+URLs.
+
+## FHIR Version Support
+
+Set `FHIR_VERSION` to `R4`, `R4B`, or `R5`. It controls the derived FHIR API
+URL, FHIRPath model context, and compact response model metadata. R4B uses the
+R4 FHIRPath model. For R5 terminology, use a matching terminology server such
+as `https://tx.fhir.org/r5`. Startup logs hint when explicit FHIR or
+terminology URLs appear to reference a different version.
+
+## Customizing Tools And Messages
+
+Everything in `config/` is editable without source changes.
 
 | File | Purpose |
-|---|---|
-| [`resources.json`](config/resources.json) | FHIR resource → MCP tool mappings and search params (see [Definitions](#definitions) below) |
-| [`operations.json`](config/operations.json) | FHIR named operation catalog for the `operate` tool (see [FHIR Named Operations](#fhir-named-operations-operate)) |
-| [`search-controls.json`](config/search-controls.json) | Search-control parameter descriptions injected into tool schemas |
-| [`instructions.md`](config/instructions.md) | System prompt sent to the AI client — controls how the model uses FHIR tools |
-| [`messages.json`](config/messages.json) | Every user-facing message, error, and note the server can return |
-| [`core-tools.json`](config/core-tools.json) | Built-in tool definitions (`paginate`, `capabilities`) — descriptions and param hints |
+| --- | --- |
+| `resources.json` | FHIR resource tools, search params, direct-read behavior, and `requireOneOf` rules |
+| `operations.json` | Named operation catalog for `operate` |
+| `search-controls.json` | Descriptions for `_count`, `_sort`, `_summary`, `_elements`, `_include`, `_revinclude`, `fhirpath`, and `responseMode` |
+| `instructions.md` | MCP server instructions shown to the client/model |
+| `messages.json` | User-facing messages, errors, and response notes |
+| `core-tools.json` | Built-in tool descriptions and param hints |
 
-Changes take effect on restart. In development, `resources.json` and
-`search-controls.json` also hot-reload (see [Hot-reload](#hot-reload-dev-mode)).
+### Resource Definition Schema
 
-## Definitions
+`config/resources.json` is an array of resource definitions:
 
-fhirHydrant uses two config files to define MCP tools:
+| Field | Type | Description |
+| --- | --- | --- |
+| `resource` | `string` | FHIR resource type |
+| `toolName` | `string` | MCP tool name; must be unique |
+| `description` | `string` | Tool description |
+| `supportsDirectRead` | `boolean` | Enables `GET /ResourceType/{id}` via `_id` |
+| `searchParams` | `Record<string,string>` | FHIR search params and descriptions |
+| `requireOneOf` | `string[]` | At least one listed param is required for search calls |
 
-- [config/resources.json](config/resources.json) — maps FHIR resource types to MCP tools
-- [config/search-controls.json](config/search-controls.json) — describes search-control parameters injected into tool schemas
+`searchParams` values are descriptions, not a full FHIR capability model.
+Server-specific search behavior can still apply.
 
-### Search controls
+### Hot Reload
 
-[config/search-controls.json](config/search-controls.json) is a flat `Record<string, string>`. Each key is a search-control parameter name and each value is its description. Server-side controls (`_count`, `_sort`, `_summary`, `_elements`, `_include`, `_revinclude`) are injected into a tool's schema only when the FHIR server's `/metadata` advertises them. Local controls (`fhirpath`, `responseMode`) are always injected regardless of metadata. Omit a key to suppress injection.
+In development (`NODE_ENV` is not `production`), `resources.json`,
+`search-controls.json`, and `operations.json` are watched. Invalid JSON keeps
+the last valid snapshot, scope changes restart auth, and behavioral changes are
+picked up on later tool calls. Adding/removing tools, operation schema changes,
+and visible param-name changes still require restart because MCP tool
+registration happens at startup. Production reads config once at startup.
 
-### Resources schema
+## Transports
 
-[config/resources.json](config/resources.json) is a top-level JSON array of resource definitions:
+### Stdio
 
-#### Resource entry fields
+Set `MCP_TRANSPORT=stdio`. stdout is reserved for the MCP protocol; logs are
+redirected to stderr. Use an external `FHIR_JWKS_URL` for stdio deployments.
 
-| Field                | Type                     | Description                                                                                     |
-| -------------------- | ------------------------ | ----------------------------------------------------------------------------------------------- |
-| `resource`           | `string`                 | FHIR resource type (e.g. `AllergyIntolerance`)                                                  |
-| `toolName`           | `string`                 | MCP tool name — must be unique across all entries                                               |
-| `description`        | `string`                 | Human-readable tool description shown to the AI client                                          |
-| `supportsDirectRead` | `boolean`                | Enable `/ResourceType/{id}` reads when `_id` is provided alone                                  |
-| `searchParams`       | `Record<string, string>` | Key = FHIR search param, value = parameter description (optional if supportsDirectRead is true) |
-| `requireOneOf`       | `string[]` (optional)    | At least one of these search params must be provided for non-direct-read calls |
+### Streamable HTTP
 
-### Direct read behavior
+HTTP transport is stateless and exposes MCP at:
 
-When `supportsDirectRead` is `true` and the caller supplies `_id` as the
-**only** non-empty argument, fhirHydrant performs a direct
-`GET /ResourceType/{id}` read instead of a search. If `_id` is combined with
-other parameters, a search is performed so intent is not silently discarded.
-
-If `supportsDirectRead` is `true` but `_id` is not listed in `searchParams`, it
-is auto-injected into the tool's input schema.
-
-### Hot-reload (dev mode)
-
-In development (`NODE_ENV` is not `production`), fhirHydrant watches the active
-definitions file for changes:
-
-- Invalid JSON keeps the last valid snapshot
-- When scopes change, auth restarts automatically
-- Behavioral changes (`requireOneOf`, `supportsDirectRead`, `searchParams`) are
-  picked up live on the next tool call
-- Adding or removing tools, or changing tool names or param names visible to the
-  MCP client, requires a server restart — those are baked into MCP tool
-  registration at startup
-
-In production, definitions are read once at startup.
-
-### Limitations
-
-- All `searchParams` values are string-only — no type enforcement or enums
-- `requireOneOf` enforces "at least one of" — it does not cover complex
-  conditional requirements or exact-one-of constraints
-- No full FHIR capability negotiation — `searchParams` are tool input hints, not
-  a FHIR capability model
-- Vendor-specific search rules may still apply
-
-## Transport
-
-### HTTP (default)
-
-Stateless Streamable HTTP — no session management required.
-Use a reverse proxy to terminate TLS when exposing HTTP beyond localhost.
-`GET /health` returns a liveness/readiness snapshot (no auth required, no PHI):
-
-```json
-{
-   "status": "ok",
-   "mcp": true,
-   "metadata": true,
-   "tools": 4,
-   "auth": true,
-   "tokenExpiresIn": 287
-}
-```
-
-`mcp: false` means the server is still initializing. `auth: false` or a low `tokenExpiresIn` indicates a token problem. `metadata: false` means the FHIR `/metadata` fetch has not yet completed or failed.
-
-```
+```http
 POST http://localhost:5000/mcp
 Accept: application/json, text/event-stream
 Content-Type: application/json
@@ -434,67 +366,34 @@ MCP client config:
 }
 ```
 
-### Stdio
+`GET /health` returns a no-PHI readiness snapshot:
 
-Set `MCP_TRANSPORT=stdio` to use stdio transport. In stdio mode, stdout is
-reserved for the MCP protocol — all logging is redirected to stderr.
-See the [Quick start](#quick-start) JSON block for a full stdio config example.
-
-Prefer stdio for local desktop clients, HTTP for remote/networked clients.
-
-## Tools
-
-### Resource tools
-
-Defined in [config/resources.json](config/resources.json). The default set:
-
-| Tool          | Resource    | Direct read | Write support |
-| ------------- | ----------- | ----------- | ------------- |
-| `patient`     | Patient     | Yes         | When enabled  |
-| `observation` | Observation | Yes         | When enabled  |
-| `condition`   | Condition   | Yes         | When enabled  |
-| `encounter`   | Encounter   | Yes         | When enabled  |
-
-Write support active when `FHIR_WRITE_CAPABILITIES` is set and the FHIR
-server advertises the interaction in `/metadata`. See
-[Write operations](#write-operations) below.
-
-### Built-in tools
-
-| Tool              | Description                                                       |
-| ----------------- | ----------------------------------------------------------------- |
-| `paginate`        | Fetch a single page of FHIR Bundle results using a pagination URL (validated against the FHIR server origin) |
-| `capabilities`    | Return the cached FHIR server CapabilityStatement summary, including which resource types and search parameters are advertised, and which tools were skipped due to metadata mismatches |
-
-### Terminology tools
-
-Set `FHIR_TERMINOLOGY_BASE_URL` to enable two terminology tools that query a FHIR terminology server for LOINC and SNOMED CT codes. These tools do not use your clinical FHIR credentials — they call the configured terminology server directly.
-
-| Tool                  | Description                                                              |
-| --------------------- | ------------------------------------------------------------------------ |
-| `terminology_lookup`  | Look up a single code and return its display name, version, and status   |
-| `code_search`         | Search for codes matching a text filter (default 10 results, max 50)     |
-
-The public HL7 reference server (`https://tx.fhir.org/r4` for R4/R4B, `https://tx.fhir.org/r5` for R5) supports both systems with no authentication. You can also point at a private or internal terminology server.
-
-Search results are FHIR Bundles that may include pagination links. When a Bundle
-contains a `link` with `relation: "next"`, call `paginate` with that
-link's `url` to fetch the next page. Repeat until no `next` link is present.
-
-## Dev
-
-```sh
-npm run dev
+```json
+{
+   "status": "ok",
+   "mcp": true,
+   "metadata": true,
+   "tools": 22,
+   "auth": true,
+   "tokenExpiresIn": 287
+}
 ```
 
-Watches `ts/server.ts` with native Node TS stripping. Definitions are watched
-live — see [Hot-reload](#hot-reload-dev-mode).
+Use a reverse proxy for TLS and user authentication when exposing HTTP beyond
+localhost. Set `ALLOWED_HOSTS` when binding to a public interface.
 
-## Build & run
+## Development
 
 ```sh
+# dev server
+npm run dev
+
+# type-check
+npm run check
+
+# build and run
 npm run build
 npm start
 ```
 
-Output goes to `bin/server.js`.
+Build output goes to `bin/server.js`.

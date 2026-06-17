@@ -1,7 +1,7 @@
 {
    "name": "fhirhydrant",
    "version": "0.6.0",
-   "description": "A Node.js MCP server for connecting AI clients to FHIR APIs.",
+   "description": "Node.js FHIR MCP server with SMART Backend Services, metadata-aware search/CRUD tools, compact responses, and FHIRPath filtering.",
    "author": "Joshua Faulkenberry <j@joshuafaulkenberry.com> (https://joshuafaulkenberry.com/)",
    "license": "SEE LICENSE IN LICENSE.md",
    "type": "module",

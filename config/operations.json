@@ -71,5 +71,97 @@
       "auditOperation": "docref",
       "affectsState": false,
       "notes": "US Core / server-specific — metadata-gated"
+   },
+   {
+      "key": "expand",
+      "operation": "$expand",
+      "resource": "ValueSet",
+      "level": ["type", "instance"],
+      "method": "GET",
+      "description": "Expand a ValueSet into its individual codes. At type level, provide url to identify the value set. At instance level, provide id. Use filter for server-side text search within the expansion. Use count to limit results.",
+      "params": {
+         "url": { "type": "string", "optional": true, "description": "Canonical URL of the ValueSet to expand (type-level)" },
+         "filter": { "type": "string", "optional": true, "description": "Text filter applied to code display names during expansion" },
+         "count": { "type": "number", "optional": true, "description": "Maximum number of codes to return in the expansion" },
+         "offset": { "type": "number", "optional": true, "description": "Paging offset into the expansion" },
+         "includeDesignations": { "type": "string", "optional": true, "description": "Include additional designations in the expansion (true/false)" },
+         "activeOnly": { "type": "string", "optional": true, "description": "Only include active codes (true/false)" }
+      },
+      "bundleResponse": false,
+      "auditOperation": "expand",
+      "affectsState": false
+   },
+   {
+      "key": "lookup",
+      "operation": "$lookup",
+      "resource": "CodeSystem",
+      "level": ["type"],
+      "method": "GET",
+      "description": "Look up a code in a code system to retrieve its display name, definition, and properties. Provide system and code, or a Coding.",
+      "params": {
+         "system": { "type": "string", "optional": true, "description": "Code system URL (e.g. http://loinc.org, http://snomed.info/sct)" },
+         "code": { "type": "string", "optional": true, "description": "Code to look up" },
+         "version": { "type": "string", "optional": true, "description": "Code system version" },
+         "displayLanguage": { "type": "string", "optional": true, "description": "Language for the display (BCP-47 code, e.g. en, fr)" },
+         "property": { "type": "string", "optional": true, "description": "Properties to return (can be repeated)", "repeat": true }
+      },
+      "requiresOneOf": [["code"]],
+      "bundleResponse": false,
+      "auditOperation": "lookup",
+      "affectsState": false
+   },
+   {
+      "key": "translate",
+      "operation": "$translate",
+      "resource": "ConceptMap",
+      "level": ["type", "instance"],
+      "method": "GET",
+      "description": "Translate a code from one value set/code system to another using a ConceptMap. At type level, provide url to identify the ConceptMap. At instance level, provide id. Requires system, code, and target or source scope.",
+      "params": {
+         "url": { "type": "string", "optional": true, "description": "Canonical URL of the ConceptMap (type-level)" },
+         "system": { "type": "string", "optional": true, "description": "Source code system URL" },
+         "code": { "type": "string", "optional": true, "description": "Code to translate" },
+         "source": { "type": "string", "optional": true, "description": "Source ValueSet URL (scope for the source code)" },
+         "target": { "type": "string", "optional": true, "description": "Target ValueSet URL (scope for the translated code)" },
+         "targetsystem": { "type": "string", "optional": true, "description": "Target code system URL (alternative to target ValueSet)" },
+         "reverse": { "type": "string", "optional": true, "description": "Reverse the direction of the map (true/false)" }
+      },
+      "requiresOneOf": [["code"]],
+      "bundleResponse": false,
+      "auditOperation": "translate",
+      "affectsState": false
+   },
+   {
+      "key": "summary",
+      "operation": "$summary",
+      "resource": "Patient",
+      "level": ["instance"],
+      "method": "GET",
+      "description": "Generate an International Patient Summary (IPS) document for a patient. Returns a Bundle (document) containing a Composition and referenced clinical resources. Provide id at the top level of the operate call.",
+      "params": {
+         "profile": { "type": "string", "optional": true, "description": "IPS profile URL to generate against" },
+         "graph": { "type": "string", "optional": true, "description": "GraphDefinition URL controlling which resources to include" }
+      },
+      "bundleResponse": true,
+      "auditOperation": "summary",
+      "affectsState": false,
+      "notes": "IPS support varies by server — metadata-gated"
+   },
+   {
+      "key": "match",
+      "operation": "$match",
+      "resource": "Patient",
+      "level": ["type"],
+      "method": "POST",
+      "description": "Find patient records that match a given set of demographics using probabilistic or deterministic matching. Provide a partial Patient resource in body with the demographics to match (name, birthDate, gender, identifier, etc.). Returns a Bundle of matching Patient resources scored by match quality.",
+      "params": {
+         "onlyCertainMatches": { "type": "string", "optional": true, "description": "Only return matches the server is certain about (true/false)" },
+         "count": { "type": "number", "optional": true, "description": "Maximum number of matches to return" }
+      },
+      "acceptsBody": true,
+      "bundleResponse": true,
+      "auditOperation": "match",
+      "affectsState": false,
+      "notes": "MPI/matching support varies by server — metadata-gated"
    }
 ]
