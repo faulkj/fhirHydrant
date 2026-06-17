@@ -1,10 +1,15 @@
 # fhirHydrant
 
-A Node.js MCP server written in TypeScript for connecting healthcare AI clients to FHIR APIs.
+A Node.js MCP server for FHIR R4 APIs. Connects any MCP-compatible AI client to clinical data over SMART on FHIR v2 Backend Services.
 
-Authenticates via SMART Backend Services, exposes
-configurable resource tools with search and full CRUD operations, FHIR Bundle pagination, and supports Streamable HTTP and
-stdio transports.
+- Search, read, create, update, patch, delete
+- Named operations — $everything, $lastn, $validate, $docref (config-driven, extensible)
+- Terminology lookups (LOINC, SNOMED via any FHIR terminology server)
+- FHIRPath response filtering, compact token-efficient shaping, auto-retry on oversized bundles
+- Structured PHI-free audit logging with request correlation
+- CapabilityStatement-aware — tools, params, and operations gated by /metadata + SMART scopes
+- Built-in JWKS hosting, key rotation, automatic token refresh
+- Streamable HTTP and stdio transports
 
 > **PHI note:** FHIR data returned through MCP tool calls contains PHI. Ensure
 > your MCP client's transcript storage meets your compliance requirements.
@@ -12,7 +17,7 @@ stdio transports.
 ## Requirements
 
 - Node.js ≥ 24
-- A FHIR R4 server with SMART Backend Services (client credentials) support
+- A FHIR R4 server with [SMART Backend Services](http://hl7.org/fhir/smart-app-launch/backend-services.html) (SMART on FHIR v2, client credentials + signed JWT assertion) support
 - An RSA-2048 private key (JWKS can be self-hosted via the built-in `/jwks` endpoint or externally)
 
 ## Install
