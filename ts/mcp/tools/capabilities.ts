@@ -8,6 +8,7 @@ import { parseGrantedScopes } from "../../fhir/auth/scopes.ts"
 import { formatFhirError } from "../../fhir/utils.ts"
 import { emitAudit, auditTime, errorStatus } from "../../audit.ts"
 import { getEnabledActions } from "../validation.ts"
+import { getEnabledOperations, getSkippedOperations } from "../operations.ts"
 
 /** Registers the capabilities tool for querying the FHIR server's CapabilityStatement. */
 export const addCapabilities = (
@@ -30,6 +31,12 @@ export const addCapabilities = (
             const
                defsByType = new Map(getDefinitions().map((d) => [d.resource, d])),
                scopeMap = parseGrantedScopes(getTokenResponse().scope),
+               operations = getEnabledOperations().map((o) => ({
+                  key: o.key, operation: o.operation, resource: o.resource,
+                  level: o.level, method: o.method, params: Object.keys(o.params),
+                  bundleResponse: o.bundleResponse,
+               })),
+               skippedOperations = getSkippedOperations(),
                enriched = {
                   ...summary,
                   grantedScope: getTokenResponse().scope,
@@ -37,6 +44,8 @@ export const addCapabilities = (
                      const def = defsByType.get(r.type)
                      return { ...r, enabledOperations: def ? getEnabledActions(def, scopeMap) : [] }
                   }),
+                  operations,
+                  skippedOperations,
                }
             emitAudit({ ts: new Date().toISOString(), tool: "capabilities", operation: "capabilities", status: "ok", durationMs: auditTime(t0), ...(args["refresh"] ? { httpStatus: 200 } : {}) })
             return {

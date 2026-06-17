@@ -75,6 +75,20 @@
    
    "writeActionPatch": "Use action=patch with _id and body containing a JSON Patch array (RFC 6902) to partially update a {resourceType}.",
    
-   "writeActionDelete": "Use action=delete with _id to delete a {resourceType}."
+   "writeActionDelete": "Use action=delete with _id to delete a {resourceType}.",
+
+   "operationNotFound": "Unknown operation \"{key}\" — call capabilities to see available operations",
+
+   "operationMissingId": "Operation {operation} requires an id parameter (instance-level invocation)",
+
+   "operationMissingBody": "Operation {operation} requires a body parameter containing FHIR JSON",
+
+   "operationMissingRequiredParam": "Operation {operation} requires at least one of: {keys}",
+
+   "operationMissingResourceType": "Operation {operation} requires a resourceType parameter (polymorphic operation)",
+
+   "operationInvalidBody": "Operation {operation} body is not valid JSON: {error}",
+
+   "operationScopeBlocked": "Operation {operation} not permitted by granted scopes for {resource}"
 }
  

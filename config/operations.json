@@ -1,0 +1,75 @@
+[
+   {
+      "key": "everything",
+      "operation": "$everything",
+      "resource": "Patient",
+      "level": ["instance"],
+      "method": "GET",
+      "description": "Retrieve a patient's complete clinical record. Returns a Bundle of all resources related to the patient. Provide id at the top level of the operate call. Optional filters: start, end (date range), _type (comma-separated resource types to include), _since (only resources updated after this instant), _count (page size).",
+      "params": {
+         "start": { "type": "string", "optional": true, "description": "Start date for care date range filter (YYYY-MM-DD)" },
+         "end": { "type": "string", "optional": true, "description": "End date for care date range filter (YYYY-MM-DD)" },
+         "_type": { "type": "string", "optional": true, "description": "Comma-separated FHIR resource types to include (e.g. Condition,Observation)" },
+         "_since": { "type": "string", "optional": true, "description": "Only include resources updated after this instant (ISO 8601)" },
+         "_count": { "type": "number", "optional": true, "description": "Maximum number of resources per page" }
+      },
+      "bundleResponse": true,
+      "auditOperation": "everything",
+      "affectsState": false
+   },
+   {
+      "key": "lastn",
+      "operation": "$lastn",
+      "resource": "Observation",
+      "level": ["type"],
+      "method": "GET",
+      "description": "Fetch the most recent or last N observations for a subject, grouped by code. Requires patient or subject AND category or code. Use max to control how many observations per group (default 1).",
+      "params": {
+         "patient": { "type": "string", "optional": true, "description": "Patient reference (e.g. Patient/123)" },
+         "subject": { "type": "string", "optional": true, "description": "Subject reference (e.g. Patient/123)" },
+         "category": { "type": "string", "optional": true, "description": "Observation category (e.g. vital-signs, laboratory)" },
+         "code": { "type": "string", "optional": true, "description": "Observation code(s), comma-separated LOINC or SNOMED codes" },
+         "max": { "type": "number", "optional": true, "description": "Maximum observations per group (default 1)" }
+      },
+      "requiresOneOf": [["patient", "subject"], ["category", "code"]],
+      "bundleResponse": true,
+      "auditOperation": "lastn",
+      "affectsState": false
+   },
+   {
+      "key": "validate",
+      "operation": "$validate",
+      "resource": null,
+      "level": ["type", "instance"],
+      "method": "POST",
+      "description": "Validate a FHIR resource against server rules and optionally a specific profile. Provide resourceType at the top level of the operate call (not in params). Provide body (full FHIR JSON) at the top level. For update/delete validation, also provide id at the top level. Returns an OperationOutcome.",
+      "params": {
+         "mode": { "type": "string", "optional": true, "description": "Validation mode: create, update, or delete" },
+         "profile": { "type": "string", "optional": true, "description": "StructureDefinition URL to validate against" }
+      },
+      "acceptsBody": true,
+      "bundleResponse": false,
+      "auditOperation": "validate",
+      "affectsState": false,
+      "notes": "body required unless mode=delete; mode=delete requires id"
+   },
+   {
+      "key": "docref",
+      "operation": "$docref",
+      "resource": "DocumentReference",
+      "level": ["type"],
+      "method": "GET",
+      "description": "Find document references for a patient. US Core operation that returns a Bundle of DocumentReference resources. Requires patient. Optional date range and type filters.",
+      "params": {
+         "patient": { "type": "string", "description": "Patient reference (e.g. Patient/123)" },
+         "start": { "type": "string", "optional": true, "description": "Start date for document period filter (YYYY-MM-DD)" },
+         "end": { "type": "string", "optional": true, "description": "End date for document period filter (YYYY-MM-DD)" },
+         "type": { "type": "string", "optional": true, "description": "Document type code (LOINC)" }
+      },
+      "requiresOneOf": [["patient"]],
+      "bundleResponse": true,
+      "auditOperation": "docref",
+      "affectsState": false,
+      "notes": "US Core / server-specific — metadata-gated"
+   }
+]

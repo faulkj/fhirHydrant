@@ -23,6 +23,8 @@ import { getConfigDir, reloadDefinitions, getRequestedScopes } from "./fhir/mode
 import { fetchMetadata } from "./fhir/model/metadata.ts"
 import { registerAll } from "./mcp/resources.ts"
 import { registerCoreTools } from "./mcp/core-tools.ts"
+import { registerOperations } from "./mcp/operations.ts"
+import { reloadOperations } from "./fhir/model/operations.ts"
 import { startHttp } from "./mcp/transport/http.ts"
 import { startStdio } from "./mcp/transport/stdio.ts"
 
@@ -42,13 +44,14 @@ const
       const s = new McpServer(SERVER_INFO, { instructions: SERVER_INSTRUCTIONS })
       registerAll(s)
       registerCoreTools(s)
+      registerOperations(s)
       return s
    }
 
 let restartingAuth = false
 
 const
-   watchFiles = new Set(["resources.json", "search-controls.json"]),
+   watchFiles = new Set(["resources.json", "search-controls.json", "operations.json"]),
    startDefinitionsWatcher = (): void => {
       const watchDir = getConfigDir()
 
@@ -57,6 +60,10 @@ const
          if (!filename || !watchFiles.has(filename)) return
          clearTimeout(debounce)
          debounce = setTimeout(async () => {
+            if (filename === "operations.json") {
+               reloadOperations() && console.log("📋 Reloaded operations.json")
+               return
+            }
             const
                prevScopes = getRequestedScopes().join(","),
                ok = reloadDefinitions()

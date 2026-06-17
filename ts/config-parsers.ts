@@ -1,5 +1,15 @@
 import { basename } from "node:path"
 
+/** Parses FHIR_OPERATIONS into a Set of allowed operation keys; undefined means all enabled. */
+export const parseOperations = (): Set<string> | undefined => {
+   const raw = opt("FHIR_OPERATIONS")
+   if (!raw) return undefined
+   if (raw.trim().toLowerCase() === "none") return new Set()
+   const
+      keys = raw.split(",").map((s) => s.trim().toLowerCase().replace(/^\$/, "")).filter(Boolean)
+   return keys.length ? new Set(keys) : undefined
+}
+
 /** Parses FHIR_WRITE_CAPABILITIES into a validated Set of write actions; empty when unset. */
 export const parseWriteCapabilities = (): Set<WriteAction> => {
    const

@@ -44,4 +44,5 @@ interface Config {
    responseMode: ConfigResponseMode
    fhirTerminologyBaseUrl?: string
    writeCapabilities: Set<WriteAction>
+   operations: Set<string> | undefined
 }

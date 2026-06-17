@@ -131,6 +131,7 @@ To rotate:
 | `FHIR_AUDIT_USER_HEADER`   | —                     | HTTP request header whose value is recorded as `user` in audit events (see [Audit user identity](#audit-user-identity)) |
 | `FHIR_RESPONSE_MODE`       | —                     | Default response shape: `compact` (token-efficient, all ops), `full` (raw FHIR, all ops), or `compact-locked` (compact always, `responseMode` param hidden from AI). Unset = searches default compact, direct reads default full |
 | `FHIR_WRITE_CAPABILITIES`   | —                     | Comma-separated write operations to enable: `create`, `update`, `patch`, `delete`. Unset = read-only. Operations are further gated by `/metadata` — only interactions the server advertises are exposed |
+| `FHIR_OPERATIONS`           | —                     | Comma-separated operation catalog keys to enable (e.g. `everything,lastn`). Leading `$` is optional. Set to `none` to disable all operations. Unset = all catalog operations enabled. Operations are further gated by `/metadata` |
 | `FHIR_TERMINOLOGY_BASE_URL` | —                     | FHIR terminology server base URL — enables `terminology_lookup` and `code_search` tools. Use `https://tx.fhir.org/r4` for the public HL7 reference server |
 
 When both a derived URL and an explicit override are available, the explicit
@@ -259,6 +260,50 @@ Scopes are derived dynamically from `FHIR_WRITE_CAPABILITIES`:
 - **Audit** — write operations emit the same structured audit events as reads,
   with the operation field set to `create`, `update`, `patch`, or `delete`
 
+### FHIR Named Operations (`operate`)
+
+The `operate` tool invokes FHIR named operations — server-side logic that goes
+beyond simple CRUD. It uses a catalog (`config/operations.json`) that ships with
+four operations:
+
+| Key | FHIR Operation | Resource | Level | Method |
+|-----|---------------|----------|-------|--------|
+| `everything` | `$everything` | Patient | instance | GET |
+| `lastn` | `$lastn` | Observation | type | GET |
+| `validate` | `$validate` | *(any)* | type/instance | POST |
+| `docref` | `$docref` | DocumentReference | type | GET |
+
+#### Usage examples
+
+```json
+// Patient's full record
+{ "operation": "everything", "id": "123", "params": { "_type": "Condition,Observation" } }
+
+// Last 3 vitals
+{ "operation": "lastn", "params": { "patient": "Patient/123", "category": "vital-signs", "max": "3" } }
+
+// Validate a resource
+{ "operation": "validate", "resourceType": "Patient", "body": "{\"resourceType\":\"Patient\", ...}" }
+
+// Find documents
+{ "operation": "docref", "params": { "patient": "Patient/123" } }
+```
+
+#### Gating
+
+Operations are gated at three levels:
+1. **`FHIR_OPERATIONS` env var** — restrict which catalog entries are enabled
+2. **`/metadata`** — in strict mode, the target *resource type* must exist in the CapabilityStatement (unadvertised operation names are allowed — most servers don't list them)
+3. **SMART scopes** — the target resource must be allowed by granted scopes
+
+#### Adding custom operations
+
+Add entries to `config/operations.json` following the existing schema. Each entry
+needs: `key`, `operation` (with `$`), `resource`, `level`, `method`, `params`,
+`bundleResponse`, `auditOperation`, and `affectsState`. The catalog file
+hot-reloads in development, but adding/removing operations changes the tool
+schema and description — restart the server to pick those up.
+
 ## Customization
 
 Everything in `config/` is yours to edit — no source changes needed:
@@ -266,6 +311,7 @@ Everything in `config/` is yours to edit — no source changes needed:
 | File | Purpose |
 |---|---|
 | [`resources.json`](config/resources.json) | FHIR resource → MCP tool mappings and search params (see [Definitions](#definitions) below) |
+| [`operations.json`](config/operations.json) | FHIR named operation catalog for the `operate` tool (see [FHIR Named Operations](#fhir-named-operations-operate)) |
 | [`search-controls.json`](config/search-controls.json) | Search-control parameter descriptions injected into tool schemas |
 | [`instructions.md`](config/instructions.md) | System prompt sent to the AI client — controls how the model uses FHIR tools |
 | [`messages.json`](config/messages.json) | Every user-facing message, error, and note the server can return |

@@ -77,3 +77,25 @@ actions and required parameters.
 Always confirm destructive operations (update, patch, delete) with the user
 before executing. For create, verify the user has provided all required fields
 for the resource type.
+
+## FHIR Named Operations
+
+Use the `operate` tool to invoke FHIR named operations like `$everything`,
+`$lastn`, `$validate`, and `$docref`. These go beyond simple search/read — they
+execute server-side logic and return specialized results.
+
+Call `capabilities` to see the currently enabled operation catalog, including
+required parameters and levels. The `operation` parameter accepts catalog keys
+(e.g. `everything`, `lastn`) — a leading `$` is optional.
+
+- **$everything** — Patient instance-level GET. Returns the patient's full
+  clinical record as a Bundle. Requires `id`.
+- **$lastn** — Observation type-level GET. Returns the last N observations
+  grouped by code. Requires `patient` or `subject` AND `category` or `code`.
+- **$validate** — Any resource type-level POST. Validates a FHIR resource.
+  Requires `resourceType` and `body` (FHIR JSON).
+- **$docref** — DocumentReference type-level GET. Finds document references for a
+  patient. Requires `patient`.
+
+Use resource tools for standard search/read/write. Use `operate` when you need
+server-side aggregation, validation, or specialized queries that go beyond CRUD.
