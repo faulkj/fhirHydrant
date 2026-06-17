@@ -2,14 +2,15 @@ import {
    get, opt, parseTransport, parsePort, parseMetadataMode,
    parseResponseMode, parseAllowedHosts, parsePaginationPaths,
    parsePositiveInt, parseAuditSinks, parseKeys, parseWriteCapabilities,
-   parseOperations,
+   parseOperations, parseFhirVersion,
 } from "./config-parsers.ts"
 
 /** Validated runtime configuration loaded from environment variables. */
 export const config: Config = {
    fhirBaseUrl: get("FHIR_BASE_URL").replace(/\/$/, ""),
+   fhirVersion: parseFhirVersion(),
    get fhirServerUrl() {
-      return opt("FHIR_SERVER_URL") ?? `${this.fhirBaseUrl}/api/FHIR/R4`
+      return opt("FHIR_SERVER_URL") ?? `${this.fhirBaseUrl}/api/FHIR/${this.fhirVersion}`
    },
    get fhirTokenEndpoint() {
       return opt("FHIR_TOKEN_URL") ?? `${this.fhirBaseUrl}/oauth2/token`

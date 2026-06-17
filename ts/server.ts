@@ -17,6 +17,7 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { McpServer } from "@modelcontextprotocol/server"
 import { config } from "./config.ts"
+import { fhirVersionLabel } from "./fhir/transform/fhir-model.ts"
 import { initAuditSinks } from "./audit.ts"
 import { startAuth, stopAuth, restartAuth } from "./fhir/auth/auth.ts"
 import { getConfigDir, reloadDefinitions, getRequestedScopes } from "./fhir/model/definitions.ts"
@@ -35,10 +36,19 @@ const
    SERVER_INFO = { name: "fhirhydrant", version: pkgVersion },
    SERVER_INSTRUCTIONS = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "config", "instructions.md"), "utf8").trim(),
 
+   explicitServerUrl = process.env["FHIR_SERVER_URL"],
+   explicitTermUrl = config.fhirTerminologyBaseUrl,
+
    _ = (
       initAuditSinks(config.auditSinks, config.auditFile),
+      console.info(`📋 FHIR version: ${fhirVersionLabel}`),
       config.auditUserHeader && console.info(`📋 User header: ${config.auditUserHeader}`),
-      config.writeCapabilities.size > 0 && console.warn(`\x1b[31m⚠️  Write capabilities enabled: ${[...config.writeCapabilities].join(", ")}\x1b[0m`)
+      config.writeCapabilities.size > 0 && console.warn(`\x1b[31m⚠️  Write capabilities enabled: ${[...config.writeCapabilities].join(", ")}\x1b[0m`),
+      explicitServerUrl && /\/R[45]B?(?:[\/?#]|$)/i.test(explicitServerUrl)
+         && !explicitServerUrl.toUpperCase().includes(`/${config.fhirVersion}`)
+         && console.warn(`💡 FHIR_SERVER_URL contains a version segment that differs from FHIR_VERSION=${config.fhirVersion} — verify both are aligned`),
+      explicitTermUrl && config.fhirVersion === "R5" && /\/r4(?:[\/?#]|$)/i.test(explicitTermUrl)
+         && console.warn(`💡 FHIR_TERMINOLOGY_BASE_URL points to /r4 but FHIR_VERSION is R5 — consider using https://tx.fhir.org/r5`)
    ),
    makeServer = (): McpServer => {
       const s = new McpServer(SERVER_INFO, { instructions: SERVER_INSTRUCTIONS })

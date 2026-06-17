@@ -1,5 +1,15 @@
 import { basename } from "node:path"
 
+const VALID_FHIR_VERSIONS = new Set<FhirVersion>(["R4", "R4B", "R5"])
+
+/** Parses FHIR_VERSION into a validated FhirVersion; defaults to R4 when unset. */
+export const parseFhirVersion = (): FhirVersion => {
+   const raw = opt("FHIR_VERSION")?.trim().toUpperCase() || "R4"
+   if (!VALID_FHIR_VERSIONS.has(raw as FhirVersion))
+      throw new Error(`Invalid FHIR_VERSION="${raw}" — must be "R4", "R4B", or "R5"`)
+   return raw as FhirVersion
+}
+
 /** Parses FHIR_OPERATIONS into a Set of allowed operation keys; undefined means all enabled. */
 export const parseOperations = (): Set<string> | undefined => {
    const raw = opt("FHIR_OPERATIONS")

@@ -1,6 +1,6 @@
 # fhirHydrant
 
-A Node.js MCP server for FHIR R4 APIs. Connects any MCP-compatible AI client to clinical data over SMART on FHIR v2 Backend Services.
+A Node.js MCP server for FHIR APIs (R4, R4B, R5). Connects any MCP-compatible AI client to clinical data over SMART on FHIR v2 Backend Services.
 
 - Search, read, create, update, patch, delete
 - Named operations — $everything, $lastn, $validate, $docref (config-driven, extensible)
@@ -18,7 +18,7 @@ A Node.js MCP server for FHIR R4 APIs. Connects any MCP-compatible AI client to 
 ## Requirements
 
 - Node.js ≥ 24
-- A FHIR R4 server with [SMART Backend Services](http://hl7.org/fhir/smart-app-launch/backend-services.html) (SMART on FHIR v2, client credentials + signed JWT assertion) support
+- A FHIR server (R4, R4B, or R5) with [SMART Backend Services](http://hl7.org/fhir/smart-app-launch/backend-services.html) (SMART on FHIR v2, client credentials + signed JWT assertion) support
 - An RSA-2048 private key (JWKS can be self-hosted via the built-in `/jwks` endpoint or externally)
 
 ## Install
@@ -46,7 +46,7 @@ The fastest way to get running with a desktop MCP client (Copilot, Claude, Curso
 
 **1. Get your credentials**
 
-- A FHIR R4 server URL, client ID, and RSA-2048 private key registered for SMART Backend Services
+- A FHIR server URL, client ID, and RSA-2048 private key registered for SMART Backend Services
 - A publicly hosted JWKS — use the built-in `/jwks` endpoint (omit `FHIR_JWKS_URL`) or host one externally (e.g. a GitHub Gist)
 
 **2. Add to your MCP client config**
@@ -86,16 +86,40 @@ See [.env.example](.env.example) for all variables.
 
 | Variable           | Description                                                                 |
 | ------------------ | --------------------------------------------------------------------------- |
-| `FHIR_BASE_URL`    | FHIR server base — `/api/FHIR/R4` and `/oauth2/token` are derived from this |
+| `FHIR_BASE_URL`    | FHIR server base — `/api/FHIR/<FHIR_VERSION>` and `/oauth2/token` are derived from this |
 | `FHIR_CLIENT_ID`   | Client ID registered with your FHIR auth server                             |
 | `FHIR_PRIVATE_KEY` | Comma-separated PEM file paths — kid derived from filename `private-<kid>.pem`; keep keys outside the repo (`.gitignore` excludes `*.pem`/`*.key`) |
 | `FHIR_ACTIVE_KEY`  | Which derived `kid` to use for signing JWT assertions                        |
 
-### Commonly required
+### Optional
 
-| Variable        | Description                                                                                                    |
-| --------------- | -------------------------------------------------------------------------------------------------------------- |
-| `FHIR_JWKS_URL` | External JWKS URL registered with your FHIR auth server. Omit to enable the built-in `/jwks` endpoint instead (no private material exposed). Behind Azure EasyAuth, add `/jwks` to `excludedPaths`. |
+| Variable                  | Default                          | Description                                                       |
+| ------------------------- | -------------------------------- | ----------------------------------------------------------------- |
+| `FHIR_JWKS_URL`           | —                                | External JWKS URL registered with your FHIR auth server. Omit to enable the built-in `/jwks` endpoint instead (no private material exposed). Behind Azure EasyAuth, add `/jwks` to `excludedPaths` |
+| `FHIR_VERSION`            | `R4`                             | FHIR version: `R4`, `R4B`, or `R5` — determines the model used for FHIRPath evaluation and response compaction |
+| `FHIR_SERVER_URL`         | `<base>/api/FHIR/<FHIR_VERSION>` | Override the derived FHIR API URL for non-standard server layouts |
+| `FHIR_TOKEN_URL`          | `<base>/oauth2/token` | Override the derived token endpoint URL                           |
+| `MCP_TRANSPORT`           | `http`                | `http` for stateless Streamable HTTP, `stdio` for stdio |
+| `PORT`                    | `5000`                | HTTP listener port (1–65535)                                      |
+| `BIND_HOST`               | `127.0.0.1`           | Bind address for HTTP listener — set to `0.0.0.0` for container/LAN access |
+| `ALLOWED_HOSTS`           | —                     | Comma-separated hostnames for DNS rebinding protection — set when exposing HTTP on a public network |
+| `DEBUG`                   | `false`               | Enable verbose FHIR request logging — **logs URLs that may contain PHI** (patient names, identifiers, dates). Treat all production logs as PHI-sensitive. **Blocked when `NODE_ENV=production`** — the bridge refuses to start |
+| `FHIR_METADATA_MODE`      | `strict`              | `/metadata` mismatch handling: `strict` blocks unadvertised params, `warn` allows with warning, `off` disables checks. Both `strict` and `warn` skip entirely absent resource types |
+| `FHIR_DEFAULT_COUNT`      | `20`                  | Default `_count` injected into searches when the resource advertises `_count` in `/metadata` |
+| `FHIR_MAX_COUNT`          | `100`                 | Maximum `_count` allowed — higher values from callers are capped to this |
+| `FHIR_MAX_RESPONSE_BYTES` | `65536`               | Universal byte-limit on tool responses — returns an error instead of the payload when exceeded |
+| `FHIR_REQUEST_TIMEOUT_MS` | `30000`               | Per-attempt timeout (ms) for outgoing FHIR requests — each retry attempt gets its own deadline via `AbortSignal.timeout()` |
+| `FHIR_AUDIT_SINK`          | —                     | Comma-separated audit sinks: `console`, `file`, or both. Off when unset/empty |
+| `FHIR_AUDIT_FILE`          | `./audit.jsonl`       | JSONL audit log path (parent directory must exist) — used when `file` sink is active |
+| `FHIR_PAGINATION_PATHS`     | —                     | Comma-separated path prefixes allowed in pagination URLs — the configured FHIR server path is always allowed; add aliases when the server returns next links with a different proxy prefix (e.g. `FHIRProxy`) |
+| `FHIR_AUDIT_USER_HEADER`   | —                     | HTTP request header whose value is recorded as `user` in audit events (see [Audit user identity](#audit-user-identity)) |
+| `FHIR_RESPONSE_MODE`       | —                     | Default response shape: `compact` (token-efficient, all ops), `full` (raw FHIR, all ops), or `compact-locked` (compact always, `responseMode` param hidden from AI). Unset = searches default compact, direct reads default full |
+| `FHIR_WRITE_CAPABILITIES`   | —                     | Comma-separated write operations to enable: `create`, `update`, `patch`, `delete`. Unset = read-only. Operations are further gated by `/metadata` — only interactions the server advertises are exposed |
+| `FHIR_OPERATIONS`           | —                     | Comma-separated operation catalog keys to enable (e.g. `everything,lastn`). Leading `$` is optional. Set to `none` to disable all operations. Unset = all catalog operations enabled. Operations are further gated by `/metadata` |
+| `FHIR_TERMINOLOGY_BASE_URL` | —                     | FHIR terminology server base URL — enables `terminology_lookup` and `code_search` tools. Use `https://tx.fhir.org/r4` (or `/r5` for R5) for the public HL7 reference server |
+
+When both a derived URL and an explicit override are available, the explicit
+override takes precedence.
 
 ### Key rotation
 
@@ -115,33 +139,18 @@ To rotate:
 > If using an external JWKS (`FHIR_JWKS_URL`), manually add the new public key
 > to that JWKS before step 3.
 
-### Optional
+### Changing FHIR versions
 
-| Variable                  | Default               | Description                                                       |
-| ------------------------- | --------------------- | ----------------------------------------------------------------- |
-| `FHIR_SERVER_URL`         | `<base>/api/FHIR/R4`  | Override the derived FHIR API URL for non-standard server layouts |
-| `FHIR_TOKEN_URL`          | `<base>/oauth2/token` | Override the derived token endpoint URL                           |
-| `MCP_TRANSPORT`           | `http`                | `http` for stateless Streamable HTTP, `stdio` for stdio |
-| `PORT`                    | `5000`                | HTTP listener port (1–65535)                                      |
-| `BIND_HOST`               | `127.0.0.1`           | Bind address for HTTP listener — set to `0.0.0.0` for container/LAN access |
-| `ALLOWED_HOSTS`           | —                     | Comma-separated hostnames for DNS rebinding protection — set when exposing HTTP on a public network |
-| `DEBUG`                   | `false`               | Enable verbose FHIR request logging — **logs URLs that may contain PHI** (patient names, identifiers, dates). Treat all production logs as PHI-sensitive. **Blocked when `NODE_ENV=production`** — the bridge refuses to start |
-| `FHIR_METADATA_MODE`      | `strict`              | `/metadata` mismatch handling: `strict` blocks unadvertised params, `warn` allows with warning, `off` disables checks. Both `strict` and `warn` skip entirely absent resource types |
-| `FHIR_DEFAULT_COUNT`      | `20`                  | Default `_count` injected into searches when the resource advertises `_count` in `/metadata` |
-| `FHIR_MAX_COUNT`          | `100`                 | Maximum `_count` allowed — higher values from callers are capped to this |
-| `FHIR_MAX_RESPONSE_BYTES` | `65536`               | Universal byte-limit on tool responses — returns an error instead of the payload when exceeded |
-| `FHIR_REQUEST_TIMEOUT_MS` | `30000`               | Per-attempt timeout (ms) for outgoing FHIR requests — each retry attempt gets its own deadline via `AbortSignal.timeout()` |
-| `FHIR_AUDIT_SINK`          | —                     | Comma-separated audit sinks: `console`, `file`, or both. Off when unset/empty |
-| `FHIR_AUDIT_FILE`          | `./audit.jsonl`       | JSONL audit log path (parent directory must exist) — used when `file` sink is active |
-| `FHIR_PAGINATION_PATHS`     | —                     | Comma-separated path prefixes allowed in pagination URLs — the configured FHIR server path is always allowed; add aliases when the server returns next links with a different proxy prefix (e.g. `/FHIRProxy/api/FHIR/R4/`) |
-| `FHIR_AUDIT_USER_HEADER`   | —                     | HTTP request header whose value is recorded as `user` in audit events (see [Audit user identity](#audit-user-identity)) |
-| `FHIR_RESPONSE_MODE`       | —                     | Default response shape: `compact` (token-efficient, all ops), `full` (raw FHIR, all ops), or `compact-locked` (compact always, `responseMode` param hidden from AI). Unset = searches default compact, direct reads default full |
-| `FHIR_WRITE_CAPABILITIES`   | —                     | Comma-separated write operations to enable: `create`, `update`, `patch`, `delete`. Unset = read-only. Operations are further gated by `/metadata` — only interactions the server advertises are exposed |
-| `FHIR_OPERATIONS`           | —                     | Comma-separated operation catalog keys to enable (e.g. `everything,lastn`). Leading `$` is optional. Set to `none` to disable all operations. Unset = all catalog operations enabled. Operations are further gated by `/metadata` |
-| `FHIR_TERMINOLOGY_BASE_URL` | —                     | FHIR terminology server base URL — enables `terminology_lookup` and `code_search` tools. Use `https://tx.fhir.org/r4` for the public HL7 reference server |
+Set `FHIR_VERSION` to `R4` (default), `R4B`, or `R5`. This controls:
 
-When both a derived URL and an explicit override are available, the explicit
-override takes precedence.
+- **Server URL** — the derived URL changes to `<base>/api/FHIR/<version>` (unless overridden by `FHIR_SERVER_URL`)
+- **FHIRPath model** — queries use the matching `fhirpath` model context (R4B uses the R4 model)
+- **Response compaction** — type-aware simplifiers use the selected model, including `CodeableReference` support in R5
+
+When switching versions, review `FHIR_SERVER_URL` and
+`FHIR_TERMINOLOGY_BASE_URL` to ensure they reference the correct version
+endpoints. fhirHydrant logs a diagnostic hint at startup when it detects a
+likely URL mismatch.
 
 ### Audit
 
@@ -201,17 +210,17 @@ fhirHydrant shapes search responses to manage token economy and limit PHI exposu
   withheld to respect the caller's filter intent. The `fhirpath` parameter is
   also available on the `paginate` tool. Powered by HL7's
   [`fhirpath`](https://github.com/nicktobey/fhirpath.js) reference
-  implementation with the R4 model context for full choice-type resolution.
+  implementation with the version-matched model context for full choice-type resolution.
 
 - **Compact response mode** — The `responseMode` parameter (available on all
-  resource tools and `paginate`) controls whether responses use a compact
+  resource tools, `paginate`, and `operate`) controls whether responses use a compact
   token-efficient format or raw FHIR JSON. **Compact output is AI-oriented JSON,
   not canonical FHIR** — it is intentionally lossy, optimised for token
   efficiency, and should not be round-tripped back to a FHIR server. Compact
   mode strips FHIR noise (meta, extensions, narrative, contained resources) and
   simplifies data types (e.g. CodeableConcept → `{coding:[{code,display}],text}`,
-  Reference → `"Patient/pat-1"`, Quantity → `{value,unit}`) using R4 model
-  metadata from the `fhirpath` dependency. Compact Bundles preserve native keys
+  Reference → `"Patient/pat-1"`, Quantity → `{value,unit}`) using
+  version-matched model metadata from the `fhirpath` dependency. Compact Bundles preserve native keys
   (`entry`, `link`) for pagination compatibility. Searches default to compact;
   direct reads default to full. Set `FHIR_RESPONSE_MODE` to override or lock
   server-wide — `compact-locked` hides the parameter entirely.
@@ -466,7 +475,7 @@ Set `FHIR_TERMINOLOGY_BASE_URL` to enable two terminology tools that query a FHI
 | `terminology_lookup`  | Look up a single code and return its display name, version, and status   |
 | `code_search`         | Search for codes matching a text filter (default 10 results, max 50)     |
 
-The public HL7 reference server (`https://tx.fhir.org/r4`) supports both systems with no authentication. You can also point at a private or internal terminology server.
+The public HL7 reference server (`https://tx.fhir.org/r4` for R4/R4B, `https://tx.fhir.org/r5` for R5) supports both systems with no authentication. You can also point at a private or internal terminology server.
 
 Search results are FHIR Bundles that may include pagination links. When a Bundle
 contains a `link` with `relation: "next"`, call `paginate` with that

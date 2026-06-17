@@ -36,7 +36,7 @@ export const applyResponsePipeline = (opts: PipelineOpts): PipelineResult | { er
 
    const
       { effectiveMode, wasDefaulted } = resolved,
-      mode = defaultMode && wasDefaulted ? defaultMode : effectiveMode
+      mode = defaultMode && wasDefaulted && !config.responseMode ? defaultMode : effectiveMode
 
    let
       json = JSON.stringify(result, null, 2),

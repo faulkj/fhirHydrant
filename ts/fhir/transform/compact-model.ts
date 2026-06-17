@@ -1,6 +1,6 @@
-import fhirpath_r4_model from "fhirpath/fhir-context/r4/index.js"
+import { fhirModel, fhirVersionLabel } from "./fhir-model.ts"
 
-/** Recursively compacts a FHIR value using R4 type metadata and registered simplifiers. */
+/** Recursively compacts a FHIR value using type metadata and registered simplifiers. */
 export const compactNode = (value: unknown, path: string, isRoot: boolean): unknown => {
    if (value === null || value === undefined) return undefined
    if (Array.isArray(value)) {
@@ -32,12 +32,12 @@ export const compactNode = (value: unknown, path: string, isRoot: boolean): unkn
 }
 
 const
-   raw = fhirpath_r4_model as Record<string, unknown>,
+   raw = fhirModel as Record<string, unknown>,
    p2t = raw.path2TypeWithoutElements as Record<string, string | string[]> | undefined,
    t2p = raw.type2Parent as Record<string, string> | undefined,
    modelOk = !!(p2t && t2p)
 
-modelOk || console.warn("⚠️ fhirpath R4 model metadata unavailable — compact will use key-only stripping")
+modelOk || console.warn(`⚠️ fhirpath model metadata unavailable for ${fhirVersionLabel} — compact will use key-only stripping`)
 
 const
    NOISE = new Set(["meta", "text", "contained", "extension", "modifierExtension", "implicitRules", "language"]),
@@ -96,6 +96,16 @@ const
       Address: (v) => pick(v, ["line", "city", "state", "postalCode"]),
       ContactPoint: (v) => pick(v, ["system", "value"]),
       Period: (v) => pick(v, ["start", "end"]),
+      CodeableReference: (v) => {
+         const
+            ref = typeof v.reference === "object" && v.reference ? SIMPLIFIERS.Reference(v.reference as Record<string, unknown>) : undefined,
+            concept = typeof v.concept === "object" && v.concept ? SIMPLIFIERS.CodeableConcept(v.concept as Record<string, unknown>) : undefined
+         if (!ref && !concept) return undefined
+         const out: Record<string, unknown> = {}
+         ref !== undefined && (out.reference = ref)
+         concept !== undefined && (out.concept = concept)
+         return out
+      },
    },
 
    quantitySimplifier = (v: Record<string, unknown>) => pick(v, ["value", "unit"]),
@@ -116,5 +126,7 @@ const
          return simplifyCoding(v)
       if (typeof v.reference === "string")
          return SIMPLIFIERS.Reference(v)
+      if ((typeof v.reference === "object" && v.reference) || (typeof v.concept === "object" && v.concept))
+         return SIMPLIFIERS.CodeableReference(v)
       return undefined
    }

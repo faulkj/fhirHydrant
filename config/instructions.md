@@ -1,6 +1,6 @@
 # fhirHydrant
 
-fhirHydrant's tools expose FHIR R4 endpoints over MCP.
+fhirHydrant's tools expose FHIR endpoints over MCP.
 
 Use these tools to search for or read clinical resources from the configured
 FHIR server.

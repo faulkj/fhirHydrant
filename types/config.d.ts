@@ -18,9 +18,13 @@ type ResponseMode = "compact" | "full"
 /** Server-wide response mode from FHIR_RESPONSE_MODE env var. */
 type ConfigResponseMode = ResponseMode | "compact-locked" | undefined
 
+/** Supported FHIR version for FHIRPath evaluation and compact model metadata. */
+type FhirVersion = "R4" | "R4B" | "R5"
+
 /** Validated runtime configuration shape — see config.ts. */
 interface Config {
    fhirBaseUrl: string
+   fhirVersion: FhirVersion
    readonly fhirServerUrl: string
    readonly fhirTokenEndpoint: string
    fhirClientId: string
