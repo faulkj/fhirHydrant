@@ -2,7 +2,7 @@
    {
       "resource": "AdverseEvent",
       "toolName": "adverseevent",
-      "description": "Search for or read a FHIR AdverseEvent resource tracking harmful or potentially harmful healthcare events. For direct read, provide _id alone. For search, provide subject (patient reference), study, resultingcondition, or substance. Note: R4 uses 'subject' not 'patient' for this resource. Use actuality to distinguish actual vs. potential events.",
+      "description": "Search for or read a FHIR AdverseEvent resource tracking harmful or potentially harmful healthcare events. For direct read, provide _id alone. For search, provide at least one of subject, study, or research-subject. Note: R4 uses 'subject' not 'patient' for this resource. Use actuality to distinguish actual vs. potential events, seriousness to filter Serious vs Non-Serious.",
       "supportsDirectRead": true,
       "searchParams": {
          "_id": "AdverseEvent resource ID — performs direct read when provided alone",
@@ -13,13 +13,14 @@
          "location": "Location where the event occurred",
          "recorder": "Who recorded the event",
          "resultingcondition": "Resulting Condition reference",
-         "seriousness": "Seriousness of the event",
+         "research-subject": "ResearchSubject FHIR ID",
+         "seriousness": "Seriousness of the event: Serious or Non-Serious",
          "severity": "Severity: mild, moderate, severe",
-         "study": "Research study associated with the event",
-         "subject": "Subject (patient) impacted by the event",
+         "study": "ResearchStudy FHIR ID associated with the event",
+         "subject": "Patient FHIR ID — the subject impacted by the event",
          "substance": "Suspected causal substance or product"
       },
-      "requireOneOf": ["subject", "study", "resultingcondition", "substance"]
+      "requireOneOf": ["subject", "study", "research-subject"]
    },
    {
       "resource": "AllergyIntolerance",
@@ -77,7 +78,7 @@
    {
       "resource": "CarePlan",
       "toolName": "careplan",
-      "description": "Search for or read a FHIR CarePlan resource describing intended care for a patient. For direct read, provide _id alone. For search, provide patient, subject, identifier, encounter, condition, care-team, or based-on. Use category to distinguish plan types and status to filter active, completed, or draft plans.",
+      "description": "Search for or read a FHIR CarePlan resource describing intended care for a patient. For direct read, provide _id alone. For search, category is REQUIRED (use 734163000 for encounter-level CarePlans) along with patient or subject. Use encounter to narrow to a specific encounter.",
       "supportsDirectRead": true,
       "searchParams": {
          "_id": "CarePlan resource ID — performs direct read when provided alone",
@@ -86,23 +87,23 @@
          "activity-reference": "Activity details defined in specific resource (Reference)",
          "based-on": "Fulfills CarePlan reference",
          "care-team": "CareTeam reference involved in the plan",
-         "category": "Type of care plan",
+         "category": "REQUIRED — type of care plan (use 734163000 for encounter-level CarePlans, assess-plan is always included)",
          "condition": "Health issues (Condition references) the plan addresses",
          "date": "Time period the plan covers",
-         "encounter": "Encounter associated with the care plan",
+         "encounter": "Encounter FHIR ID to narrow to a specific encounter's CarePlans",
          "goal": "Desired outcome of plan (Goal reference)",
          "identifier": "Business identifier",
          "instantiates-canonical": "Instantiates FHIR protocol or definition",
          "instantiates-uri": "Instantiates external protocol or definition",
          "intent": "Intent: proposal, plan, order, option",
          "part-of": "Part of referenced CarePlan",
-         "patient": "Patient resource ID or reference",
+         "patient": "Patient FHIR ID",
          "performer": "Matches if the practitioner is listed as a performer in any activity",
          "replaces": "CarePlan replaced by this plan",
          "status": "Status: draft, active, on-hold, revoked, completed, entered-in-error, unknown",
          "subject": "Subject of the care plan (Patient or Group)"
       },
-      "requireOneOf": ["patient", "subject", "identifier", "encounter", "condition", "care-team", "based-on"]
+      "requireCombination": [["category", "patient"], ["category", "subject"]]
    },
    {
       "resource": "CareTeam",
