@@ -153,11 +153,8 @@
       "resource": "Patient",
       "level": ["type"],
       "method": "POST",
-      "description": "Find patient records that match a given set of demographics using probabilistic or deterministic matching. Provide a partial Patient resource in body with the demographics to match (name, birthDate, gender, identifier, etc.). Returns a Bundle of matching Patient resources scored by match quality.",
-      "params": {
-         "onlyCertainMatches": { "type": "string", "optional": true, "description": "Only return matches the server is certain about (true/false)" },
-         "count": { "type": "number", "optional": true, "description": "Maximum number of matches to return" }
-      },
+      "description": "Find patient records that match a given set of demographics. Body MUST be a FHIR Parameters resource with: (1) a 'resource' parameter containing a partial Patient resource with demographics to match (name, birthDate, gender, telecom, address, identifier), and (2) an 'onlyCertainMatches' parameter set to valueBoolean true. Example body: {\"resourceType\":\"Parameters\",\"parameter\":[{\"name\":\"resource\",\"resource\":{\"resourceType\":\"Patient\",\"name\":[{\"family\":\"Smith\",\"given\":[\"John\"]}],\"birthDate\":\"1990-01-01\"}},{\"name\":\"onlyCertainMatches\",\"valueBoolean\":true}]}. Returns a Bundle of matching Patient resources.",
+      "params": {},
       "acceptsBody": true,
       "bundleResponse": true,
       "auditOperation": "match",
