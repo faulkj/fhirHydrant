@@ -1,3 +1,5 @@
+import { config } from "../../config.ts"
+
 /** Canonical CodeSystem URLs keyed by short name */
 export const SYSTEMS: Record<string, string> = {
    loinc: "http://loinc.org",
@@ -18,10 +20,13 @@ export const resolveSystem = (system: string): { url: string, vsUrl: string } | 
 
 /** Fetches JSON from a FHIR terminology server with proper Accept header */
 export const txFetch = async (base: string, path: string, signal?: AbortSignal): Promise<unknown> => {
-   const res = await fetch(`${base}${path}`, {
+   const url = `${base}${path}`
+   config.debug && console.log(`🔤 terminology → ${url}`)
+   const res = await fetch(url, {
       headers: { Accept: "application/fhir+json" },
       signal,
    })
+   config.debug && console.log(`🔤 terminology ← ${res.status} ${res.statusText}`)
    if (!res.ok) {
       const body = await res.text().catch(() => "")
       const err = new Error(`${res.status} ${res.statusText}\n\n${body}`) as Error & { statusCode: number, statusText: string }
