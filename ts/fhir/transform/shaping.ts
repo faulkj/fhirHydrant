@@ -22,7 +22,7 @@ const shapeCount = (params: URLSearchParams, resource: string): { injected: bool
       config.debug && console.log(`✂️ ${resource}: _count${raw === null ? ` not provided, defaulted to ${config.fhirDefaultCount}` : `="${raw}" invalid, replaced with ${config.fhirDefaultCount}`}`)
       return { injected: true, capped: false }
    }
-   if (n > config.fhirMaxCount) {
+   if (config.fhirMaxCount > 0 && n > config.fhirMaxCount) {
       params.set("_count", String(config.fhirMaxCount))
       config.debug && console.log(`✂️ ${resource}: _count=${n} capped to ${config.fhirMaxCount}`)
       return { injected: false, capped: true }

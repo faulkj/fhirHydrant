@@ -200,7 +200,7 @@ when the FHIR server advertises them.
 
 | Feature | Behavior |
 | --- | --- |
-| `_count` default/cap | No `_count` injected by default (server decides page size). Set `FHIR_DEFAULT_COUNT` to inject one; caps explicit caller values at `FHIR_MAX_COUNT` |
+| `_count` default/cap | No `_count` injected by default (server decides page size). Set `FHIR_DEFAULT_COUNT` to inject one; `FHIR_MAX_COUNT` caps explicit caller values (0 = no cap) |
 | Byte limit | `FHIR_MAX_RESPONSE_BYTES` limits every tool response; oversized Bundles are chunked transparently |
 | Auto-retry | Oversized search Bundles attempt local chunking first, then retry with smaller `_count` as a fallback |
 | FHIRPath | `fhirpath` filters the returned FHIR JSON locally and returns matching nodes as an array |
@@ -283,7 +283,7 @@ See [.env.example](.env.example) for a complete sample.
 | `ALLOWED_HOSTS` | unset | Comma-separated hostnames for DNS rebinding protection |
 | `FHIR_METADATA_MODE` | `strict` | `strict`, `warn`, or `off` for `/metadata` validation |
 | `FHIR_DEFAULT_COUNT` | `0` | Default `_count` injected into searches when allowed; 0 = server decides |
-| `FHIR_MAX_COUNT` | `100` | Maximum `_count`; caller values above this are capped |
+| `FHIR_MAX_COUNT` | `0` | Cap on explicit caller `_count` values; 0 = no cap |
 | `FHIR_MAX_RESPONSE_BYTES` | `262144` | Byte limit for tool responses; oversized Bundles are chunked |
 | `FHIR_REQUEST_TIMEOUT_MS` | `30000` | Per-attempt timeout for outgoing FHIR requests |
 | `FHIR_RESPONSE_MODE` | unset | `compact`, `full`, or `compact-locked`; unset means search defaults compact and direct reads default full |

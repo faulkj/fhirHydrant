@@ -28,7 +28,7 @@ export const config: Config = {
    debug: opt("DEBUG")?.toLowerCase() === "true",
    metadataMode: parseMetadataMode(),
    fhirDefaultCount: parseNonNegativeInt("FHIR_DEFAULT_COUNT", 0),
-   fhirMaxCount: parsePositiveInt("FHIR_MAX_COUNT", 100),
+   fhirMaxCount: parseNonNegativeInt("FHIR_MAX_COUNT", 0),
    fhirMaxResponseBytes: parsePositiveInt("FHIR_MAX_RESPONSE_BYTES", 262144),
    auditSinks: parseAuditSinks(),
    auditFile: opt("FHIR_AUDIT_FILE") ?? "./audit.jsonl",
@@ -45,7 +45,7 @@ config.debug && console.log(`🔑 Active kid: ${config.fhirActiveKey.kid}`)
 if (retiredKeys.length)
    console.log(`🔑 JWKS: ${1 + retiredKeys.length} keys`)
 
-if (config.fhirDefaultCount > 0 && config.fhirDefaultCount > config.fhirMaxCount)
+if (config.fhirDefaultCount > 0 && config.fhirMaxCount > 0 && config.fhirDefaultCount > config.fhirMaxCount)
    throw new Error(
       `FHIR_DEFAULT_COUNT (${config.fhirDefaultCount}) must not exceed FHIR_MAX_COUNT (${config.fhirMaxCount})`,
    )
