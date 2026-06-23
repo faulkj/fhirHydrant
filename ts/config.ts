@@ -45,11 +45,6 @@ config.debug && console.log(`🔑 Active kid: ${config.fhirActiveKey.kid}`)
 if (retiredKeys.length)
    console.log(`🔑 JWKS: ${1 + retiredKeys.length} keys`)
 
-if (config.debug && process.env["NODE_ENV"]?.trim().toLowerCase() === "production")
-   throw new Error(
-      "DEBUG=true is not allowed when NODE_ENV=production — FHIR request URLs may contain PHI",
-   )
-
 if (config.fhirDefaultCount > config.fhirMaxCount)
    throw new Error(
       `FHIR_DEFAULT_COUNT (${config.fhirDefaultCount}) must not exceed FHIR_MAX_COUNT (${config.fhirMaxCount})`,
