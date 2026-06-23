@@ -1,6 +1,6 @@
 {
    "name": "fhirhydrant",
-   "version": "0.7.1",
+   "version": "0.7.2",
    "description": "Node.js FHIR MCP server with SMART Backend Services, metadata-aware search/CRUD tools, compact responses, and FHIRPath filtering.",
    "author": "Joshua Faulkenberry <j@joshuafaulkenberry.com> (https://joshuafaulkenberry.com/)",
    "license": "SEE LICENSE IN LICENSE.md",
@@ -44,7 +44,7 @@
       "build": "tsup ts/server.ts --format esm --out-dir bin --no-splitting --platform node --clean",
       "prepublishOnly": "npm run build",
       "start": "node bin/server.js",
-      "dev": "node --env-file=.env --experimental-strip-types --watch ts/server.ts",
+      "dev": "node --env-file=.env --experimental-strip-types --watch ts/server.ts --dev",
       "inspector": "npx @modelcontextprotocol/inspector"
    },
    "dependencies": {

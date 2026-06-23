@@ -40,8 +40,9 @@ const
    explicitTermUrl = config.fhirTerminologyBaseUrl,
 
    _ = (
+      config.debug && console.info(`📋 fhirhydrant v${pkgVersion}`),
       initAuditSinks(config.auditSinks, config.auditFile),
-      console.info(`📋 FHIR version: ${fhirVersionLabel}`),
+      config.debug && console.info(`📋 FHIR version: ${fhirVersionLabel}`),
       config.auditUserHeader && console.info(`📋 User header: ${config.auditUserHeader}`),
       config.writeCapabilities.size > 0 && console.warn(`\x1b[31m⚠️  Write capabilities enabled: ${[...config.writeCapabilities].join(", ")}\x1b[0m`),
       explicitServerUrl && /\/R[45]B?(?:[\/?#]|$)/i.test(explicitServerUrl)

@@ -22,7 +22,7 @@ export const config: Config = {
    fhirRetiredKeys: retiredKeys,
    fhirJwksUrl: opt("FHIR_JWKS_URL"),
    port: parsePort(),
-   bindHost: opt("BIND_HOST") ?? (process.env["NODE_ENV"] === "development" ? "127.0.0.1" : "0.0.0.0"),
+   bindHost: opt("BIND_HOST") ?? (process.argv.includes("--dev") ? "127.0.0.1" : "0.0.0.0"),
    allowedHosts: parseAllowedHosts(),
    transport: parseTransport(),
    debug: opt("DEBUG")?.toLowerCase() === "true",
@@ -41,7 +41,7 @@ export const config: Config = {
    operations: parseOperations(),
 }
 
-console.log(`🔑 Active kid: ${config.fhirActiveKey.kid}`)
+config.debug && console.log(`🔑 Active kid: ${config.fhirActiveKey.kid}`)
 if (retiredKeys.length)
    console.log(`🔑 JWKS: ${1 + retiredKeys.length} keys`)
 

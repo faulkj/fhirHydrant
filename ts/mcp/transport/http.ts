@@ -39,7 +39,7 @@ export const startHttp = async (): Promise<TransportHandle> => {
 
    if (!config.fhirJwksUrl) {
       app.get("/jwks", jwksHandler)
-      console.info(`\x1b[35m🔑 Serving JWKS at http://${config.bindHost === "0.0.0.0" ? "localhost" : config.bindHost}:${config.port}/jwks\x1b[0m`)
+      console.info(`\x1b[35m🔑 Serving JWKS at http://${config.bindHost === "127.0.0.1" ? "localhost" : config.bindHost}:${config.port}/jwks\x1b[0m`)
    } else
       console.info("🔑 External JWKS URL configured — /jwks disabled")
 
@@ -70,7 +70,7 @@ export const startHttp = async (): Promise<TransportHandle> => {
 
    const httpServer = await new Promise<ReturnType<typeof app.listen>>((resolve) => {
       const s = app.listen(config.port, config.bindHost, () => {
-         const displayHost = config.bindHost === "0.0.0.0" || config.bindHost === "127.0.0.1"
+         const displayHost = config.bindHost === "127.0.0.1"
             ? "localhost"
             : config.bindHost
          console.info(`\x1b[34m🔥 fhirhydrant listening on http://${displayHost}:${config.port}/mcp\x1b[0m`)
