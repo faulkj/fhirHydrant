@@ -27,7 +27,7 @@ const
             `/ValueSet/$expand?url=${encodeURIComponent(vsUrl)}&filter=${encodeURIComponent(filter)}&count=${count}&offset=${offset}`,
             signal,
          ),
-         3, config.fhirRequestTimeoutMs,
+         3, config.fhirTerminologyTimeoutMs,
       ) as Record<string, unknown>
 
 const

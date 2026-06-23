@@ -30,7 +30,7 @@ export const addTerminologyLookup = (
          try {
             const
                path = `/CodeSystem/$lookup?system=${encodeURIComponent(resolved.url)}&code=${encodeURIComponent(code)}`,
-               result = await withRetry("terminology_lookup", (signal) => txFetch(base, path, signal), 3, config.fhirRequestTimeoutMs) as Record<string, unknown>,
+               result = await withRetry("terminology_lookup", (signal) => txFetch(base, path, signal), 3, config.fhirTerminologyTimeoutMs) as Record<string, unknown>,
                params = Array.isArray(result.parameter) ? result.parameter as Array<Record<string, unknown>> : [],
                display = params.find(p => p.name === "display")?.valueString as string | undefined,
                version = params.find(p => p.name === "version")?.valueString as string | undefined,

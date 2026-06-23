@@ -37,6 +37,7 @@ export const config: Config = {
    paginationPaths: parsePaginationPaths(),
    responseMode: parseResponseMode(),
    fhirTerminologyBaseUrl: (opt("FHIR_TERMINOLOGY_BASE_URL")?.replace(/\/+$/, "") || undefined),
+   fhirTerminologyTimeoutMs: parsePositiveInt("FHIR_TERMINOLOGY_TIMEOUT_MS", 60000),
    writeCapabilities: parseWriteCapabilities(),
    operations: parseOperations(),
 }

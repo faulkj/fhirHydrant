@@ -47,6 +47,7 @@ interface Config {
    paginationPaths: string[]
    responseMode: ConfigResponseMode
    fhirTerminologyBaseUrl?: string
+   fhirTerminologyTimeoutMs: number
    writeCapabilities: Set<WriteAction>
    operations: Set<string> | undefined
 }

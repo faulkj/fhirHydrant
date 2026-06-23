@@ -30,8 +30,15 @@ export const filterOperationsByMetadata = (
       }
       if (meta) {
          const opName = op.operation.replace(/^\$/, "")
-         if (!meta.operations.includes(opName))
-            config.debug && console.log(`🏥 ${op.resource} does not advertise ${op.operation} — registering anyway`)
+         if (!meta.operations.includes(opName)) {
+            if (config.metadataMode === "strict") {
+               const reason = `${op.resource} does not advertise ${op.operation}`
+               config.debug && console.warn(`🏥 ${reason} — operation "${op.key}" skipped`)
+               skippedOps.push({ key: op.key, reason, gate: "metadata" })
+               continue
+            }
+            config.debug && console.log(`🏥 ${op.resource} does not advertise ${op.operation} — registering anyway (warn mode)`)
+         }
       }
       enabled.push(op)
    }
