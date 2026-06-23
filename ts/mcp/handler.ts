@@ -11,6 +11,7 @@ import { responseNote, bundleStats } from "../fhir/transform/response-notes.ts"
 import { checkRuntimeCapability } from "./validation.ts"
 import { extractFhirPath, applyFhirPath } from "../fhir/transform/fhirpath.ts"
 import { extractResponseMode, resolveResponseMode, compact } from "../fhir/transform/compact.ts"
+import { tryChunkBundle } from "../fhir/transform/bundle-chunks.ts"
 import { validateResourceRequest } from "./request-guards.ts"
 import { isWriteOp, executeWrite } from "./handler-write.ts"
 
@@ -98,6 +99,11 @@ export const makeHandler =
             ].filter(Boolean), prefix = notes.length ? notes.join("\n") + "\n\n" : ""
             shaped = enforceByteLimit(`${prefix}${json}`, config.fhirMaxResponseBytes)
             if (!shaped.isError || !search || !stats) break
+            const chunked = tryChunkBundle(JSON.parse(json), prefix, config.fhirMaxResponseBytes)
+            if (chunked) {
+               shaped = { text: chunked.text }
+               break
+            }
             const next = Math.floor((currentCount || stats.entries || config.fhirDefaultCount) / 2)
             if (next < 1) break
             currentCount = next

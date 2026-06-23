@@ -1,8 +1,8 @@
 import {
    get, opt, parseTransport, parsePort, parseMetadataMode,
    parseResponseMode, parseAllowedHosts, parsePaginationPaths,
-   parsePositiveInt, parseAuditSinks, parseKeys, parseWriteCapabilities,
-   parseOperations, parseFhirVersion,
+   parsePositiveInt, parseNonNegativeInt, parseAuditSinks, parseKeys,
+   parseWriteCapabilities, parseOperations, parseFhirVersion,
 } from "./config-parsers.ts"
 
 /** Validated runtime configuration loaded from environment variables. */
@@ -27,9 +27,9 @@ export const config: Config = {
    transport: parseTransport(),
    debug: opt("DEBUG")?.toLowerCase() === "true",
    metadataMode: parseMetadataMode(),
-   fhirDefaultCount: parsePositiveInt("FHIR_DEFAULT_COUNT", 20),
+   fhirDefaultCount: parseNonNegativeInt("FHIR_DEFAULT_COUNT", 0),
    fhirMaxCount: parsePositiveInt("FHIR_MAX_COUNT", 100),
-   fhirMaxResponseBytes: parsePositiveInt("FHIR_MAX_RESPONSE_BYTES", 65536),
+   fhirMaxResponseBytes: parsePositiveInt("FHIR_MAX_RESPONSE_BYTES", 262144),
    auditSinks: parseAuditSinks(),
    auditFile: opt("FHIR_AUDIT_FILE") ?? "./audit.jsonl",
    auditUserHeader: opt("FHIR_AUDIT_USER_HEADER")?.trim() || undefined,
@@ -45,7 +45,7 @@ config.debug && console.log(`🔑 Active kid: ${config.fhirActiveKey.kid}`)
 if (retiredKeys.length)
    console.log(`🔑 JWKS: ${1 + retiredKeys.length} keys`)
 
-if (config.fhirDefaultCount > config.fhirMaxCount)
+if (config.fhirDefaultCount > 0 && config.fhirDefaultCount > config.fhirMaxCount)
    throw new Error(
       `FHIR_DEFAULT_COUNT (${config.fhirDefaultCount}) must not exceed FHIR_MAX_COUNT (${config.fhirMaxCount})`,
    )

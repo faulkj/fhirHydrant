@@ -8,6 +8,8 @@ import { emitAudit, auditTime, errorStatus } from "../../audit.ts"
 import { responseNote, bundleStats } from "../../fhir/transform/response-notes.ts"
 import { extractFhirPath, applyFhirPath } from "../../fhir/transform/fhirpath.ts"
 import { extractResponseMode, resolveResponseMode, compact } from "../../fhir/transform/compact.ts"
+import { isChunkUrl, retrieveChunk, tryChunkBundle } from "../../fhir/transform/bundle-chunks.ts"
+import { validatePageUrl } from "./validate-page-url.ts"
 import { readOnlyAnnotations } from "../annotations.ts"
 
 /** Registers the paginate tool for fetching next-page Bundle results. */
@@ -27,10 +29,20 @@ export const addPaginate = (
             return { content: [{ type: "text" as const, text: "Invalid responseMode — must be \"compact\" or \"full\"" }], isError: true }
          const { effectiveMode, wasDefaulted } = resolved
          try {
-            const
-               validatedUrl = validatePageUrl(args["url"] as string),
-               client = createFhirClient()
+            const validatedUrl = validatePageUrl(args["url"] as string)
 
+            if (isChunkUrl(validatedUrl)) {
+               const text = retrieveChunk(validatedUrl)
+               if (!text) {
+                  emitAudit({ ts: new Date().toISOString(), tool: "paginate", operation: "paginate", status: "error", durationMs: auditTime(t0) })
+                  return { content: [{ type: "text" as const, text: (messages as Record<string, string>)["paginationChunkExpired"] ?? "Chunk expired. Re-fetch the original server page URL." }], isError: true }
+               }
+               console.log("🟢 Paginate (chunk)")
+               emitAudit({ ts: new Date().toISOString(), tool: "paginate", operation: "paginate", status: "ok", durationMs: auditTime(t0) })
+               return { content: [{ type: "text" as const, text }] }
+            }
+
+            const client = createFhirClient()
             config.debug && console.log(`🔥 Paginate → ${validatedUrl}`)
 
             const result = await withRetry(
@@ -72,6 +84,24 @@ export const addPaginate = (
                ].filter(Boolean),
                prefix = notes.length ? notes.join("\n") + "\n\n" : "",
                shaped = enforceByteLimit(`${prefix}${json}`, config.fhirMaxResponseBytes)
+
+            if (shaped.isError) {
+               const chunked = tryChunkBundle(JSON.parse(json), prefix, config.fhirMaxResponseBytes)
+               if (chunked) {
+                  console.log("🟢 Paginate OK (chunked)")
+                  emitAudit({
+                     ts: new Date().toISOString(), tool: "paginate", operation: "paginate",
+                     status: "truncated", durationMs: auditTime(t0), httpStatus: 200,
+                     jsonBytes: Buffer.byteLength(json, "utf8"),
+                     ...(stats && { bundleEntries: stats.entries, bundleTotal: stats.total, hasNext: !!stats.nextUrl }),
+                     ...(filtered && { fhirpathFiltered: true, fhirpathMatchCount: matchCount }),
+                     responseMode: effectiveMode,
+                     ...(compacted && { compacted: true }),
+                  })
+                  return { content: [{ type: "text" as const, text: chunked.text }] }
+               }
+            }
+
             console.log("🟢 Paginate OK")
             emitAudit({
                ts: new Date().toISOString(), tool: "paginate", operation: "paginate",
@@ -97,24 +127,4 @@ export const addPaginate = (
          }
       },
    )
-}
-
-const validatePageUrl = (url: string): string => {
-   const
-      baseHref = config.fhirServerUrl.replace(/\/?$/, "/"),
-      serverUrl = new URL(baseHref),
-      nextUrl = new URL(url, baseHref)
-
-   if (nextUrl.origin !== serverUrl.origin)
-      throw new Error(messages.paginationOriginMismatch
-         .replace("{actual}", nextUrl.origin)
-         .replace("{expected}", serverUrl.origin))
-
-   const
-      basePath = serverUrl.pathname.replace(/\/*$/, "/"),
-      prefixes = [...(basePath.length > 1 ? [basePath] : []), ...config.paginationPaths]
-   if (prefixes.length && !prefixes.some((p) => nextUrl.pathname === p.slice(0, -1) || nextUrl.pathname.startsWith(p)))
-      throw new Error(messages.paginationPathMismatch
-         .replace("{actual}", nextUrl.pathname))
-   return nextUrl.toString()
 }

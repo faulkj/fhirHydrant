@@ -41,6 +41,9 @@
 
    "responseModeCompact": "Compact mode applied — pass responseMode=full for raw FHIR JSON.",
 
+   "paginationChunked": "Page too large for single response — delivering entries in chunks. Follow the next link to continue.",
+   "paginationChunkExpired": "Local chunk expired or evicted. Re-fetch the original server page URL to retry.",
+
    "terminologyInvalidSystem": "Invalid system \"{system}\" — expected \"loinc\" or \"snomed\"",
    
    "terminologyInvalidCount": "Invalid count \"{count}\" — must be a positive integer (max 50)",

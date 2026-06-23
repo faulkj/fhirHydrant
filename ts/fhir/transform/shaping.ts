@@ -17,6 +17,7 @@ const shapeCount = (params: URLSearchParams, resource: string): { injected: bool
       raw = params.get("_count"),
       n = raw !== null && /^\d+$/.test(raw) ? Number(raw) : NaN
    if (raw === null || !Number.isFinite(n) || n < 1) {
+      if (config.fhirDefaultCount === 0) return { injected: false, capped: false }
       params.set("_count", String(config.fhirDefaultCount))
       config.debug && console.log(`✂️ ${resource}: _count${raw === null ? ` not provided, defaulted to ${config.fhirDefaultCount}` : `="${raw}" invalid, replaced with ${config.fhirDefaultCount}`}`)
       return { injected: true, capped: false }

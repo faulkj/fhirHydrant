@@ -106,6 +106,16 @@ export const parsePositiveInt = (key: string, fallback: number): number => {
    return val
 }
 
+/** Parses a non-negative-integer env var (0 allowed); falls back to the given default if unset. */
+export const parseNonNegativeInt = (key: string, fallback: number): number => {
+   const
+      raw = opt(key),
+      val = raw ? (/^\d+$/.test(raw) ? Number(raw) : NaN) : fallback
+   if (!Number.isFinite(val) || val < 0)
+      throw new Error(`Invalid ${key}="${raw}" — must be a non-negative integer`)
+   return val
+}
+
 /** Parses FHIR_AUDIT_SINK into a list of valid sink names; warns about and skips unknowns. */
 export const parseAuditSinks = (): AuditSinkName[] => {
    const

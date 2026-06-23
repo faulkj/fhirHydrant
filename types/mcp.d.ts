@@ -30,3 +30,8 @@ interface TransportHandle {
 type GuardResult =
    | { ok: true; directId: string | undefined; op: AuditEvent["operation"]; parsedBody?: unknown }
    | { ok: false; response: { content: { type: "text"; text: string }[]; isError: true } }
+
+/** Result from tryChunkBundle when chunking is possible. */
+interface ChunkBuildResult {
+   text: string
+}

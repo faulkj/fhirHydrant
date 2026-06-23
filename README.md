@@ -200,9 +200,9 @@ when the FHIR server advertises them.
 
 | Feature | Behavior |
 | --- | --- |
-| `_count` default/cap | Injects `FHIR_DEFAULT_COUNT` when allowed and caps caller values at `FHIR_MAX_COUNT` |
-| Byte limit | `FHIR_MAX_RESPONSE_BYTES` limits every tool response |
-| Auto-retry | Oversized search Bundles retry with smaller `_count` down to 1 |
+| `_count` default/cap | No `_count` injected by default (server decides page size). Set `FHIR_DEFAULT_COUNT` to inject one; caps explicit caller values at `FHIR_MAX_COUNT` |
+| Byte limit | `FHIR_MAX_RESPONSE_BYTES` limits every tool response; oversized Bundles are chunked transparently |
+| Auto-retry | Oversized search Bundles attempt local chunking first, then retry with smaller `_count` as a fallback |
 | FHIRPath | `fhirpath` filters the returned FHIR JSON locally and returns matching nodes as an array |
 | Compact mode | `responseMode=compact` strips common FHIR envelope noise and simplifies datatypes |
 | Full mode | `responseMode=full` returns raw FHIR JSON |
@@ -279,12 +279,12 @@ See [.env.example](.env.example) for a complete sample.
 | `FHIR_JWKS_URL` | unset | External JWKS URL. Omit in HTTP mode to enable built-in `/jwks` |
 | `MCP_TRANSPORT` | `http` | `http` or `stdio` |
 | `PORT` | `5000` | HTTP listener port |
-| `BIND_HOST` | `0.0.0.0` (or `127.0.0.1` when `NODE_ENV=development`) | HTTP bind address |
+| `BIND_HOST` | `0.0.0.0` (or `127.0.0.1` with `--dev` flag) | HTTP bind address |
 | `ALLOWED_HOSTS` | unset | Comma-separated hostnames for DNS rebinding protection |
 | `FHIR_METADATA_MODE` | `strict` | `strict`, `warn`, or `off` for `/metadata` validation |
-| `FHIR_DEFAULT_COUNT` | `20` | Default `_count` injected into searches when allowed |
+| `FHIR_DEFAULT_COUNT` | `0` | Default `_count` injected into searches when allowed; 0 = server decides |
 | `FHIR_MAX_COUNT` | `100` | Maximum `_count`; caller values above this are capped |
-| `FHIR_MAX_RESPONSE_BYTES` | `65536` | Byte limit for tool responses |
+| `FHIR_MAX_RESPONSE_BYTES` | `262144` | Byte limit for tool responses; oversized Bundles are chunked |
 | `FHIR_REQUEST_TIMEOUT_MS` | `30000` | Per-attempt timeout for outgoing FHIR requests |
 | `FHIR_RESPONSE_MODE` | unset | `compact`, `full`, or `compact-locked`; unset means search defaults compact and direct reads default full |
 | `FHIR_WRITE_CAPABILITIES` | unset | Comma-separated write actions: `create`, `update`, `patch`, `delete` |
