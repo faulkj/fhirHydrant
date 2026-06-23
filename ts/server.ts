@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
-// Patch console methods to prepend ISO timestamps
-for (const level of ["log", "info", "warn", "error"] as const) {
-   const original = console[level].bind(console)
-   console[level] = (...args: unknown[]) => original(new Date().toISOString().replace("T", " ").slice(0, 19), ...args)
+// Patch console methods to prepend ISO timestamps (dev mode only — Azure already timestamps)
+if (process.argv.includes("--dev")) {
+   for (const level of ["log", "info", "warn", "error"] as const) {
+      const original = console[level].bind(console)
+      console[level] = (...args: unknown[]) => original(new Date().toISOString().replace("T", " ").slice(0, 19), ...args)
+   }
 }
 
 // stdio: redirect stdout logging to stderr before anything else runs
