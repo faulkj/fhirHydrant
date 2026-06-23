@@ -13,14 +13,17 @@ export const startHttp = async (): Promise<TransportHandle> => {
          await import("@modelcontextprotocol/express"),
       { NodeStreamableHTTPServerTransport } =
          await import("@modelcontextprotocol/node"),
-      app = createMcpExpressApp(
-         config.allowedHosts
-            ? { allowedHosts: config.allowedHosts }
-            : undefined,
-      ),
+      app = createMcpExpressApp({
+         host: config.bindHost,
+         ...(config.allowedHosts ? { allowedHosts: config.allowedHosts } : {}),
+      }),
       transport = new NodeStreamableHTTPServerTransport({
          sessionIdGenerator: undefined,
       })
+
+   config.debug && console.info(`🌐 HTTP bind host: ${config.bindHost}; allowed hosts: ${config.allowedHosts?.join(", ") ?? "not restricted"}`)
+
+   app.use(logFailedRequest)
 
    let mcpReady = false
    let connectedServer: import("@modelcontextprotocol/server").McpServer | undefined
@@ -131,4 +134,13 @@ const
       res.setHeader("Access-Control-Allow-Methods", "GET,HEAD,POST,OPTIONS")
       res.setHeader("Access-Control-Allow-Headers", corsAllowedHeaders)
       res.setHeader("Access-Control-Expose-Headers", corsExposedHeaders)
+   },
+
+   logFailedRequest = (req: Req, res: Res, next: Next) => {
+      res.on("finish", () => {
+         if (res.statusCode < 400)
+            return
+         console.warn(`🌐 Request failed status=${res.statusCode} method=${req.method} path=${req.originalUrl} host=${req.headers.host ?? "-"} origin=${req.get("origin") ?? "-"} contentType=${req.get("content-type") ?? "-"} contentLength=${req.get("content-length") ?? "0"}`)
+      })
+      next()
    }
