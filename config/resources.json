@@ -2,7 +2,7 @@
    {
       "resource": "AdverseEvent",
       "toolName": "adverseevent",
-      "description": "Search for or read a FHIR AdverseEvent resource tracking harmful or potentially harmful healthcare events. For direct read, provide _id alone. For search, provide at least one of subject, study, or research-subject. Note: R4 uses 'subject' not 'patient' for this resource. Use actuality to distinguish actual vs. potential events, seriousness to filter Serious vs Non-Serious.",
+      "description": "Search for or read a FHIR AdverseEvent resource tracking harmful or potentially harmful healthcare events. For direct read, provide _id alone. For search, provide subject + study together, subject + research-subject, or research-subject alone. All ID values are raw FHIR IDs (not prefixed with resource type). Use seriousness to filter Serious vs Non-Serious, actuality to distinguish actual vs potential.",
       "supportsDirectRead": true,
       "searchParams": {
          "_id": "AdverseEvent resource ID — performs direct read when provided alone",
@@ -11,16 +11,16 @@
          "date": "When the event occurred",
          "event": "Type of adverse event (coded)",
          "location": "Location where the event occurred",
-         "recorder": "Who recorded the event",
+         "recorder": "Who recorded the adverse event (user who first recorded it)",
+         "research-subject": "ResearchSubject FHIR ID (raw ID, no prefix)",
          "resultingcondition": "Resulting Condition reference",
-         "research-subject": "ResearchSubject FHIR ID",
          "seriousness": "Seriousness of the event: Serious or Non-Serious",
          "severity": "Severity: mild, moderate, severe",
-         "study": "ResearchStudy FHIR ID associated with the event",
-         "subject": "Patient FHIR ID — the subject impacted by the event",
+         "study": "ResearchStudy FHIR ID (raw ID, no prefix)",
+         "subject": "Patient FHIR ID (raw ID, no Patient/ prefix)",
          "substance": "Suspected causal substance or product"
       },
-      "requireOneOf": ["subject", "study", "research-subject"]
+      "requireCombination": [["subject", "study"], ["subject", "research-subject"], ["research-subject"]]
    },
    {
       "resource": "AllergyIntolerance",
