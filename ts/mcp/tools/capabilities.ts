@@ -9,6 +9,7 @@ import { formatFhirError } from "../../fhir/utils.ts"
 import { emitAudit, auditTime, errorStatus } from "../../audit.ts"
 import { getEnabledActions } from "../validation.ts"
 import { getEnabledOperations, getSkippedOperations } from "../operations.ts"
+import { readOnlyAnnotations } from "../annotations.ts"
 
 /** Registers the capabilities tool for querying the FHIR server's CapabilityStatement. */
 export const addCapabilities = (
@@ -16,7 +17,7 @@ export const addCapabilities = (
 ): void => {
    server.registerTool(
       "capabilities",
-      { description, inputSchema },
+      { description, inputSchema, annotations: readOnlyAnnotations },
       async (args: Record<string, unknown>) => {
          const t0 = Date.now()
          try {

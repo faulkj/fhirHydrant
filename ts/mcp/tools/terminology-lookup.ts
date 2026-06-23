@@ -5,6 +5,7 @@ import { config } from "../../config.ts"
 import { withRetry, formatFhirError } from "../../fhir/utils.ts"
 import { emitAudit, auditTime, errorStatus } from "../../audit.ts"
 import { resolveSystem, txFetch } from "../../fhir/terminology/systems.ts"
+import { readOnlyAnnotations } from "../annotations.ts"
 
 /** Registers the terminology_lookup tool for CodeSystem/$lookup queries */
 export const addTerminologyLookup = (
@@ -12,7 +13,7 @@ export const addTerminologyLookup = (
 ): void => {
    server.registerTool(
       "terminology_lookup",
-      { description, inputSchema },
+      { description, inputSchema, annotations: readOnlyAnnotations },
       async (args: Record<string, unknown>) => {
          const
             t0 = Date.now(),

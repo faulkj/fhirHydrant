@@ -6,6 +6,7 @@ import { enforceByteLimit, formatFhirError } from "../../fhir/utils.ts"
 import { emitAudit, auditTime, errorStatus } from "../../audit.ts"
 import { resolveSystem } from "../../fhir/terminology/systems.ts"
 import { loincSearch, snomedSearch } from "../../fhir/terminology/search.ts"
+import { readOnlyAnnotations } from "../annotations.ts"
 
 const
    text = (s: string) => ({ type: "text" as const, text: s }),
@@ -22,7 +23,7 @@ export const addCodeSearch = (
 ): void => {
    server.registerTool(
       "code_search",
-      { description, inputSchema },
+      { description, inputSchema, annotations: readOnlyAnnotations },
       async (args: Record<string, unknown>) => {
          const
             t0 = Date.now(),

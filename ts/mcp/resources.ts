@@ -9,6 +9,7 @@ import { parseGrantedScopes } from "../fhir/auth/scopes.ts"
 import { filterByMetadata, filterByScopes } from "./filter-definitions.ts"
 import { getEnabledActions } from "./validation.ts"
 import { makeHandler } from "./handler.ts"
+import { readOnlyAnnotations, writeAnnotations } from "./annotations.ts"
 
 let registeredCount = 0
 
@@ -19,7 +20,7 @@ const
 const augmentSchema = (
    def: ResourceDefinition, meta: ResourceMeta | undefined,
    controlParams: Record<string, string>, scopeMap: Map<string, Set<ScopePermission>>,
-): { schema: z.ZodObject<z.ZodRawShape>; injected: string[]; description: string } => {
+): { schema: z.ZodObject<z.ZodRawShape>; injected: string[]; description: string; actions: ToolAction[] } => {
    const merged = { ...def.searchParams }, injected: string[] = []
    for (const [param, desc] of Object.entries(controlParams)) {
       if (merged[param]) continue
@@ -65,7 +66,7 @@ const augmentSchema = (
          ? `${def.description} ${writeHints}`
          : def.description
 
-   return { schema: z.object(shape), injected, description }
+   return { schema: z.object(shape), injected, description, actions }
 }
 
 /** Returns the number of resource tools registered after metadata + scope gating. */
@@ -85,11 +86,18 @@ export const registerAll = (server: McpServer): void => {
    for (const def of scopeResult.definitions) {
       const
          meta = getResourceMeta(def.resource),
-         { schema, injected, description } = augmentSchema(def, meta, controlParams, scopeMap)
+         { schema, injected, description, actions } = augmentSchema(def, meta, controlParams, scopeMap),
+         hasWrites = actions.some((a) => WRITE_WITH_BODY.has(a) || a === "delete"),
+         annotations = hasWrites
+            ? writeAnnotations(
+               actions.includes("delete"),
+               !actions.some((a) => a === "create" || a === "patch"),
+            )
+            : readOnlyAnnotations
       config.debug && injected.length && console.log(`📋 ${def.resource}: injected ${injected.join(", ")}`)
       server.registerTool(
          def.toolName,
-         { description, inputSchema: schema },
+         { description, inputSchema: schema, annotations },
          makeHandler(def.toolName),
       )
    }

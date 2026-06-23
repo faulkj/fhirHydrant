@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/server"
 import { z } from "zod"
 import { config } from "../../config.ts"
 import { makeOperateHandler } from "../handler-operate.ts"
+import { readOnlyAnnotations, writeAnnotations } from "../annotations.ts"
 
 /** Registers the operate MCP tool with a dynamic description built from the enabled catalog. */
 export const addOperate = (
@@ -19,6 +20,9 @@ export const addOperate = (
          opSummaries.join(", "),
          ". Call capabilities for full parameter details.",
       ].join(""),
+      annotations = enabledOps.every((o) => o.method === "GET")
+         ? readOnlyAnnotations
+         : writeAnnotations(false, false),
 
       shape: Record<string, z.ZodTypeAny> = {
          operation: z.string().describe("Operation catalog key (e.g. everything, lastn, validate, docref). Leading $ is optional."),
@@ -34,7 +38,7 @@ export const addOperate = (
 
    server.registerTool(
       "operate",
-      { description, inputSchema: z.object(shape) },
+      { description, inputSchema: z.object(shape), annotations },
       makeOperateHandler(enabledOps),
    )
 }

@@ -8,6 +8,7 @@ import { emitAudit, auditTime, errorStatus } from "../../audit.ts"
 import { responseNote, bundleStats } from "../../fhir/transform/response-notes.ts"
 import { extractFhirPath, applyFhirPath } from "../../fhir/transform/fhirpath.ts"
 import { extractResponseMode, resolveResponseMode, compact } from "../../fhir/transform/compact.ts"
+import { readOnlyAnnotations } from "../annotations.ts"
 
 /** Registers the paginate tool for fetching next-page Bundle results. */
 export const addPaginate = (
@@ -15,7 +16,7 @@ export const addPaginate = (
 ): void => {
    server.registerTool(
       "paginate",
-      { description, inputSchema },
+      { description, inputSchema, annotations: readOnlyAnnotations },
       async (args: Record<string, unknown>) => {
          const
             fhirpathExpr = extractFhirPath(args),
