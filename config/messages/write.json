@@ -1,0 +1,13 @@
+{
+   "writeNotEnabled": "Write operation \"{action}\" is not enabled — set FHIR_WRITE_CAPABILITIES to allow it",
+   "writeNotAdvertised": "{resourceType} does not advertise {action} interaction in /metadata",
+   "writeMissingBody": "{action} requires a 'body' parameter containing valid FHIR JSON",
+   "writeMissingId": "{action} requires '_id' to identify the target resource",
+   "writeInvalidBody": "body is not valid JSON: {error}",
+   "writeResourceTypeMismatch": "body.resourceType ({actual}) does not match tool resource type ({expected})",
+   "writePatchInvalidFormat": "patch body must be a JSON Patch array (RFC 6902) — expected [{op, path, ...}]",
+   "writeActionCreate": "Use action=create with body containing full FHIR {resourceType} JSON to create a new resource.",
+   "writeActionUpdate": "Use action=update with _id and body containing the complete FHIR {resourceType} JSON to replace an existing resource.",
+   "writeActionPatch": "Use action=patch with _id and body containing a JSON Patch array (RFC 6902) to partially update a {resourceType}.",
+   "writeActionDelete": "Use action=delete with _id to delete a {resourceType}."
+}

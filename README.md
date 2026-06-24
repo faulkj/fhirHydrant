@@ -383,7 +383,7 @@ Everything in `config/` is editable without source changes.
 | `operations.json` | Named operation catalog for `operate` |
 | `search-controls.json` | Descriptions for `_count`, `_sort`, `_summary`, `_elements`, `_include`, `_revinclude`, `fhirpath`, `responseMode`, `maxResults`, and `prefetch` |
 | `instructions.md` | MCP server instructions shown to the client/model |
-| `messages.json` | User-facing messages, errors, and response notes |
+| `messages/*.json` | User-facing messages, errors, and response notes (split by domain: core, write, operations, terminology, bundle) |
 | `core-tools.json` | Built-in tool descriptions and param hints |
 
 ### Resource Definition Schema

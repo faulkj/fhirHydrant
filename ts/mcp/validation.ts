@@ -1,4 +1,4 @@
-import messages from "../../config/messages.json" with { type: "json" }
+import messages from "../../config/messages/core.json" with { type: "json" }
 import { config } from "../config.ts"
 import { isMetadataAvailable, getResourceMeta } from "../fhir/model/metadata.ts"
 import { scopeActions } from "../fhir/auth/scopes.ts"

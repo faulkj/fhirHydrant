@@ -1,13 +1,13 @@
-import messages from "../../config/messages.json" with { type: "json" }
-import { log } from "../log.ts"
-import { getDefinitions } from "../fhir/model/definitions.ts"
-import { getTokenResponse } from "../fhir/auth/auth.ts"
-import { parseGrantedScopes, scopeActions } from "../fhir/auth/scopes.ts"
-import { emitAudit, auditTime } from "../audit.ts"
-import { canShapeCount, buildSearchUrl, buildHistoryUrl } from "../fhir/transform/shaping.ts"
-import { checkRuntimeCapability } from "./validation.ts"
-import { validateResourceRequest } from "./request-guards.ts"
-import { isWriteOp, executeWrite } from "./handler-write.ts"
+import messages from "../../../config/messages/core.json" with { type: "json" }
+import { log } from "../../log.ts"
+import { getDefinitions } from "../../fhir/model/definitions.ts"
+import { getTokenResponse } from "../../fhir/auth/auth.ts"
+import { parseGrantedScopes, scopeActions } from "../../fhir/auth/scopes.ts"
+import { emitAudit, auditTime } from "../../audit.ts"
+import { canShapeCount, buildSearchUrl, buildHistoryUrl } from "../../fhir/transform/shaping.ts"
+import { checkRuntimeCapability } from "../validation.ts"
+import { validateResourceRequest } from "../guards/request.ts"
+import { isWriteOp, executeWrite } from "./write.ts"
 import { executeRead } from "./read-response.ts"
 
 /** Returns an async MCP tool handler bound to the given resource tool name. */

@@ -1,12 +1,12 @@
 import type { McpServer } from "@modelcontextprotocol/server"
 import type { z } from "zod"
-import messages from "../../../config/messages.json" with { type: "json" }
+import messages from "../../../config/messages/core.json" with { type: "json" }
 import { log } from "../../log.ts"
 import { emitAudit, auditTime } from "../../audit.ts"
 import { isChunkUrl, retrieveChunk } from "../../fhir/transform/bundle-chunks.ts"
 import { validatePageUrl } from "./validate-page-url.ts"
 import { readOnlyAnnotations } from "../annotations.ts"
-import { executeRead } from "../read-response.ts"
+import { executeRead } from "../handlers/read-response.ts"
 
 /** Registers the paginate tool for fetching next-page Bundle results. */
 export const addPaginate = (

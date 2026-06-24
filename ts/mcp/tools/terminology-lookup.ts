@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/server"
 import type { z } from "zod"
-import messages from "../../../config/messages.json" with { type: "json" }
+import messages from "../../../config/messages/terminology.json" with { type: "json" }
 import { config } from "../../config.ts"
 import { log } from "../../log.ts"
 import { withRetry, formatFhirError } from "../../fhir/utils.ts"

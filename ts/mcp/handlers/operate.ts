@@ -1,12 +1,12 @@
-import { config } from "../config.ts"
-import { log } from "../log.ts"
-import { createFhirClient } from "../fhir/auth/client.ts"
-import { withRetry, formatFhirError } from "../fhir/utils.ts"
-import { emitAudit, auditTime, errorStatus } from "../audit.ts"
-import { extractFhirPath } from "../fhir/transform/fhirpath.ts"
-import { extractResponseMode, resolveResponseMode } from "../fhir/transform/compact.ts"
-import { applyResponsePipeline } from "../fhir/transform/pipeline.ts"
-import { validateOperateArgs } from "./operate-guards.ts"
+import { config } from "../../config.ts"
+import { log } from "../../log.ts"
+import { createFhirClient } from "../../fhir/auth/client.ts"
+import { withRetry, formatFhirError } from "../../fhir/utils.ts"
+import { emitAudit, auditTime, errorStatus } from "../../audit.ts"
+import { extractFhirPath } from "../../fhir/transform/fhirpath.ts"
+import { extractResponseMode, resolveResponseMode } from "../../fhir/transform/compact.ts"
+import { applyResponsePipeline } from "../../fhir/transform/pipeline.ts"
+import { validateOperateArgs } from "../guards/operate.ts"
 
 /** Creates the handler function for the operate MCP tool. */
 export const makeOperateHandler = (enabledOps: OperationDefinition[]) =>
@@ -56,7 +56,7 @@ export const makeOperateHandler = (enabledOps: OperationDefinition[]) =>
             if (!parsed.parameter.some((p: Record<string, unknown>) => p.name === "onlyCertainMatches"))
                parsed.parameter.push({ name: "onlyCertainMatches", valueBoolean: true })
             finalBody = JSON.stringify(parsed)
-         } catch { /* JSON syntax errors caught by operate-guards */ }
+         } catch { /* JSON syntax errors caught by guards/operate */ }
       }
 
       try {

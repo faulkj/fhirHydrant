@@ -3,7 +3,7 @@ import type { z } from "zod"
 import { buildHistoryUrl } from "../../fhir/transform/shaping.ts"
 import { validateDateArgs } from "../validation.ts"
 import { readOnlyAnnotations } from "../annotations.ts"
-import { executeRead } from "../read-response.ts"
+import { executeRead } from "../handlers/read-response.ts"
 
 /** Registers the system-level _history core tool. */
 export const addSystemHistory = (

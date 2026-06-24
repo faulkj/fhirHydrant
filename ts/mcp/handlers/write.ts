@@ -1,8 +1,8 @@
-import { config } from "../config.ts"
-import { log } from "../log.ts"
-import { createFhirClient } from "../fhir/auth/client.ts"
-import { withRetry, formatFhirError } from "../fhir/utils.ts"
-import { emitAudit, auditTime, errorStatus } from "../audit.ts"
+import { config } from "../../config.ts"
+import { log } from "../../log.ts"
+import { createFhirClient } from "../../fhir/auth/client.ts"
+import { withRetry, formatFhirError } from "../../fhir/utils.ts"
+import { emitAudit, auditTime, errorStatus } from "../../audit.ts"
 
 const WRITE_OPS = new Set<WriteAction>(["create", "update", "patch", "delete"])
 
@@ -12,7 +12,7 @@ export const isWriteOp = (op: AuditEvent["operation"]): op is WriteAction =>
 
 /**
  * Executes a FHIR write operation (create/update/patch/delete) using fhirclient
- * native methods. Body validation and normalization is done by request-guards;
+ * native methods. Body validation and normalization is done by guards/request;
  * parsedBody is the already-validated (and id-injected for update) object.
  */
 export const executeWrite = async (

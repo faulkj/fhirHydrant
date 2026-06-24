@@ -1,10 +1,10 @@
-import messages from "../../config/messages.json" with { type: "json" }
-import { config } from "../config.ts"
-import { log } from "../log.ts"
-import { getResourceMeta, isMetadataAvailable } from "../fhir/model/metadata.ts"
-import { scopeAllowsResource } from "../fhir/auth/scopes.ts"
-import { getTokenResponse } from "../fhir/auth/auth.ts"
-import { parseGrantedScopes } from "../fhir/auth/scopes.ts"
+import messages from "../../../config/messages/operations.json" with { type: "json" }
+import { config } from "../../config.ts"
+import { log } from "../../log.ts"
+import { getResourceMeta, isMetadataAvailable } from "../../fhir/model/metadata.ts"
+import { scopeAllowsResource } from "../../fhir/auth/scopes.ts"
+import { getTokenResponse } from "../../fhir/auth/auth.ts"
+import { parseGrantedScopes } from "../../fhir/auth/scopes.ts"
 
 let skippedOps: Array<{ key: string; reason: string; gate: "metadata" | "scope" }> = []
 

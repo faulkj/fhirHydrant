@@ -1,4 +1,4 @@
-import messages from "../../../config/messages.json" with { type: "json" }
+import messages from "../../../config/messages/core.json" with { type: "json" }
 import { config } from "../../config.ts"
 import { applyFhirPath } from "./fhirpath.ts"
 import { compact } from "./compact.ts"

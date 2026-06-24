@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/server"
 import type { z } from "zod"
-import messages from "../../../config/messages.json" with { type: "json" }
+import messages from "../../../config/messages/core.json" with { type: "json" }
 import { fetchMetadata, getCapabilitySummary } from "../../fhir/model/metadata.ts"
 import { getDefinitions } from "../../fhir/model/definitions.ts"
 import { getTokenResponse } from "../../fhir/auth/auth.ts"

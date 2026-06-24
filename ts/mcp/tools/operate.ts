@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/server"
 import { z } from "zod"
 import { config } from "../../config.ts"
-import { makeOperateHandler } from "../handler-operate.ts"
+import { makeOperateHandler } from "../handlers/operate.ts"
 import { readOnlyAnnotations, writeAnnotations } from "../annotations.ts"
 
 /** Registers the operate MCP tool with a dynamic description built from the enabled catalog. */

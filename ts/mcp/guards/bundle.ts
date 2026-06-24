@@ -1,9 +1,9 @@
-import messages from "../../config/messages.json" with { type: "json" }
-import { config } from "../config.ts"
-import { getDefinitions } from "../fhir/model/definitions.ts"
-import { isMetadataAvailable, getSystemInteractions, getResourceMeta } from "../fhir/model/metadata.ts"
-import { getTokenResponse } from "../fhir/auth/auth.ts"
-import { parseGrantedScopes, scopeActions } from "../fhir/auth/scopes.ts"
+import messages from "../../../config/messages/bundle.json" with { type: "json" }
+import { config } from "../../config.ts"
+import { getDefinitions } from "../../fhir/model/definitions.ts"
+import { isMetadataAvailable, getSystemInteractions, getResourceMeta } from "../../fhir/model/metadata.ts"
+import { getTokenResponse } from "../../fhir/auth/auth.ts"
+import { parseGrantedScopes, scopeActions } from "../../fhir/auth/scopes.ts"
 
 /** Validates a raw Bundle body string against all preflight gates. */
 export const validateBundleRequest = (body: string): BundleGuardResult => {

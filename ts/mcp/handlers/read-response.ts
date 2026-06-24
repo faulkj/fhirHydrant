@@ -1,14 +1,14 @@
-import messages from "../../config/messages.json" with { type: "json" }
-import { config } from "../config.ts"
-import { log } from "../log.ts"
-import { createFhirClient } from "../fhir/auth/client.ts"
-import { withRetry, formatFhirError } from "../fhir/utils.ts"
-import { emitAudit, auditTime, errorStatus } from "../audit.ts"
-import { rebuildWithCount } from "../fhir/transform/shaping.ts"
-import { extractFhirPath } from "../fhir/transform/fhirpath.ts"
-import { extractResponseMode, resolveResponseMode } from "../fhir/transform/compact.ts"
-import { coalesce, extractMaxResults, extractPrefetch } from "../fhir/transform/coalesce.ts"
-import { applyResponsePipeline } from "../fhir/transform/pipeline.ts"
+import messages from "../../../config/messages/core.json" with { type: "json" }
+import { config } from "../../config.ts"
+import { log } from "../../log.ts"
+import { createFhirClient } from "../../fhir/auth/client.ts"
+import { withRetry, formatFhirError } from "../../fhir/utils.ts"
+import { emitAudit, auditTime, errorStatus } from "../../audit.ts"
+import { rebuildWithCount } from "../../fhir/transform/shaping.ts"
+import { extractFhirPath } from "../../fhir/transform/fhirpath.ts"
+import { extractResponseMode, resolveResponseMode } from "../../fhir/transform/compact.ts"
+import { coalesce, extractMaxResults, extractPrefetch } from "../../fhir/transform/coalesce.ts"
+import { applyResponsePipeline } from "../../fhir/transform/pipeline.ts"
 
 /** Options for the shared read/search/history/paginate execution wrapper. */
 interface ReadOpts {

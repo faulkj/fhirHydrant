@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/server"
 import * as z from "zod"
-import messages from "../../config/messages.json" with { type: "json" }
+import messages from "../../config/messages/write.json" with { type: "json" }
 import { config } from "../config.ts"
 import { log } from "../log.ts"
 import { getDefinitions, getSearchControls, buildShape } from "../fhir/model/definitions.ts"
@@ -9,7 +9,7 @@ import { getTokenResponse } from "../fhir/auth/auth.ts"
 import { parseGrantedScopes } from "../fhir/auth/scopes.ts"
 import { filterByMetadata, filterByScopes } from "./filter-definitions.ts"
 import { getEnabledActions } from "./validation.ts"
-import { makeHandler } from "./handler.ts"
+import { makeHandler } from "./handlers/resource.ts"
 import { readOnlyAnnotations, writeAnnotations } from "./annotations.ts"
 
 let registeredCount = 0
@@ -57,9 +57,14 @@ const augmentSchema = (
    }
 
    if (actions.length > 1 || hasWrites) {
+      const hints = [
+         "Omit for search/read",
+         hasVread ? "vread requires _id+_vid" : "",
+         hasHistory ? "history optionally takes _id for instance history" : "",
+      ].filter(Boolean).join(". ")
       shape["action"] = z.enum(actions as [string, ...string[]])
          .optional()
-         .describe(`Operation to perform: ${actions.join(", ")}. Omit for search/read. vread requires _id+_vid. history optionally takes _id for instance history.`)
+         .describe(`Operation: ${actions.join(", ")}. ${hints}.`)
       injected.push("action")
    }
    if (hasWrites) {

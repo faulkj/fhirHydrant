@@ -1,4 +1,4 @@
-import messages from "../../config/messages.json" with { type: "json" }
+import messages from "../../config/messages/core.json" with { type: "json" }
 import { log } from "../log.ts"
 
 /** Checks whether an error is transient and eligible for retry. */

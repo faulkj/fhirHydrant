@@ -8,7 +8,7 @@ import { emitAudit, auditTime, errorStatus } from "../../audit.ts"
 import { extractFhirPath } from "../../fhir/transform/fhirpath.ts"
 import { extractResponseMode, resolveResponseMode } from "../../fhir/transform/compact.ts"
 import { applyResponsePipeline } from "../../fhir/transform/pipeline.ts"
-import { validateBundleRequest } from "../bundle-guards.ts"
+import { validateBundleRequest } from "../guards/bundle.ts"
 import { readOnlyAnnotations, writeAnnotations } from "../annotations.ts"
 
 /** Registers the bundle tool on the MCP server. */
