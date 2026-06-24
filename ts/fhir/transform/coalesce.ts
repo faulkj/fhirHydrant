@@ -36,25 +36,23 @@ export const coalesce = async (
    const
       start = t0 ?? Date.now(),
       entries: unknown[] = [],
+      seen = new Set<string>(),
       cap = maxResults ?? config.prefetchMaxEntries
 
    let
       pages = 0,
       entriesSeen = 0,
+      dupsSkipped = 0,
       rawBytes = 0,
       nextUrl: string | undefined = undefined,
       truncated = false,
       truncateReason: string | undefined = undefined,
       bundleType: unknown = undefined,
-      bundleTotal: unknown = undefined,
       current: unknown = firstResult
 
    while (current) {
       const b = current as Record<string, unknown>
-      if (pages === 0) {
-         bundleType = b.type
-         bundleTotal = b.total
-      }
+      if (pages === 0) bundleType = b.type
 
       const pageJson = JSON.stringify(current)
       rawBytes += Buffer.byteLength(pageJson, "utf8")
@@ -64,7 +62,12 @@ export const coalesce = async (
 
       const compacted = compact(current) as Record<string, unknown>
       const compactEntries = Array.isArray(compacted.entry) ? compacted.entry as unknown[] : []
-      entries.push(...compactEntries)
+      for (const entry of compactEntries) {
+         const url = (entry as Record<string, unknown>)?.fullUrl as string | undefined
+         if (url && seen.has(url)) { dupsSkipped++; continue }
+         url && seen.add(url)
+         entries.push(entry)
+      }
       pages++
 
       const links = Array.isArray(b.link) ? b.link as Record<string, unknown>[] : []
@@ -99,10 +102,11 @@ export const coalesce = async (
    }
 
    truncated && log.debug(`📦 Coalesce truncated: ${truncateReason} after ${pages} pages, ${entries.length} entries`)
+   dupsSkipped && log.debug(`📦 ${label}: deduplicated ${dupsSkipped} included resource(s) across pages`)
 
    const bundle: Record<string, unknown> = { resourceType: "Bundle" }
    bundleType !== undefined && (bundle.type = bundleType)
-   bundleTotal !== undefined && (bundle.total = bundleTotal)
+   bundle.total = entries.length
    entries.length && (bundle.entry = entries)
    truncated && nextUrl && (bundle.link = [{ relation: "next", url: nextUrl }])
 
