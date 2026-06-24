@@ -1,5 +1,6 @@
 import { appendFile } from "node:fs/promises"
 import { accessSync, constants } from "node:fs"
+import { dirname } from "node:path"
 import { AsyncLocalStorage } from "node:async_hooks"
 
 const auditContext = new AsyncLocalStorage<AuditContext>()
@@ -16,7 +17,8 @@ export const initAuditSinks = (names: AuditSinkName[], filePath: string): void =
          active.push("console")
       else if (name === "file") {
          try {
-            accessSync(filePath, constants.W_OK)
+            try { accessSync(filePath, constants.W_OK) }
+            catch { accessSync(dirname(filePath), constants.W_OK) }
             sinks.push((e) =>
                void appendFile(filePath, JSON.stringify(e) + "\n", "utf8")
                   .catch((err) => console.error(`🔍 File write failed: ${err instanceof Error ? err.message : err}`)),

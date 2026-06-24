@@ -185,8 +185,9 @@ CapabilityStatement at startup. In `strict` mode:
 - Search params are blocked when the server does not advertise them
 - Write actions require both `FHIR_WRITE_CAPABILITIES` and matching
   CapabilityStatement interactions
-- Named operations require the target resource type to exist and the granted
-  SMART scope to allow the resource
+- Named operations require the target resource type to exist, the granted
+  SMART scope to allow the resource, and the operation itself to be advertised
+  in the resource's CapabilityStatement entry
 
 In `warn` mode, unadvertised params are allowed with a warning, but absent
 resource types are still skipped. SMART scopes are also checked at runtime, so a
