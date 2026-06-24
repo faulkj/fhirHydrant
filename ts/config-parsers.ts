@@ -128,6 +128,19 @@ export const parseAuditSinks = (): AuditSinkName[] => {
    return good
 }
 
+/** Parses FHIR_BUNDLE_CAPABILITIES into a Set of allowed Bundle types; empty when unset or "none". */
+export const parseBundleCapabilities = (): Set<BundleType> => {
+   const
+      valid = new Set<BundleType>(["batch", "transaction"]),
+      raw = opt("FHIR_BUNDLE_CAPABILITIES")
+   if (!raw || raw.trim().toLowerCase() === "none") return new Set()
+   const types = raw.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean)
+   for (const t of types)
+      if (!valid.has(t as BundleType))
+         throw new Error(`Invalid FHIR_BUNDLE_CAPABILITIES value "${t}" — allowed: ${[...valid].join(", ")}`)
+   return new Set(types as BundleType[])
+}
+
 const
    /** Decodes a base64-encoded PEM value into PEM text. */
    decodePem = (raw: string): string =>

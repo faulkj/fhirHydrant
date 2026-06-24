@@ -92,6 +92,15 @@
 
    "operationInvalidBody": "Operation {operation} body is not valid JSON: {error}",
 
-   "operationScopeBlocked": "Operation {operation} not permitted by granted scopes for {resource}"
+   "operationScopeBlocked": "Operation {operation} not permitted by granted scopes for {resource}",
+
+   "bundleNotEnabled": "Bundle type \"{type}\" is not enabled — set FHIR_BUNDLE_CAPABILITIES to include it",
+   "bundleTypeNotAdvertised": "This FHIR server does not advertise \"{type}\" in /metadata system interactions",
+   "bundleInvalidBody": "body is not a valid FHIR Bundle: {error}",
+   "bundleInvalidType": "Bundle type \"{type}\" is not batch or transaction",
+   "bundleEntryBlocked": "Entry {index}: {reason}",
+   "bundleEntryUnsupported": "Entry {index}: unsupported request shape — only relative REST paths (Resource/id or Resource?query) are allowed in v1",
+   "bundleWritesDisabled": "Entry {index}: write operation \"{action}\" requires FHIR_BUNDLE_WRITES_ENABLED=true",
+   "bundleWriteNotAllowed": "Entry {index}: write operation \"{action}\" is not in FHIR_WRITE_CAPABILITIES"
 }
  

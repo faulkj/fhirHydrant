@@ -1,6 +1,9 @@
 /** The four FHIR write interactions that can be enabled via FHIR_WRITE_CAPABILITIES. */
 type WriteAction = "create" | "update" | "patch" | "delete"
 
+/** Allowed FHIR Bundle types for the bundle execution tool. */
+type BundleType = "batch" | "transaction"
+
 /** All possible action values a resource tool can execute. */
 type ToolAction = "search" | "read" | WriteAction
 
@@ -54,4 +57,6 @@ interface Config {
    prefetchMaxEntries: number
    prefetchMaxBytes: number
    prefetchTimeoutMs: number
+   bundleCapabilities: Set<BundleType>
+   bundleWritesEnabled: boolean
 }

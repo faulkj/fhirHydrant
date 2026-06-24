@@ -109,6 +109,7 @@ The exact list depends on `config/resources.json`, granted SMART scopes,
 | `capabilities` | Always registered | Inspect CapabilityStatement summary, registered tools, skipped tools, search params, operations, and metadata notes |
 | `paginate` | Always registered | Fetch the next page of a FHIR Bundle using a server-returned `next` URL |
 | `operate` | At least one named operation passes gating | Invoke configured FHIR named operations for clinical data, terminology, IPS, matching, validation, or custom workflows |
+| `bundle` | `FHIR_BUNDLE_CAPABILITIES` is set | Submit a FHIR batch or transaction Bundle; writes require additional opt-in |
 | `terminology_lookup` | `FHIR_TERMINOLOGY_BASE_URL` is set | Look up one LOINC or SNOMED CT code |
 | `code_search` | `FHIR_TERMINOLOGY_BASE_URL` is set | Search LOINC or SNOMED CT codes by text |
 
@@ -176,6 +177,26 @@ Set `FHIR_TERMINOLOGY_BASE_URL` to enable:
 These tools call the configured terminology server directly. They do not use
 the clinical FHIR server credentials. Use a terminology endpoint that matches
 your selected FHIR release, such as `https://tx.fhir.org/r4`.
+
+### Bundle Execution
+
+Set `FHIR_BUNDLE_CAPABILITIES=batch` (or `batch,transaction`) to enable
+`bundle`. This tool submits a FHIR batch or transaction Bundle and
+returns the server's response through the standard response pipeline.
+
+**Safety model:**
+- Read-only batch Bundles (all GET entries) are allowed with just
+  `FHIR_BUNDLE_CAPABILITIES=batch`.
+- Write entries (POST, PUT, PATCH, DELETE) additionally require
+  `FHIR_BUNDLE_WRITES_ENABLED=true` and the corresponding action in
+  `FHIR_WRITE_CAPABILITIES`.
+- Transaction Bundles require explicit `FHIR_BUNDLE_CAPABILITIES=transaction`.
+- Every entry is preflighted against configured resources, SMART scopes, and
+  metadata interactions. If any single entry fails, the entire Bundle is
+  rejected before submission.
+
+**V1 exclusions:** Conditional requests, `_history` paths, absolute URLs, and
+`$operation` URLs inside Bundle entries are not supported.
 
 ## Metadata And Scope Gating
 
@@ -311,6 +332,8 @@ See [.env.example](.env.example) for a complete sample.
 | `FHIR_REQUEST_TIMEOUT_MS` | `30000` | Per-attempt timeout for outgoing FHIR requests |
 | `FHIR_RESPONSE_MODE` | unset | `compact`, `full`, or `compact-locked`; unset means search defaults compact and direct reads default full |
 | `FHIR_WRITE_CAPABILITIES` | unset | Comma-separated write actions: `create`, `update`, `patch`, `delete` |
+| `FHIR_BUNDLE_CAPABILITIES` | unset | Comma-separated Bundle types: `batch`, `transaction`; enables `bundle` tool |
+| `FHIR_BUNDLE_WRITES_ENABLED` | `false` | Set to `true` to allow write entries inside Bundles (also requires `FHIR_WRITE_CAPABILITIES`) |
 | `FHIR_OPERATIONS` | unset | Comma-separated operation keys; `none` disables all catalog operations. Default catalog: `everything`, `lastn`, `validate`, `docref`, `expand`, `lookup`, `translate`, `summary`, `match` |
 | `FHIR_TERMINOLOGY_BASE_URL` | unset | Enables terminology tools, e.g. `https://tx.fhir.org/r4` |
 | `FHIR_PAGINATION_PATHS` | unset | Extra allowed path prefixes for pagination links, e.g. `FHIRProxy` |

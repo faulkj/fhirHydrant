@@ -77,5 +77,25 @@
             "description": "Starting position for paged results (default 0). Increment by count for subsequent pages."
          }
       }
+   },
+   {
+      "name": "bundle",
+      "description": "Submit a FHIR batch or transaction Bundle to the server. Requires FHIR_BUNDLE_CAPABILITIES to be configured. Write entries require additional opt-in via FHIR_BUNDLE_WRITES_ENABLED.",
+      "params": {
+         "body": {
+            "type": "string",
+            "description": "Complete FHIR Bundle JSON with resourceType, type (batch or transaction), and entry array"
+         },
+         "fhirpath": {
+            "type": "string",
+            "optional": true,
+            "description": "FHIRPath expression evaluated locally against the response Bundle"
+         },
+         "responseMode": {
+            "type": "string",
+            "optional": true,
+            "description": "Response shape: compact or full"
+         }
+      }
    }
 ]

@@ -42,6 +42,10 @@ interface AuditEvent {
    prefetchRawBytes?: number
    prefetchTruncated?: boolean
    prefetchTruncateReason?: string
+   bundleType?: BundleType
+   bundleEntryCount?: number
+   bundleReadCount?: number
+   bundleWriteCount?: number
    requestId?: string
    user?: string
 }

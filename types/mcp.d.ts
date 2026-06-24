@@ -47,3 +47,15 @@ interface CoalesceResult {
    truncated: boolean
    truncateReason?: string
 }
+
+/** Summary of a successfully preflighted Bundle — entry counts and resource types touched. */
+interface BundlePreflightSummary {
+   readCount: number
+   writeCount: number
+   resourceTypes: string[]
+}
+
+/** Result of bundle request validation — success with parsed Bundle or failure with error response. */
+type BundleGuardResult =
+   | { ok: true; bundle: Record<string, unknown>; type: BundleType; summary: BundlePreflightSummary; warning?: string }
+   | { ok: false; response: { content: { type: "text"; text: string }[]; isError: true } }

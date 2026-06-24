@@ -9,25 +9,19 @@ import { addCapabilities } from "./tools/capabilities.ts"
 import { addTerminologyLookup } from "./tools/terminology-lookup.ts"
 import { addCodeSearch } from "./tools/code-search.ts"
 
-const
-   coreToolsPath = (): string => {
-      const
-         bundled = join(dirname(fileURLToPath(import.meta.url)), "..", "config", "core-tools.json"),
-         source = join(dirname(fileURLToPath(import.meta.url)), "../..", "config", "core-tools.json")
-      return existsSync(bundled) ? bundled : source
-   },
+/** Loads all core tool definitions from config/core-tools.json. */
+export const loadCoreTools = (): CoreToolDef[] =>
+   JSON.parse(readFileSync(coreToolsPath(), "utf8")) as CoreToolDef[]
 
-   loadCoreTools = (): CoreToolDef[] =>
-      JSON.parse(readFileSync(coreToolsPath(), "utf8")) as CoreToolDef[],
-
-   buildSchema = (params: Record<string, { type: string; optional?: boolean; description: string }>) => {
-      const shape: Record<string, z.ZodTypeAny> = {}
-      for (const [key, p] of Object.entries(params)) {
-         const base = p.type === "boolean" ? z.boolean() : p.type === "number" ? z.number() : z.string()
-         shape[key] = p.optional ? base.optional().describe(p.description) : base.describe(p.description)
-      }
-      return z.object(shape)
+/** Builds a Zod input schema from a core tool param definition map. */
+export const buildSchema = (params: Record<string, { type: string; optional?: boolean; description: string }>) => {
+   const shape: Record<string, z.ZodTypeAny> = {}
+   for (const [key, p] of Object.entries(params)) {
+      const base = p.type === "boolean" ? z.boolean() : p.type === "number" ? z.number() : z.string()
+      shape[key] = p.optional ? base.optional().describe(p.description) : base.describe(p.description)
    }
+   return z.object(shape)
+}
 
 /** Registers built-in infrastructure tools (e.g. pagination, capabilities) on the server. */
 export const registerCoreTools = (server: McpServer): void => {
@@ -46,3 +40,11 @@ export const registerCoreTools = (server: McpServer): void => {
       addCodeSearch(server, def("code_search").description, buildSchema(def("code_search").params))
    }
 }
+
+const
+   coreToolsPath = (): string => {
+      const
+         bundled = join(dirname(fileURLToPath(import.meta.url)), "..", "config", "core-tools.json"),
+         source = join(dirname(fileURLToPath(import.meta.url)), "../..", "config", "core-tools.json")
+      return existsSync(bundled) ? bundled : source
+   }

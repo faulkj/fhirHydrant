@@ -5,6 +5,7 @@ import { withRetry } from "../utils.ts"
 let
    cache: CapabilitySummary | null = null,
    resourceIndex = new Map<string, ResourceMeta>(),
+   systemInteractions = new Set<string>(),
    skipped: CapabilitySummary["skippedTools"] = []
 
 /** Fetches and caches the FHIR server's CapabilityStatement. Non-throwing. */
@@ -35,6 +36,13 @@ export const fetchMetadata = async (): Promise<void> => {
 
       const
          resources = Array.isArray(serverRest.resource) ? serverRest.resource as Array<Record<string, unknown>> : [],
+         sysInteractions = new Set<string>(
+            Array.isArray(serverRest.interaction)
+               ? (serverRest.interaction as Array<Record<string, unknown>>)
+                  .map((i) => i.code as string)
+                  .filter(Boolean)
+               : [],
+         ),
          newIndex = new Map<string, ResourceMeta>(),
          summaryResources: CapabilitySummary["resources"] = []
 
@@ -81,10 +89,12 @@ export const fetchMetadata = async (): Promise<void> => {
       }
 
       resourceIndex = newIndex
+      systemInteractions = sysInteractions
       cache = {
          serverUrl: config.fhirServerUrl,
          fetchedAt: new Date().toISOString(),
          mode: config.metadataMode,
+         systemInteractions: [...sysInteractions],
          resources: summaryResources,
          skippedTools: skipped,
       }
@@ -99,6 +109,9 @@ export const fetchMetadata = async (): Promise<void> => {
 
 /** Whether a cached CapabilityStatement is available. */
 export const isMetadataAvailable = (): boolean => cache !== null
+
+/** Returns the set of system-level interactions advertised (e.g. batch, transaction). */
+export const getSystemInteractions = (): Set<string> => systemInteractions
 
 /** Returns parsed metadata for a single resource type, or undefined. */
 export const getResourceMeta = (resourceType: string): ResourceMeta | undefined =>

@@ -18,10 +18,12 @@ export const bundleStats = (result: unknown, json: string): BundleStats | undefi
 }
 
 /** Builds a compact text note for a FHIR response — always includes the resourceType label,
- *  enriches Bundles with entry count, total, next link, and appends jsonBytes for all types. */
+ *  enriches Bundles with entry count, total, next link, and appends jsonBytes for all types.
+ *  For batch-response/transaction-response, appends per-status counts. */
 export const responseNote = (result: unknown, json: string): string | undefined => {
    if (!result || typeof result !== "object") return undefined
-   const rt = (result as Record<string, unknown>).resourceType
+   const r = result as Record<string, unknown>
+   const rt = r.resourceType
    if (typeof rt !== "string") return undefined
    const stats = bundleStats(result, json)
    if (!stats) return `${rt} jsonBytes=${Buffer.byteLength(json, "utf8")}`
@@ -30,7 +32,19 @@ export const responseNote = (result: unknown, json: string): string | undefined 
       stats.total !== undefined ? `total=${stats.total}` : undefined,
       `jsonBytes=${stats.jsonBytes}`,
    ].filter(Boolean).join(" ")
-   return stats.nextUrl ? `${parts}. Next: ${stats.nextUrl}` : parts
+   const base = stats.nextUrl ? `${parts}. Next: ${stats.nextUrl}` : parts
+   const btype = r.type as string | undefined
+   if ((btype === "batch-response" || btype === "transaction-response") && Array.isArray(r.entry)) {
+      const counts: Record<string, number> = {}
+      for (const e of r.entry as Array<Record<string, unknown>>) {
+         const resp = e?.response as Record<string, unknown> | undefined
+         const code = typeof resp?.status === "string" ? resp.status.split(" ")[0] : "unknown"
+         counts[code] = (counts[code] ?? 0) + 1
+      }
+      const statusParts = Object.entries(counts).map(([code, n]) => `${n}x${code}`).join(", ")
+      return `${base} status: ${statusParts}`
+   }
+   return base
 }
 
 /** Builds a summary note for a coalesced multi-page fetch. */

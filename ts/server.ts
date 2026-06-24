@@ -27,6 +27,7 @@ import { fetchMetadata } from "./fhir/model/metadata.ts"
 import { registerAll } from "./mcp/resources.ts"
 import { registerCoreTools } from "./mcp/core-tools.ts"
 import { registerOperations } from "./mcp/operations.ts"
+import { registerBundle } from "./mcp/bundle.ts"
 import { reloadOperations } from "./fhir/model/operations.ts"
 import { startHttp } from "./mcp/transport/http.ts"
 import { startStdio } from "./mcp/transport/stdio.ts"
@@ -58,6 +59,7 @@ const
       registerAll(s)
       registerCoreTools(s)
       registerOperations(s)
+      registerBundle(s)
       return s
    }
 

@@ -3,6 +3,7 @@ import {
    parseResponseMode, parseAllowedHosts, parsePaginationPaths,
    parsePositiveInt, parseNonNegativeInt, parseAuditSinks, parseKeys,
    parseWriteCapabilities, parseOperations, parseFhirVersion,
+   parseBundleCapabilities,
 } from "./config-parsers.ts"
 
 /** Validated runtime configuration loaded from environment variables. */
@@ -44,6 +45,8 @@ export const config: Config = {
    prefetchMaxEntries: parsePositiveInt("FHIR_PREFETCH_MAX_ENTRIES", 5000),
    prefetchMaxBytes: parsePositiveInt("FHIR_PREFETCH_MAX_BYTES", 2097152),
    prefetchTimeoutMs: parsePositiveInt("FHIR_PREFETCH_TIMEOUT_MS", 25000),
+   bundleCapabilities: parseBundleCapabilities(),
+   bundleWritesEnabled: opt("FHIR_BUNDLE_WRITES_ENABLED")?.toLowerCase() === "true",
 }
 
 config.debug && console.log(`🔑 Active kid: ${config.fhirActiveKey.kid}`)

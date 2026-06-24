@@ -127,6 +127,7 @@ interface CapabilitySummary {
    serverUrl: string
    fetchedAt: string
    mode: Config["metadataMode"]
+   systemInteractions: string[]
    resources: Array<{
       type: string
       interactions: string[]

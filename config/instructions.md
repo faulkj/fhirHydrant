@@ -108,3 +108,23 @@ required parameters and levels. The `operation` parameter accepts catalog keys
 
 Use resource tools for standard search/read/write. Use `operate` when you need
 server-side aggregation, validation, or specialized queries that go beyond CRUD.
+
+## Bundle Execution
+
+Use `bundle` to submit a FHIR batch or transaction Bundle when you
+need to perform multiple related reads or writes in a single round trip. Provide
+a complete FHIR Bundle JSON as the `body` parameter with `resourceType: "Bundle"`,
+`type` set to `batch` or `transaction`, and an `entry` array of request objects.
+
+Prefer batch reads over multiple individual tool calls when you need several
+related resources simultaneously and already know their IDs or search criteria.
+
+Before submitting any Bundle that contains write entries (POST, PUT, PATCH,
+DELETE) or any transaction Bundle, you must:
+1. Summarize the exact resources and actions that will be submitted.
+2. State whether the operation is atomic (transaction) or independent (batch).
+3. Ask the user for explicit permission before proceeding.
+
+Do not infer permission from earlier context. Server-side capability gates
+(`FHIR_BUNDLE_WRITES_ENABLED`, `FHIR_WRITE_CAPABILITIES`) are administrative
+controls, not user consent.
