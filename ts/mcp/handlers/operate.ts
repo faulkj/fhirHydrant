@@ -42,7 +42,7 @@ export const makeOperateHandler = (enabledOps: OperationDefinition[]) =>
 
       const fullUrl = qs ? `${url}?${qs}` : url
       const logTag = `${resource}.${op.operation}`
-      log.debug(`🔥 ${logTag} ${op.method} → ${fullUrl}`)
+      log.info(`🔥 ${logTag} ${op.method} → ${fullUrl}`)
 
       // $match: validate Parameters shape and auto-inject onlyCertainMatches
       let finalBody = body

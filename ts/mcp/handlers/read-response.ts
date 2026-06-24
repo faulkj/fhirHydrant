@@ -40,7 +40,7 @@ export const executeRead = async (opts: ReadOpts) => {
    const { effectiveMode, wasDefaulted } = resolved
 
    let url = opts.url, retries = 0, currentCount = 0
-   log.debug(`🔥 ${logTag} → ${url}`)
+   log.info(`🔥 ${logTag} → ${url}`)
 
    try {
       const client = createFhirClient()

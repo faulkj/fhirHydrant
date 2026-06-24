@@ -28,7 +28,7 @@ export const executeWrite = async (
    try {
       const
          client = createFhirClient()
-      log.debug(`🔥 ${logTag} → ${op} ${def.resource}${id ? '/' + id : ''}`)
+      log.info(`🔥 ${logTag} → ${op} ${def.resource}${id ? '/' + id : ''}`)
       const
          result = await withRetry(`${def.resource} ${op}`, () => {
             if (op === "create") return client.create(body)

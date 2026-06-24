@@ -42,7 +42,7 @@ export const addBundle = (
 
          const { type, summary, warning } = guard
          const logTag = `Bundle.${type}`
-         log.debug(`🔥 ${logTag} → ${summary.readCount}R ${summary.writeCount}W`)
+         log.info(`🔥 ${logTag} → ${summary.readCount}R ${summary.writeCount}W`)
 
          try {
             const
