@@ -153,12 +153,12 @@
       "resource": "Patient",
       "level": ["type"],
       "method": "POST",
-      "description": "Find patient records matching demographics. Body MUST be a FHIR Parameters resource with a 'resource' parameter containing a Patient resource with demographics (name, birthDate, gender, telecom, address). The server auto-injects 'onlyCertainMatches=true' into the body — do NOT include it yourself.",
+      "description": "Find a single high-confidence patient match by demographics. Body MUST be a FHIR Parameters resource with a 'resource' parameter containing a Patient with demographics. The server auto-injects 'onlyCertainMatches=true'. A high-confidence match typically requires EXACT name + EXACT birthDate + a combination of: address, national ID (e.g. SSN), phone, email, or gender. Providing only name+birthDate often yields low-confidence matches, which return an error — include as many demographics as possible.",
       "params": {},
       "acceptsBody": true,
       "bundleResponse": true,
       "auditOperation": "match",
       "affectsState": false,
-      "notes": "MPI/matching support varies by server — metadata-gated"
+      "notes": "Servers require onlyCertainMatches=true (auto-injected). A high-confidence match typically needs exact name + exact birthDate + additional demographics (address, national ID, phone, email, gender). Insufficient demographics usually returns an OperationOutcome error, not an empty Bundle."
    }
 ]
