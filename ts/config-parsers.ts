@@ -116,6 +116,16 @@ export const parseNonNegativeInt = (key: string, fallback: number): number => {
    return val
 }
 
+/** Parses LOG_LEVEL into a numeric severity (error=0, warn=1, info=2, debug=3); defaults to info. */
+export const parseLogLevel = (): number => {
+   const
+      levels: Record<LogLevel, number> = { error: 0, warn: 1, info: 2, debug: 3 },
+      raw = (opt("LOG_LEVEL") ?? "info").trim().toLowerCase()
+   if (!(raw in levels))
+      throw new Error(`Invalid LOG_LEVEL="${raw}" — must be "error", "warn", "info", or "debug"`)
+   return levels[raw as LogLevel]
+}
+
 /** Parses FHIR_AUDIT_SINK into a list of valid sink names; warns about and skips unknowns. */
 export const parseAuditSinks = (): AuditSinkName[] => {
    const

@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/server"
 import * as z from "zod"
 import messages from "../../config/messages.json" with { type: "json" }
 import { config } from "../config.ts"
+import { log } from "../log.ts"
 import { getDefinitions, getSearchControls, buildShape } from "../fhir/model/definitions.ts"
 import { getResourceMeta, setSkippedTools } from "../fhir/model/metadata.ts"
 import { getTokenResponse } from "../fhir/auth/auth.ts"
@@ -81,7 +82,7 @@ export const registerAll = (server: McpServer): void => {
       scopeResult = filterByScopes(metaResult.definitions, scopeMap)
 
    setSkippedTools([...metaResult.skipped, ...scopeResult.skipped])
-   scopeMap.size > 0 && console.info(`🔑 Scope gate active — ${scopeResult.definitions.length}/${metaResult.definitions.length} resource(s) allowed`)
+   scopeMap.size > 0 && log.info(`🔑 Scope gate active — ${scopeResult.definitions.length}/${metaResult.definitions.length} resource(s) allowed`)
 
    for (const def of scopeResult.definitions) {
       const
@@ -94,7 +95,7 @@ export const registerAll = (server: McpServer): void => {
                !actions.some((a) => a === "create" || a === "patch"),
             )
             : readOnlyAnnotations
-      config.debug && injected.length && console.log(`📋 ${def.resource}: injected ${injected.join(", ")}`)
+      injected.length && log.debug(`📋 ${def.resource}: injected ${injected.join(", ")}`)
       server.registerTool(
          def.toolName,
          { description, inputSchema: schema, annotations },
@@ -102,4 +103,5 @@ export const registerAll = (server: McpServer): void => {
       )
    }
    registeredCount = scopeResult.definitions.length
+   log.info(`📋 Registered ${registeredCount} resource tool(s)`)
 }

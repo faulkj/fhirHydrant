@@ -1,4 +1,5 @@
 import { config } from "../../config.ts"
+import { log } from "../../log.ts"
 import { createFhirClient } from "../auth/client.ts"
 import { withRetry } from "../utils.ts"
 
@@ -21,7 +22,7 @@ export const fetchMetadata = async (): Promise<void> => {
          ) as Record<string, unknown>
 
       if (raw?.resourceType !== "CapabilityStatement") {
-         console.warn("🏥 Response is not a CapabilityStatement — skipping metadata gating")
+         log.warn("🏥 Response is not a CapabilityStatement — skipping metadata gating")
          return
       }
 
@@ -30,7 +31,7 @@ export const fetchMetadata = async (): Promise<void> => {
          serverRest = restEntries.find((r) => r.mode === "server") ?? restEntries[0]
 
       if (!serverRest) {
-         console.warn("🏥 No rest entry found in CapabilityStatement — skipping metadata gating")
+         log.warn("🏥 No rest entry found in CapabilityStatement — skipping metadata gating")
          return
       }
 
@@ -98,9 +99,9 @@ export const fetchMetadata = async (): Promise<void> => {
          resources: summaryResources,
          skippedTools: skipped,
       }
-      config.debug && console.info(`🏥 Loaded CapabilityStatement — ${summaryResources.length} resource types`)
+      log.info(`🏥 Loaded CapabilityStatement — ${summaryResources.length} resource types`)
    } catch (err) {
-      console.warn(
+      log.warn(
          "🏥 Could not fetch CapabilityStatement — skipping metadata gating:",
          err instanceof Error ? err.message : err,
       )

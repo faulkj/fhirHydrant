@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import { config } from "../../config.ts"
+import { log } from "../../log.ts"
 import { getConfigDir } from "./definitions.ts"
 import { validateOperations } from "./validate-operations.ts"
 
@@ -9,7 +10,7 @@ let catalog: OperationDefinition[] = []
 const load = (): OperationDefinition[] => {
    const path = join(getConfigDir(), "operations.json")
    if (!existsSync(path)) {
-      config.debug && console.info("📋 No config/operations.json found — operations disabled")
+      log.info("📋 No config/operations.json found — operations disabled")
       return []
    }
    const
@@ -39,8 +40,8 @@ const load = (): OperationDefinition[] => {
    const allowed = config.operations
    if (allowed) {
       const filtered = defs.filter((d) => allowed.has(d.key))
-      config.debug && filtered.length < defs.length
-         && console.info(`📋 FHIR_OPERATIONS filter: ${filtered.length}/${defs.length} operations enabled`)
+      filtered.length < defs.length
+         && log.info(`📋 FHIR_OPERATIONS filter: ${filtered.length}/${defs.length} operations enabled`)
       return filtered
    }
    return defs
@@ -64,7 +65,7 @@ export const reloadOperations = (): boolean => {
       catalog = load()
       return true
    } catch (err) {
-      console.error("📋 Failed to reload operations:", err instanceof Error ? err.message : err)
+      log.error("📋 Failed to reload operations:", err instanceof Error ? err.message : err)
       return false
    }
 }

@@ -1,4 +1,5 @@
 import { config } from "../config.ts"
+import { log } from "../log.ts"
 import { isMetadataAvailable, getResourceMeta } from "../fhir/model/metadata.ts"
 import { scopeAllowsResource } from "../fhir/auth/scopes.ts"
 
@@ -16,21 +17,21 @@ export const filterByMetadata = (defs: ResourceDefinition[]): { definitions: Res
 
       if (!meta) {
          const reason = `${def.resource} not in /metadata`
-         config.debug && console.warn(`🏥 ${reason} — skipped`)
+         log.debug(`🏥 ${reason} — skipped`)
          skipped.push({ toolName: def.toolName, reason, gate: "metadata" })
          continue
       }
 
       if (def.supportsDirectRead && !meta.interactions.has("read")) {
          const reason = `${def.resource} does not advertise read`
-         config.debug && console.warn(`🏥 ${reason} — tool "${def.toolName}" skipped`)
+         log.debug(`🏥 ${reason} — tool "${def.toolName}" skipped`)
          skipped.push({ toolName: def.toolName, reason, gate: "metadata" })
          continue
       }
 
       if (!meta.interactions.has("search-type") && !meta.interactions.has("search")) {
          const reason = `${def.resource} does not advertise search`
-         config.debug && console.warn(`🏥 ${reason} — tool "${def.toolName}" skipped`)
+         log.debug(`🏥 ${reason} — tool "${def.toolName}" skipped`)
          skipped.push({ toolName: def.toolName, reason, gate: "metadata" })
          continue
       }
@@ -38,7 +39,7 @@ export const filterByMetadata = (defs: ResourceDefinition[]): { definitions: Res
       for (const param of Object.keys(def.searchParams)) {
          if (param === "_id" || param === "_include" || param === "_revinclude") continue
          if (!meta.searchParams.has(param))
-            config.debug && console.warn(`🏥 ${def.resource}: "${param}" not in /metadata`)
+            log.debug(`🏥 ${def.resource}: "${param}" not in /metadata`)
       }
 
       enabled.push(def)
@@ -62,7 +63,7 @@ export const filterByScopes = (
          enabled.push(def)
       } else {
          const reason = `${def.resource} not in granted scopes`
-         config.debug && console.warn(`🔑 ${reason} — skipped`)
+         log.debug(`🔑 ${reason} — skipped`)
          skipped.push({ toolName: def.toolName, reason, gate: "scope" })
       }
    }

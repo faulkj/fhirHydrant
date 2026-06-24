@@ -4,6 +4,7 @@ import { existsSync, readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { config } from "../config.ts"
+import { log } from "../log.ts"
 import { addPaginate } from "./tools/paginate.ts"
 import { addCapabilities } from "./tools/capabilities.ts"
 import { addTerminologyLookup } from "./tools/terminology-lookup.ts"
@@ -38,7 +39,9 @@ export const registerCoreTools = (server: McpServer): void => {
    if (config.fhirTerminologyBaseUrl) {
       addTerminologyLookup(server, def("terminology_lookup").description, buildSchema(def("terminology_lookup").params))
       addCodeSearch(server, def("code_search").description, buildSchema(def("code_search").params))
-   }
+      log.debug(`📋 Terminology tools enabled (→ ${config.fhirTerminologyBaseUrl})`)
+   } else
+      log.debug("📋 Terminology tools disabled — FHIR_TERMINOLOGY_BASE_URL not set")
 }
 
 const

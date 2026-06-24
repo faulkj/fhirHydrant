@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/server"
 import type { z } from "zod"
 import messages from "../../../config/messages.json" with { type: "json" }
 import { config } from "../../config.ts"
+import { log } from "../../log.ts"
 import { enforceByteLimit, formatFhirError } from "../../fhir/utils.ts"
 import { emitAudit, auditTime, errorStatus } from "../../audit.ts"
 import { resolveSystem } from "../../fhir/terminology/systems.ts"
@@ -69,7 +70,7 @@ export const addCodeSearch = (
                   body = `${header}\n\n${page.join("\n")}${hint}`,
                   shaped = enforceByteLimit(body, config.fhirMaxResponseBytes)
 
-               console.log(`🟢 code_search OK — ${page.length} results`)
+               log.debug(`🟢 code_search OK — ${page.length} results (${auditTime(t0)}ms)`)
                audit(shaped.isError ? "truncated" : "ok", 200)
                return { content: [text(shaped.text)], ...(shaped.isError && { isError: true }) }
             }
@@ -88,12 +89,12 @@ export const addCodeSearch = (
                body = `${header}\n\n${page.join("\n")}`,
                shaped = enforceByteLimit(body, config.fhirMaxResponseBytes)
 
-            console.log(`🟢 code_search OK — ${page.length} results (SNOMED)`)
+            log.debug(`🟢 code_search OK — ${page.length} results, SNOMED (${auditTime(t0)}ms)`)
             audit(shaped.isError ? "truncated" : "ok", 200)
             return { content: [text(shaped.text)], ...(shaped.isError && { isError: true }) }
          } catch (err) {
-            const { log, client } = formatFhirError(err)
-            console.error(`🔴 code_search ERR ${log}`)
+            const { log: errLog, client } = formatFhirError(err)
+            log.error(`🔴 code_search ERR ${errLog} (${auditTime(t0)}ms)`)
             audit("error", errorStatus(err))
             return { content: [text(messages.terminologyError.replace("{message}", client))], isError: true }
          }

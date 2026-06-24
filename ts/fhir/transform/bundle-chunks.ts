@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto"
+import { log } from "../../log.ts"
 
 const
    CHUNK_PREFIX = "urn:fhirhydrant:chunk:",
@@ -52,6 +53,7 @@ export const tryChunkBundle = (
    }
 
    const firstNextUrl = `${CHUNK_PREFIX}${ids[0]}`
+   log.debug(`📄 Bundle chunked into ${ids.length + 1} parts (${entries.length} entries)`)
    return { text: renderChunk(shell, entries.slice(ranges[0][0], ranges[0][1]), firstNextUrl, prefix) }
 }
 

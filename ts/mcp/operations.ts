@@ -1,4 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/server"
+import { log } from "../log.ts"
 import { getOperations } from "../fhir/model/operations.ts"
 import { getTokenResponse } from "../fhir/auth/auth.ts"
 import { parseGrantedScopes } from "../fhir/auth/scopes.ts"
@@ -24,10 +25,10 @@ export const registerOperations = (server: McpServer): void => {
    enabledOps = afterScope
 
    if (enabledOps.length === 0) {
-      console.info("📋 No FHIR operations enabled — operate tool not registered")
+      log.info("📋 No FHIR operations enabled — operate tool not registered")
       return
    }
 
-   console.info(`📋 Registering operate tool with ${enabledOps.length} operation(s): ${enabledOps.map((o) => o.key).join(", ")}`)
+   log.info(`📋 Registering operate tool with ${enabledOps.length} operation(s): ${enabledOps.map((o) => o.key).join(", ")}`)
    addOperate(server, enabledOps)
 }

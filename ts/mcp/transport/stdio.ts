@@ -1,4 +1,5 @@
 import { StdioServerTransport } from "@modelcontextprotocol/server"
+import { log } from "../../log.ts"
 
 /** Starts the stdio MCP transport and returns a handle to attach a server and close the connection. */
 export const startStdio = async (): Promise<TransportHandle> => {
@@ -8,7 +9,7 @@ export const startStdio = async (): Promise<TransportHandle> => {
       attach: async (factory) => {
          connectedServer = factory()
          await connectedServer.connect(transport)
-         console.info("\x1b[34m🚒 fhirhydrant running in stdio mode\x1b[0m")
+         log.log("🚒 fhirhydrant running in stdio mode")
       },
       close: async () => {
          await connectedServer?.close()

@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url"
 import * as z from "zod"
 import { validateResources } from "./validate-definitions.ts"
 import { config } from "../../config.ts"
+import { log } from "../../log.ts"
 
 /** Returns the current valid set of generated FHIR resource definitions. */
 export const getDefinitions = (): ResourceDefinition[] => snapshot.definitions
@@ -35,7 +36,7 @@ export const buildShape = (
    )
    if (supportsDirectRead && !shape["_id"]) {
       shape["_id"] = z.string().optional().describe(`${resource} resource ID — performs direct read when provided alone`)
-      console.warn(`📋 "${resource}": auto-injected _id for supportsDirectRead`)
+      log.warn(`📋 "${resource}": auto-injected _id for supportsDirectRead`)
    }
    return shape
 }
@@ -101,7 +102,7 @@ export const reloadDefinitions = (): boolean => {
       snapshot = parse()
       return true
    } catch (err) {
-      console.error(
+      log.error(
          "📋 Reload failed — keeping last valid snapshot:",
          err instanceof Error ? err.message : err,
       )

@@ -1,5 +1,6 @@
 import messages from "../../config/messages.json" with { type: "json" }
 import { config } from "../config.ts"
+import { log } from "../log.ts"
 import { getDefinitions } from "../fhir/model/definitions.ts"
 import { createFhirClient } from "../fhir/auth/client.ts"
 import { getTokenResponse } from "../fhir/auth/auth.ts"
@@ -37,6 +38,7 @@ export const makeHandler =
 
       const scopeAllowed = scopeActions(def.resource, parseGrantedScopes(getTokenResponse().scope))
       if (!scopeAllowed.has(op as ToolAction)) {
+         log.debug(`🔑 ${def.resource}.${op} scope blocked — not permitted by granted scopes`)
          emitAudit({ ts: new Date().toISOString(), tool: toolName, resource: def.resource, operation: op, status: "blocked", durationMs: auditTime(t0), scopeBlocked: true })
          return { content: [{ type: "text" as const, text: `🔑 ${op} not permitted by granted scopes for ${def.resource}` }], isError: true }
       }
@@ -49,6 +51,7 @@ export const makeHandler =
          { effectiveMode, wasDefaulted } = resolved,
          cap = checkRuntimeCapability(def, args, directId)
       if (cap.error) {
+         log.debug(`🏥 ${def.resource}.${op} metadata blocked — ${cap.error}`)
          emitAudit({ ts: new Date().toISOString(), tool: toolName, resource: def.resource, operation: op, status: "blocked", durationMs: auditTime(t0), metadataBlocked: true })
          return { content: [{ type: "text" as const, text: cap.error }], isError: true }
       }
@@ -59,7 +62,7 @@ export const makeHandler =
             client = createFhirClient(),
             search = directId ? undefined : buildSearchUrl(def.resource, args, shape.allowed)
          let url = directId ? `${def.resource}/${directId}` : search!.url, retries = 0, currentCount = 0
-         config.debug && console.log(`🔥 ${logTag} → ${url}`)
+         log.debug(`🔥 ${logTag} → ${url}`)
 
          let result: unknown, json: string, stats: ReturnType<typeof bundleStats>,
             shaped: ReturnType<typeof enforceByteLimit>, filtered = false, matchCount = 0, compacted = false
@@ -77,7 +80,7 @@ export const makeHandler =
                if (r.resourceType === "Bundle" && Array.isArray(r.link) &&
                   (r.link as Record<string, unknown>[]).some((l) => l?.relation === "next" && typeof l?.url === "string")) {
                   const c = await coalesce(result, client, logTag, maxResults, t0)
-                  console.log(`\u{1F7E2} ${logTag} OK (coalesced ${c.pagesFetched} pages)`)
+                  log.debug(`🟢 ${logTag} OK (coalesced ${c.pagesFetched} pages, ${c.entriesReturned} entries)`)
                   emitAudit({
                      ts: new Date().toISOString(), tool: toolName, resource: def.resource, operation: op,
                      status: c.isError ? "truncated" : "ok", durationMs: auditTime(t0), httpStatus: 200,
@@ -132,10 +135,10 @@ export const makeHandler =
             currentCount = next
             retries++
             url = rebuildWithCount(search.url, currentCount)
-            console.log(`✂️ ${def.resource}: response too large, retrying with _count=${currentCount}`)
+            log.info(`✂️ ${def.resource}: response too large, retrying with _count=${currentCount}`)
          }
 
-         console.log(`🟢 ${logTag} OK`)
+         log.debug(`🟢 ${logTag} OK (${stats?.entries ?? 1}E, ${Buffer.byteLength(json, "utf8")}B, ${auditTime(t0)}ms)`)
          emitAudit({
             ts: new Date().toISOString(), tool: toolName, resource: def.resource, operation: op,
             status: shaped.isError ? "truncated" : "ok", durationMs: auditTime(t0), httpStatus: 200,
@@ -153,8 +156,8 @@ export const makeHandler =
             ...(shaped.isError && { isError: true }),
          }
       } catch (err) {
-         const { log, client } = formatFhirError(err)
-         console.error(`🔴 ${logTag} ERR ${log}`)
+         const { log: errLog, client } = formatFhirError(err)
+         log.error(`🔴 ${logTag} ERR ${errLog} (${auditTime(t0)}ms)`)
          emitAudit({ ts: new Date().toISOString(), tool: toolName, resource: def.resource, operation: op, status: "error", durationMs: auditTime(t0), httpStatus: errorStatus(err) })
          return { content: [{ type: "text" as const, text: client }], isError: true }
       }

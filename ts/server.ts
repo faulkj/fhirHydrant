@@ -19,6 +19,7 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { McpServer } from "@modelcontextprotocol/server"
 import { config } from "./config.ts"
+import { log } from "./log.ts"
 import { fhirVersionLabel } from "./fhir/transform/fhir-model.ts"
 import { initAuditSinks } from "./audit.ts"
 import { startAuth, stopAuth, restartAuth } from "./fhir/auth/auth.ts"
@@ -43,16 +44,21 @@ const
    explicitTermUrl = config.fhirTerminologyBaseUrl,
 
    _ = (
-      config.debug && console.info(`📋 fhirhydrant v${pkgVersion}`),
+      log.info(`📋 fhirhydrant v${pkgVersion}`),
+      log.debug(`🔑 Active kid: ${config.fhirActiveKey.kid}`),
+      config.fhirRetiredKeys.length && log.info(`🔑 JWKS: ${1 + config.fhirRetiredKeys.length} keys`),
       initAuditSinks(config.auditSinks, config.auditFile),
-      config.debug && console.info(`📋 FHIR version: ${fhirVersionLabel}`),
-      config.auditUserHeader && console.info(`📋 User header: ${config.auditUserHeader}`),
-      config.writeCapabilities.size > 0 && console.warn(`\x1b[31m⚠️  Write capabilities enabled: ${[...config.writeCapabilities].join(", ")}\x1b[0m`),
+      log.info(`📋 FHIR version: ${fhirVersionLabel}`),
+      log.info(`📋 FHIR server: ${config.fhirServerUrl}`),
+      log.info(`📋 Transport: ${config.transport}`),
+      log.info(`📋 Metadata mode: ${config.metadataMode}`),
+      config.auditUserHeader && log.info(`📋 User header: ${config.auditUserHeader}`),
+      config.writeCapabilities.size > 0 && log.log(`⚠️  Write capabilities enabled: ${[...config.writeCapabilities].join(", ")}`),
       explicitServerUrl && /\/R[45]B?(?:[\/?#]|$)/i.test(explicitServerUrl)
          && !explicitServerUrl.toUpperCase().includes(`/${config.fhirVersion}`)
-         && console.warn(`💡 FHIR_SERVER_URL contains a version segment that differs from FHIR_VERSION=${config.fhirVersion} — verify both are aligned`),
+         && log.warn(`💡 FHIR_SERVER_URL contains a version segment that differs from FHIR_VERSION=${config.fhirVersion} — verify both are aligned`),
       explicitTermUrl && config.fhirVersion === "R5" && /\/r4(?:[\/?#]|$)/i.test(explicitTermUrl)
-         && console.warn(`💡 FHIR_TERMINOLOGY_BASE_URL points to /r4 but FHIR_VERSION is R5 — consider using https://tx.fhir.org/r5`)
+         && log.warn(`💡 FHIR_TERMINOLOGY_BASE_URL points to /r4 but FHIR_VERSION is R5 — consider using https://tx.fhir.org/r5`)
    ),
    makeServer = (): McpServer => {
       const s = new McpServer(SERVER_INFO, { instructions: SERVER_INSTRUCTIONS })
@@ -76,29 +82,29 @@ const
          clearTimeout(debounce)
          debounce = setTimeout(async () => {
             if (filename === "operations.json") {
-               reloadOperations() && console.log("📋 Reloaded operations.json")
+               reloadOperations() && log.info("📋 Reloaded operations.json")
                return
             }
             const
                prevScopes = getRequestedScopes().join(","),
                ok = reloadDefinitions()
             if (!ok) return
-            console.log(`📋 Reloaded from ${filename}`)
-            console.log("📋 Metadata cache may be stale — restart to re-validate against /metadata")
+            log.info(`📋 Reloaded from ${filename}`)
+            log.info("📋 Metadata cache may be stale — restart to re-validate against /metadata")
             if (getRequestedScopes().join(",") !== prevScopes) {
                if (restartingAuth)
-                  return void console.log(
+                  return void log.warn(
                      "📋 Auth restart already in progress — skipping",
                   )
                restartingAuth = true
                try {
-                  console.log(
+                  log.info(
                      "📋 Scopes changed — restarting auth...",
                   )
                   await restartAuth()
-                  console.info("📋 Auth restarted with new scopes")
+                  log.info("📋 Auth restarted with new scopes")
                } catch (err) {
-                  console.error(
+                  log.error(
                      "📋 Auth restart failed:",
                      err instanceof Error ? err.message : err,
                   )
@@ -108,7 +114,7 @@ const
             }
          }, 300)
       })
-      console.info(`👀 Watching config/ for changes`)
+      log.info(`👀 Watching config/ for changes`)
    }
 
 const selfHostJwks = config.transport !== "stdio" && !config.fhirJwksUrl
@@ -133,7 +139,7 @@ let shutdownInProgress = false
 const shutdown = async (code = 0): Promise<void> => {
    if (shutdownInProgress) return
    shutdownInProgress = true
-   console.info("🛑 Shutting down...")
+   log.log("🛑 Shutting down...")
    stopAuth()
    await close()
    process.exit(code)

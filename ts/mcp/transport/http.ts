@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { config } from "../../config.ts"
+import { log } from "../../log.ts"
 import { withAuditContext } from "../../audit.ts"
 import { jwksHandler } from "../../fhir/auth/jwks.ts"
 import { getTokenResponse } from "../../fhir/auth/auth.ts"
@@ -21,7 +22,7 @@ export const startHttp = async (): Promise<TransportHandle> => {
          sessionIdGenerator: undefined,
       })
 
-   config.debug && console.info(`🌐 HTTP bind host: ${config.bindHost}; allowed hosts: ${config.allowedHosts?.join(", ") ?? "not restricted"}`)
+   log.debug(`🌐 HTTP bind host: ${config.bindHost}; allowed hosts: ${config.allowedHosts?.join(", ") ?? "not restricted"}`)
 
    app.use(logFailedRequest)
 
@@ -42,9 +43,9 @@ export const startHttp = async (): Promise<TransportHandle> => {
 
    if (!config.fhirJwksUrl) {
       app.get("/jwks", jwksHandler)
-      console.info(`\x1b[35m🔑 Serving JWKS at http://${config.bindHost === "127.0.0.1" ? "localhost" : config.bindHost}:${config.port}/jwks\x1b[0m`)
+      log.log(`🔑 Serving JWKS at http://${config.bindHost === "127.0.0.1" ? "localhost" : config.bindHost}:${config.port}/jwks`)
    } else
-      console.info("🔑 External JWKS URL configured — /jwks disabled")
+      log.log("🔑 External JWKS URL configured — /jwks disabled")
 
    app.use("/mcp", (req: Req, res: Res, next: Next) => {
       applyMcpCors(req, res)
@@ -62,7 +63,7 @@ export const startHttp = async (): Promise<TransportHandle> => {
       const
          body = req.body as Record<string, unknown> | undefined,
          method = body?.method as string | undefined
-      method && method !== "tools/call" && console.log(`🔌 ${method}`)
+      method && method !== "tools/call" && log.debug(`🔌 ${method}`)
       const
          requestId = randomUUID(),
          user = config.auditUserHeader ? req.get(config.auditUserHeader)?.trim() || undefined : undefined
@@ -70,7 +71,7 @@ export const startHttp = async (): Promise<TransportHandle> => {
    })
 
    app.use((err: Error, _req: Req, res: Res, _next: Next) => {
-      console.error("🌐 Request error: ", err.message)
+      log.error("🌐 Request error: ", err.message)
       res.status(400).json({
          jsonrpc: "2.0",
          error: { code: -32700, message: "Parse error" },
@@ -83,7 +84,7 @@ export const startHttp = async (): Promise<TransportHandle> => {
          const displayHost = config.bindHost === "127.0.0.1"
             ? "localhost"
             : config.bindHost
-         console.info(`\x1b[34m🔥 fhirhydrant listening on http://${displayHost}:${config.port}/mcp\x1b[0m`)
+         log.log(`🔥 fhirhydrant listening on http://${displayHost}:${config.port}/mcp`)
          resolve(s)
       })
    })
@@ -140,7 +141,7 @@ const
       res.on("finish", () => {
          if (res.statusCode < 400)
             return
-         console.warn(`🌐 Request failed status=${res.statusCode} method=${req.method} path=${req.originalUrl} host=${req.headers.host ?? "-"} origin=${req.get("origin") ?? "-"} contentType=${req.get("content-type") ?? "-"} contentLength=${req.get("content-length") ?? "0"}`)
+         log.warn(`🌐 Request failed status=${res.statusCode} method=${req.method} path=${req.originalUrl} host=${req.headers.host ?? "-"} origin=${req.get("origin") ?? "-"} contentType=${req.get("content-type") ?? "-"} contentLength=${req.get("content-length") ?? "0"}`)
       })
       next()
    }

@@ -1,4 +1,5 @@
 import { fhirModel, fhirVersionLabel } from "./fhir-model.ts"
+import { log } from "../../log.ts"
 
 /** Recursively compacts a FHIR value using type metadata and registered simplifiers. */
 export const compactNode = (value: unknown, path: string, isRoot: boolean): unknown => {
@@ -37,7 +38,7 @@ const
    t2p = raw.type2Parent as Record<string, string> | undefined,
    modelOk = !!(p2t && t2p)
 
-modelOk || console.warn(`⚠️ fhirpath model metadata unavailable for ${fhirVersionLabel} — compact will use key-only stripping`)
+modelOk || log.warn(`⚠️ fhirpath model metadata unavailable for ${fhirVersionLabel} — compact will use key-only stripping`)
 
 const
    NOISE = new Set(["meta", "text", "contained", "extension", "modifierExtension", "implicitRules", "language"]),

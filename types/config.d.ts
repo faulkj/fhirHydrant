@@ -24,6 +24,9 @@ type ConfigResponseMode = ResponseMode | "compact-locked" | undefined
 /** Supported FHIR version for FHIRPath evaluation and compact model metadata. */
 type FhirVersion = "R4" | "R4B" | "R5"
 
+/** Allowed log level strings for the LOG_LEVEL env var. */
+type LogLevel = "error" | "warn" | "info" | "debug"
+
 /** Validated runtime configuration shape — see config.ts. */
 interface Config {
    fhirBaseUrl: string
@@ -38,7 +41,8 @@ interface Config {
    bindHost: string
    allowedHosts: string[] | undefined
    transport: "http" | "stdio"
-   debug: boolean
+   /** Numeric log level: error=0, warn=1, info=2, debug=3. */
+   logLevel: number
    metadataMode: "strict" | "warn" | "off"
    fhirDefaultCount: number
    fhirMaxCount: number

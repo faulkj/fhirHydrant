@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/server"
 import type { z } from "zod"
 import messages from "../../../config/messages.json" with { type: "json" }
 import { config } from "../../config.ts"
+import { log } from "../../log.ts"
 import { createFhirClient } from "../../fhir/auth/client.ts"
 import { withRetry, enforceByteLimit, formatFhirError } from "../../fhir/utils.ts"
 import { emitAudit, auditTime, errorStatus } from "../../audit.ts"
@@ -40,13 +41,13 @@ export const addPaginate = (
                   emitAudit({ ts: new Date().toISOString(), tool: "paginate", operation: "paginate", status: "error", durationMs: auditTime(t0) })
                   return { content: [{ type: "text" as const, text: (messages as Record<string, string>)["paginationChunkExpired"] ?? "Chunk expired. Re-fetch the original server page URL." }], isError: true }
                }
-               console.log("🟢 Paginate (chunk)")
+               log.debug("🟢 Paginate (chunk)")
                emitAudit({ ts: new Date().toISOString(), tool: "paginate", operation: "paginate", status: "ok", durationMs: auditTime(t0) })
                return { content: [{ type: "text" as const, text }] }
             }
 
             const client = createFhirClient()
-            config.debug && console.log(`🔥 Paginate → ${validatedUrl}`)
+            log.debug(`🔥 Paginate → ${validatedUrl}`)
 
             const result = await withRetry(
                "paginate",
@@ -61,7 +62,7 @@ export const addPaginate = (
                if (r.resourceType === "Bundle" && Array.isArray(r.link) &&
                   (r.link as Record<string, unknown>[]).some((l) => l?.relation === "next" && typeof l?.url === "string")) {
                   const c = await coalesce(result, client, "paginate", maxResults, t0)
-                  console.log(`\u{1F7E2} Paginate OK (coalesced ${c.pagesFetched} pages)`)
+                  log.debug(`🟢 Paginate OK (coalesced ${c.pagesFetched} pages, ${c.entriesReturned} entries)`)
                   emitAudit({
                      ts: new Date().toISOString(), tool: "paginate", operation: "paginate",
                      status: c.isError ? "truncated" : "ok", durationMs: auditTime(t0), httpStatus: 200,
@@ -111,7 +112,7 @@ export const addPaginate = (
             if (shaped.isError) {
                const chunked = tryChunkBundle(JSON.parse(json), prefix, config.fhirMaxResponseBytes)
                if (chunked) {
-                  console.log("🟢 Paginate OK (chunked)")
+                  log.debug(`🟢 Paginate OK (chunked, ${auditTime(t0)}ms)`)
                   emitAudit({
                      ts: new Date().toISOString(), tool: "paginate", operation: "paginate",
                      status: "truncated", durationMs: auditTime(t0), httpStatus: 200,
@@ -125,7 +126,7 @@ export const addPaginate = (
                }
             }
 
-            console.log("🟢 Paginate OK")
+            log.debug(`🟢 Paginate OK (${stats?.entries ?? 1}E, ${Buffer.byteLength(json, "utf8")}B, ${auditTime(t0)}ms)`)
             emitAudit({
                ts: new Date().toISOString(), tool: "paginate", operation: "paginate",
                status: shaped.isError ? "truncated" : "ok", durationMs: auditTime(t0), httpStatus: 200,
@@ -140,8 +141,8 @@ export const addPaginate = (
                ...(shaped.isError && { isError: true }),
             }
          } catch (err) {
-            const { log, client } = formatFhirError(err)
-            console.error(`🔴 Paginate ERR ${log}`)
+            const { log: errLog, client } = formatFhirError(err)
+            log.error(`🔴 Paginate ERR ${errLog} (${auditTime(t0)}ms)`)
             emitAudit({ ts: new Date().toISOString(), tool: "paginate", operation: "paginate", status: "error", durationMs: auditTime(t0), httpStatus: errorStatus(err) })
             return {
                content: [{ type: "text" as const, text: messages.paginationRetryHint.replace("{message}", client) }],

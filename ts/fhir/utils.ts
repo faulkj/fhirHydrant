@@ -1,4 +1,5 @@
 import messages from "../../config/messages.json" with { type: "json" }
+import { log } from "../log.ts"
 
 /** Checks whether an error is transient and eligible for retry. */
 export const retryable = (err: unknown): boolean => {
@@ -38,7 +39,7 @@ export const withRetry = async <T>(
          const timedOut = isTimeout(err)
          if (i + 1 >= attempts || (!timedOut && !retryable(err))) throw err
          const delay = 1000 * 2 ** i
-         console.warn(`🔥 ${label} — ${timedOut ? "timed out" : "transient error"}, retrying in ${delay}ms (${i + 1}/${attempts})`)
+         log.warn(`🔥 ${label} — ${timedOut ? "timed out" : "transient error"}, retrying in ${delay}ms (${i + 1}/${attempts})`)
          await new Promise((r) => setTimeout(r, delay))
       }
    }

@@ -1,4 +1,5 @@
 import { config } from "../../config.ts"
+import { log } from "../../log.ts"
 import { isMetadataAvailable, getResourceMeta } from "../model/metadata.ts"
 
 /** Returns whether _count injection/capping is allowed for the given resource type given current metadata mode. */
@@ -19,12 +20,12 @@ const shapeCount = (params: URLSearchParams, resource: string): { injected: bool
    if (raw === null || !Number.isFinite(n) || n < 1) {
       if (config.fhirDefaultCount === 0) return { injected: false, capped: false }
       params.set("_count", String(config.fhirDefaultCount))
-      config.debug && console.log(`✂️ ${resource}: _count${raw === null ? ` not provided, defaulted to ${config.fhirDefaultCount}` : `="${raw}" invalid, replaced with ${config.fhirDefaultCount}`}`)
+      log.debug(`✂️ ${resource}: _count${raw === null ? ` not provided, defaulted to ${config.fhirDefaultCount}` : `="${raw}" invalid, replaced with ${config.fhirDefaultCount}`}`)
       return { injected: true, capped: false }
    }
    if (config.fhirMaxCount > 0 && n > config.fhirMaxCount) {
       params.set("_count", String(config.fhirMaxCount))
-      config.debug && console.log(`✂️ ${resource}: _count=${n} capped to ${config.fhirMaxCount}`)
+      log.debug(`✂️ ${resource}: _count=${n} capped to ${config.fhirMaxCount}`)
       return { injected: false, capped: true }
    }
    return { injected: false, capped: false }
@@ -46,7 +47,7 @@ export const buildSearchUrl = (
       countInjected = s.injected
       countCapped = s.capped
    } else {
-      config.debug && console.log(`✂️ ${resource}: _count skipped (not advertised, strict mode)`)
+      log.debug(`✂️ ${resource}: _count skipped (not advertised, strict mode)`)
    }
    const qs = params.toString()
    return {

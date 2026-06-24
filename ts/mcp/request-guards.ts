@@ -1,4 +1,5 @@
 import messages from "../../config/messages.json" with { type: "json" }
+import { log } from "../log.ts"
 import { getSearchControls } from "../fhir/model/definitions.ts"
 import { emitAudit, auditTime } from "../audit.ts"
 import { validateDateArgs } from "./validation.ts"
@@ -81,5 +82,7 @@ const
       const id = typeof args["_id"] === "string" && args["_id"] ? args["_id"] : undefined
       if (!id) return undefined
       const ignore = new Set(["_id", "action", "body", ...Object.keys(getSearchControls())])
-      return Object.entries(args).some(([k, v]) => !ignore.has(k) && v !== undefined && v !== "") ? undefined : id
+      const hasExtra = Object.entries(args).some(([k, v]) => !ignore.has(k) && v !== undefined && v !== "")
+      hasExtra && log.debug(`🔥 ${id}: direct read demoted to search — extra params present`)
+      return hasExtra ? undefined : id
    }

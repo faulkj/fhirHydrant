@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/server"
 import type { z } from "zod"
 import { config } from "../../config.ts"
+import { log } from "../../log.ts"
 import { createFhirClient } from "../../fhir/auth/client.ts"
 import { withRetry, formatFhirError } from "../../fhir/utils.ts"
 import { emitAudit, auditTime, errorStatus } from "../../audit.ts"
@@ -37,7 +38,7 @@ export const addBundle = (
 
          const { type, summary, warning } = guard
          const logTag = `Bundle.${type}`
-         config.debug && console.log(`🔥 ${logTag} → ${summary.readCount}R ${summary.writeCount}W`)
+         log.debug(`🔥 ${logTag} → ${summary.readCount}R ${summary.writeCount}W`)
 
          try {
             const
@@ -74,7 +75,7 @@ export const addBundle = (
                   : `${type}: empty Bundle`,
                prefix = [warning, summaryNote].filter(Boolean).join("\n") + "\n\n"
 
-            console.log(`🟢 ${logTag} OK`)
+            log.debug(`🟢 ${logTag} OK (${entryCount} entries, ${auditTime(t0)}ms)`)
             emitAudit({
                ts: new Date().toISOString(), tool: "bundle", operation: "bundle",
                status: pipeline.isError ? "truncated" : "ok", durationMs: auditTime(t0), httpStatus: 200,
@@ -90,8 +91,8 @@ export const addBundle = (
                ...(pipeline.isError && { isError: true }),
             }
          } catch (err) {
-            const { log, client } = formatFhirError(err)
-            console.error(`🔴 ${logTag} ERR ${log}`)
+            const { log: errLog, client } = formatFhirError(err)
+            log.error(`🔴 ${logTag} ERR ${errLog} (${auditTime(t0)}ms)`)
             emitAudit({ ts: new Date().toISOString(), tool: "bundle", operation: "bundle", status: "error", durationMs: auditTime(t0), httpStatus: errorStatus(err), bundleType: type, bundleEntryCount: summary.readCount + summary.writeCount, bundleReadCount: summary.readCount, bundleWriteCount: summary.writeCount })
             return { content: [{ type: "text" as const, text: client }], isError: true }
          }

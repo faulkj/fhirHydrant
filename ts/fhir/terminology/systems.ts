@@ -1,4 +1,4 @@
-import { config } from "../../config.ts"
+import { log } from "../../log.ts"
 
 /** Canonical CodeSystem URLs keyed by short name */
 export const SYSTEMS: Record<string, string> = {
@@ -21,12 +21,12 @@ export const resolveSystem = (system: string): { url: string, vsUrl: string } | 
 /** Fetches JSON from a FHIR terminology server with proper Accept header */
 export const txFetch = async (base: string, path: string, signal?: AbortSignal): Promise<unknown> => {
    const url = `${base}${path}`
-   config.debug && console.log(`🔤 terminology → ${url}`)
+   log.debug(`🔤 terminology → ${url}`)
    const res = await fetch(url, {
       headers: { Accept: "application/fhir+json" },
       signal,
    })
-   config.debug && console.log(`🔤 terminology ← ${res.status} ${res.statusText}`)
+   log.debug(`🔤 terminology ← ${res.status} ${res.statusText}`)
    if (!res.ok) {
       const body = await res.text().catch(() => "")
       const err = new Error(`${res.status} ${res.statusText}\n\n${body}`) as Error & { statusCode: number, statusText: string }

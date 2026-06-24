@@ -1,4 +1,5 @@
 import { config } from "../config.ts"
+import { log } from "../log.ts"
 import { createFhirClient } from "../fhir/auth/client.ts"
 import { withRetry, formatFhirError } from "../fhir/utils.ts"
 import { emitAudit, auditTime, errorStatus } from "../audit.ts"
@@ -26,7 +27,9 @@ export const executeWrite = async (
 
    try {
       const
-         client = createFhirClient(),
+         client = createFhirClient()
+      log.debug(`🔥 ${logTag} → ${op} ${def.resource}${id ? '/' + id : ''}`)
+      const
          result = await withRetry(`${def.resource} ${op}`, () => {
             if (op === "create") return client.create(body)
             if (op === "update") return client.update(body)
@@ -36,7 +39,7 @@ export const executeWrite = async (
          }, 3, config.fhirRequestTimeoutMs),
          json = result ? JSON.stringify(result, null, 2) : `${op} succeeded`
 
-      config.debug && console.log(`🔥 ${logTag} OK`)
+      log.debug(`🟢 ${logTag} OK (${Buffer.byteLength(json, "utf8")}B, ${auditTime(t0)}ms)`)
       emitAudit({
          ts: new Date().toISOString(), tool: toolName, resource: def.resource,
          operation: op, status: "ok", durationMs: auditTime(t0), httpStatus: 200,
@@ -44,8 +47,8 @@ export const executeWrite = async (
       })
       return { content: [{ type: "text" as const, text: json }] }
    } catch (err) {
-      const { log, client } = formatFhirError(err)
-      console.error(`🔴 ${logTag} ERR ${log}`)
+      const { log: errLog, client } = formatFhirError(err)
+      log.error(`🔴 ${logTag} ERR ${errLog} (${auditTime(t0)}ms)`)
       emitAudit({
          ts: new Date().toISOString(), tool: toolName, resource: def.resource,
          operation: op, status: "error", durationMs: auditTime(t0), httpStatus: errorStatus(err),

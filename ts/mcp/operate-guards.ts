@@ -1,5 +1,6 @@
 import messages from "../../config/messages.json" with { type: "json" }
 import { config } from "../config.ts"
+import { log } from "../log.ts"
 import { getResourceMeta, isMetadataAvailable } from "../fhir/model/metadata.ts"
 import { scopeAllowsResource } from "../fhir/auth/scopes.ts"
 import { getTokenResponse } from "../fhir/auth/auth.ts"
@@ -24,7 +25,7 @@ export const filterOperationsByMetadata = (
       const meta = getResourceMeta(op.resource)
       if (!meta && config.metadataMode === "strict") {
          const reason = `${op.resource} not in /metadata`
-         config.debug && console.warn(`🏥 ${reason} — operation "${op.key}" skipped`)
+         log.debug(`🏥 ${reason} — operation "${op.key}" skipped`)
          skippedOps.push({ key: op.key, reason, gate: "metadata" })
          continue
       }
@@ -33,11 +34,11 @@ export const filterOperationsByMetadata = (
          if (!meta.operations.includes(opName)) {
             if (config.metadataMode === "strict") {
                const reason = `${op.resource} does not advertise ${op.operation}`
-               config.debug && console.warn(`🏥 ${reason} — operation "${op.key}" skipped`)
+               log.debug(`🏥 ${reason} — operation "${op.key}" skipped`)
                skippedOps.push({ key: op.key, reason, gate: "metadata" })
                continue
             }
-            config.debug && console.log(`🏥 ${op.resource} does not advertise ${op.operation} — registering anyway (warn mode)`)
+            log.debug(`🏥 ${op.resource} does not advertise ${op.operation} — registering anyway (warn mode)`)
          }
       }
       enabled.push(op)
@@ -57,7 +58,7 @@ export const filterOperationsByScopes = (
          enabled.push(op)
       } else {
          const reason = `${op.resource} not in granted scopes`
-         config.debug && console.warn(`🔑 ${reason} — operation "${op.key}" skipped`)
+         log.debug(`🔑 ${reason} — operation "${op.key}" skipped`)
          skippedOps.push({ key: op.key, reason, gate: "scope" })
       }
    }

@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/server"
 import type { z } from "zod"
 import messages from "../../../config/messages.json" with { type: "json" }
 import { config } from "../../config.ts"
+import { log } from "../../log.ts"
 import { withRetry, formatFhirError } from "../../fhir/utils.ts"
 import { emitAudit, auditTime, errorStatus } from "../../audit.ts"
 import { resolveSystem, txFetch } from "../../fhir/terminology/systems.ts"
@@ -50,10 +51,11 @@ export const addTerminologyLookup = (
                ].filter(Boolean)
 
             emitAudit({ ts: new Date().toISOString(), tool: "terminology_lookup", operation: "lookup", status: "ok", durationMs: auditTime(t0), httpStatus: 200, system: systemKey })
+            log.debug(`🟢 terminology_lookup OK (${auditTime(t0)}ms)`)
             return { content: [{ type: "text" as const, text: lines.join("\n") }] }
          } catch (err) {
-            const { log, client } = formatFhirError(err)
-            console.error(`🔴 terminology_lookup ERR ${log}`)
+            const { log: errLog, client } = formatFhirError(err)
+            log.error(`🔴 terminology_lookup ERR ${errLog} (${auditTime(t0)}ms)`)
             emitAudit({ ts: new Date().toISOString(), tool: "terminology_lookup", operation: "lookup", status: "error", durationMs: auditTime(t0), httpStatus: errorStatus(err), system: systemKey })
             return { content: [{ type: "text" as const, text: messages.terminologyError.replace("{message}", client) }], isError: true }
          }

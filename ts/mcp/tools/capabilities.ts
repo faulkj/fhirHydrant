@@ -6,6 +6,7 @@ import { getDefinitions } from "../../fhir/model/definitions.ts"
 import { getTokenResponse } from "../../fhir/auth/auth.ts"
 import { parseGrantedScopes } from "../../fhir/auth/scopes.ts"
 import { formatFhirError } from "../../fhir/utils.ts"
+import { log } from "../../log.ts"
 import { emitAudit, auditTime, errorStatus } from "../../audit.ts"
 import { getEnabledActions } from "../validation.ts"
 import { getEnabledOperations, getSkippedOperations } from "../operations.ts"
@@ -57,8 +58,8 @@ export const addCapabilities = (
                content: [{ type: "text" as const, text: JSON.stringify(enriched, null, 2) }],
             }
          } catch (err) {
-            const { log, client } = formatFhirError(err)
-            console.error(`🏥 capabilities ERR ${log}`)
+            const { log: errLog, client } = formatFhirError(err)
+            log.error(`🔴 capabilities ERR ${errLog} (${auditTime(t0)}ms)`)
             emitAudit({ ts: new Date().toISOString(), tool: "capabilities", operation: "capabilities", status: "error", durationMs: auditTime(t0), httpStatus: errorStatus(err) })
             return {
                content: [{ type: "text" as const, text: client }],

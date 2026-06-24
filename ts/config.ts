@@ -3,7 +3,7 @@ import {
    parseResponseMode, parseAllowedHosts, parsePaginationPaths,
    parsePositiveInt, parseNonNegativeInt, parseAuditSinks, parseKeys,
    parseWriteCapabilities, parseOperations, parseFhirVersion,
-   parseBundleCapabilities,
+   parseBundleCapabilities, parseLogLevel,
 } from "./config-parsers.ts"
 
 /** Validated runtime configuration loaded from environment variables. */
@@ -26,7 +26,7 @@ export const config: Config = {
    bindHost: opt("BIND_HOST") ?? (process.argv.includes("--dev") ? "127.0.0.1" : "0.0.0.0"),
    allowedHosts: parseAllowedHosts(),
    transport: parseTransport(),
-   debug: opt("DEBUG")?.toLowerCase() === "true",
+   logLevel: parseLogLevel(),
    metadataMode: parseMetadataMode(),
    fhirDefaultCount: parseNonNegativeInt("FHIR_DEFAULT_COUNT", 0),
    fhirMaxCount: parseNonNegativeInt("FHIR_MAX_COUNT", 0),
@@ -48,10 +48,6 @@ export const config: Config = {
    bundleCapabilities: parseBundleCapabilities(),
    bundleWritesEnabled: opt("FHIR_BUNDLE_WRITES_ENABLED")?.toLowerCase() === "true",
 }
-
-config.debug && console.log(`🔑 Active kid: ${config.fhirActiveKey.kid}`)
-if (retiredKeys.length)
-   console.log(`🔑 JWKS: ${1 + retiredKeys.length} keys`)
 
 if (config.fhirDefaultCount > 0 && config.fhirMaxCount > 0 && config.fhirDefaultCount > config.fhirMaxCount)
    throw new Error(

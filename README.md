@@ -1,6 +1,6 @@
 # fhirHydrant
 
-A fully configurable, open-source Node.js MCP server for R4+ FHIR APIs. It
+A modern, fully configurable, open-source Node.js MCP server for R4+ FHIR APIs. It
 connects MCP-compatible clients to clinical data over SMART on FHIR v2 Backend
 Services using signed JWT client credentials.
 
@@ -344,7 +344,7 @@ See [.env.example](.env.example) for a complete sample.
 | `FHIR_AUDIT_SINK` | unset | `console`, `file`, or both |
 | `FHIR_AUDIT_FILE` | `./audit.jsonl` | JSONL file used when the `file` audit sink is enabled |
 | `FHIR_AUDIT_USER_HEADER` | unset | Proxy-authenticated user header copied into audit events |
-| `DEBUG` | `false` | Verbose FHIR request logging; blocked when `NODE_ENV=production` |
+| `LOG_LEVEL` | `info` | Log verbosity: `error`, `warn`, `info`, or `debug` |
 
 Explicit `FHIR_SERVER_URL` and `FHIR_TOKEN_URL` values always win over derived
 URLs.

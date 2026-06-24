@@ -1,4 +1,5 @@
 import { config } from "../../config.ts"
+import { log } from "../../log.ts"
 import { withRetry, enforceByteLimit } from "../utils.ts"
 import { compact } from "./compact.ts"
 import { tryChunkBundle } from "./bundle-chunks.ts"
@@ -83,6 +84,7 @@ export const coalesce = async (
       if (truncated) break
 
       try {
+         log.debug(`📦 ${label} fetching page ${pages + 1} → ${nextUrl}`)
          current = await withRetry(
             label,
             (signal) => client.request({ url: nextUrl!, signal }),
@@ -95,6 +97,8 @@ export const coalesce = async (
          break
       }
    }
+
+   truncated && log.debug(`📦 Coalesce truncated: ${truncateReason} after ${pages} pages, ${entries.length} entries`)
 
    const bundle: Record<string, unknown> = { resourceType: "Bundle" }
    bundleType !== undefined && (bundle.type = bundleType)

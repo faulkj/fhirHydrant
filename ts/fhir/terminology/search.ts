@@ -5,6 +5,7 @@ export { loincSearch }
 export { snomedSearch }
 
 import { config } from "../../config.ts"
+import { log } from "../../log.ts"
 import { withRetry } from "../utils.ts"
 import { txFetch } from "./systems.ts"
 import { LOINC_FETCH_SIZE, cacheKey, cacheGet, cacheSet } from "./cache.ts"
@@ -41,8 +42,8 @@ const
          }
 
       hit
-         ? console.log(`🟢 code_search CACHE HIT — ${entry.items.length} cached for "${filter}"`)
-         : console.log(`🔵 code_search FETCHING — "${filter}"`)
+         ? log.debug(`🟢 code_search CACHE HIT — ${entry.items.length} cached for "${filter}"`)
+         : log.debug(`🔵 code_search FETCHING — "${filter}"`)
 
       let fetched = false
       const fill = async (serverFilter: string) => {
@@ -75,7 +76,7 @@ const
             exact = entry.items.slice().sort((a, b) => scoreLoinc(disp(b), filter) - scoreLoinc(disp(a), filter)),
             exactCodes = new Set(exact.map(i => i.split(" - ")[0])),
             anchor = [...words].sort((a, b) => b.length - a.length)[0]
-         console.log(`🟠 code_search FALLBACK — "${filter}" → "${anchor}" (${exact.length} exact kept)`)
+         log.debug(`🟠 code_search FALLBACK — "${filter}" → "${anchor}" (${exact.length} exact kept)`)
          entry.items = []
          entry.codes = new Set<string>()
          entry.nextRawOffset = 0
@@ -86,7 +87,7 @@ const
             entry.items = entry.items
                .filter(item => !exactCodes.has(item.split(" - ")[0]))
                .filter(item => words.every(w => item.toLowerCase().includes(w)))
-            console.log(`🟠 code_search FILTERED — ${before} → ${entry.items.length} (all words: ${words.join(", ")})`)
+            log.debug(`🟠 code_search FILTERED — ${before} → ${entry.items.length} (all words: ${words.join(", ")})`)
             entry.items.sort((a, b) => scoreLoinc(disp(b), filter) - scoreLoinc(disp(a), filter))
             entry.items = [...exact, ...entry.items]
             entry.codes = new Set(entry.items.map(i => i.split(" - ")[0]))

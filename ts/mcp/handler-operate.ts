@@ -1,4 +1,5 @@
 import { config } from "../config.ts"
+import { log } from "../log.ts"
 import { createFhirClient } from "../fhir/auth/client.ts"
 import { withRetry, formatFhirError } from "../fhir/utils.ts"
 import { emitAudit, auditTime, errorStatus } from "../audit.ts"
@@ -36,7 +37,7 @@ export const makeOperateHandler = (enabledOps: OperationDefinition[]) =>
 
       const fullUrl = qs ? `${url}?${qs}` : url
       const logTag = `${resource}.${op.operation}`
-      config.debug && console.log(`🔥 ${logTag} → ${fullUrl}`)
+      log.debug(`🔥 ${logTag} ${op.method} → ${fullUrl}`)
 
       // $match: validate Parameters shape and auto-inject onlyCertainMatches
       let finalBody = body
@@ -80,7 +81,7 @@ export const makeOperateHandler = (enabledOps: OperationDefinition[]) =>
             return { content: [{ type: "text" as const, text: pipeline.error }], isError: true }
          }
 
-         console.log(`🟢 ${logTag} OK`)
+         log.debug(`🟢 ${logTag} OK (${Buffer.byteLength(pipeline.text, "utf8")}B, ${auditTime(t0)}ms)`)
          emitAudit({
             ts: new Date().toISOString(), tool: "operate", resource,
             operation: op.auditOperation as AuditEvent["operation"],
@@ -94,8 +95,8 @@ export const makeOperateHandler = (enabledOps: OperationDefinition[]) =>
          })
          return { content: [{ type: "text" as const, text: pipeline.text }], ...(pipeline.isError && { isError: true }) }
       } catch (err) {
-         const { log, client } = formatFhirError(err)
-         console.error(`🔴 ${logTag} ERR ${log}`)
+         const { log: errLog, client } = formatFhirError(err)
+         log.error(`🔴 ${logTag} ERR ${errLog} (${auditTime(t0)}ms)`)
          emitAudit({ ts: new Date().toISOString(), tool: "operate", resource, operation: op.auditOperation as AuditEvent["operation"], status: "error", durationMs: auditTime(t0), httpStatus: errorStatus(err) })
          return { content: [{ type: "text" as const, text: client }], isError: true }
       }

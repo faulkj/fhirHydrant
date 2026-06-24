@@ -1,5 +1,6 @@
 import fhirStarter from "fhirstarterjs"
 import { config } from "../../config.ts"
+import { log } from "../../log.ts"
 import { getRequestedScopes } from "../model/definitions.ts"
 
 let starter!: InstanceType<typeof fhirStarter>
@@ -14,13 +15,16 @@ export const startAuth = async (): Promise<void> => {
       keyId: config.fhirActiveKey.kid,
       ...(config.fhirJwksUrl && { jwksUrl: config.fhirJwksUrl }),
    })
+   log.debug(`🔑 Requesting scopes: ${getRequestedScopes().join(", ")}`)
    await starter.start()
+   log.info("🔑 Auth started — token acquired")
+   log.debug(`🔑 Granted scope: ${starter.tokenResponse().scope ?? "(none)"}`)
 
    const initialScope = starter.tokenResponse().scope ?? ""
    starter.onRefresh(() => {
       const refreshedScope = starter.tokenResponse().scope ?? ""
       if (refreshedScope !== initialScope)
-         console.warn(`🔑 Granted scopes changed after token refresh — registered tools may be stale`)
+         log.warn(`🔑 Granted scopes changed after token refresh — registered tools may be stale`)
    })
 }
 

@@ -1,5 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/server"
 import { config } from "../config.ts"
+import { log } from "../log.ts"
 import { isMetadataAvailable, getSystemInteractions } from "../fhir/model/metadata.ts"
 import { getDefinitions } from "../fhir/model/definitions.ts"
 import { loadCoreTools, buildSchema } from "./core-tools.ts"
@@ -13,7 +14,7 @@ export const registerBundle = (server: McpServer): void => {
       const sys = getSystemInteractions()
       const hasAny = [...config.bundleCapabilities].some((t) => sys.has(t))
       if (!hasAny) {
-         console.info(`📦 Bundle tool skipped — /metadata does not advertise ${[...config.bundleCapabilities].join(" or ")}`)
+         log.info(`📦 Bundle tool skipped — /metadata does not advertise ${[...config.bundleCapabilities].join(" or ")}`)
          return
       }
    }
@@ -36,5 +37,5 @@ export const registerBundle = (server: McpServer): void => {
       description = `Submit a FHIR ${types} Bundle. Resources: ${resourceSample}. Writes: ${writeState}.`
 
    addBundle(server, description, schema)
-   console.info(`📦 Registered bundle (${types}, writes ${config.bundleWritesEnabled ? "enabled" : "disabled"})`)
+   log.info(`📦 Registered bundle (${types}, writes ${config.bundleWritesEnabled ? "enabled" : "disabled"})`)
 }
