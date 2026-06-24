@@ -37,9 +37,15 @@ export const compact = (data: unknown): unknown => {
       const
          entries = Array.isArray(r.entry)
             ? (r.entry as Record<string, unknown>[])
-               .map((e) => {
-                  const compacted = e.resource ? compactNode(e.resource, String((e.resource as Record<string, unknown>).resourceType), true) : undefined
-                  return compacted !== undefined ? { resource: compacted } : undefined
+               .map((entry) => {
+                  const
+                     compacted = entry.resource ? compactNode(entry.resource, String((entry.resource as Record<string, unknown>).resourceType), true) : undefined,
+                     fullUrl = typeof entry.fullUrl === "string" ? entry.fullUrl : undefined
+                  return compacted !== undefined
+                     ? fullUrl
+                        ? { fullUrl, resource: compacted }
+                        : { resource: compacted }
+                     : undefined
                })
                .filter(Boolean)
             : undefined,
