@@ -51,6 +51,10 @@ pages — the server handles that internally. Use `maxResults` to set a target
 for how many compact entries you want back. Pass `prefetch=false` if you need
 single-page control for debugging.
 
+IMPORTANT: If a response header includes a partial-result warning (`⚠️ INCOMPLETE`), the
+next action is always to call `paginate` with the URL from the `Next:` line in
+that same header.
+
 When the FHIR server does not support `_elements` or `_summary`, or when you
 need projection beyond what those controls offer, use the `fhirpath` parameter
 for client-side filtering. The expression is a standard FHIRPath expression
