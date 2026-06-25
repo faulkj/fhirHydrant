@@ -1,5 +1,6 @@
 import { fhirModel, fhirVersionLabel } from "./fhir-model.ts"
 import { log } from "../../log.ts"
+import { simplifyByType } from "./compact-simplifiers.ts"
 
 /** Recursively compacts a FHIR value using type metadata and registered simplifiers. */
 export const compactNode = (value: unknown, path: string, isRoot: boolean): unknown => {
@@ -13,7 +14,7 @@ export const compactNode = (value: unknown, path: string, isRoot: boolean): unkn
    const
       obj = value as Record<string, unknown>,
       type = resolveType(path),
-      simplified = simplify(type, obj)
+      simplified = simplifyByType(type, obj, isType)
    if (simplified !== undefined) return simplified
 
    const out: Record<string, unknown> = {}
@@ -21,7 +22,10 @@ export const compactNode = (value: unknown, path: string, isRoot: boolean): unkn
       if (NOISE.has(key)) continue
       if (key.startsWith("_")) continue
       if (key === "id" && !isRoot) continue
-      if (key === "resourceType") { out[key] = val; continue }
+      if (key === "resourceType") {
+         out[key] = val
+         continue
+      }
 
       const
          childPath = `${path}.${key}`,
@@ -59,75 +63,4 @@ const
          cur = t2p![cur]
       }
       return false
-   },
-
-   pick = (obj: Record<string, unknown>, keys: string[]): Record<string, unknown> | undefined => {
-      const out: Record<string, unknown> = {}
-      let any = false
-      for (const k of keys) {
-         const v = obj[k]
-         if (v !== undefined && v !== null) out[k] = v, any = true
-      }
-      return any ? out : undefined
-   },
-
-   simplifyCoding = (v: Record<string, unknown>) => pick(v, ["code", "display"]),
-
-   SIMPLIFIERS: Record<string, (v: Record<string, unknown>) => unknown> = {
-      CodeableConcept: (v) => {
-         const
-            coding = Array.isArray(v.coding)
-               ? v.coding.map((c: Record<string, unknown>) => simplifyCoding(c)).filter(Boolean)
-               : undefined,
-            text = v.text,
-            textIsDup = coding?.length === 1 && text === (coding[0] as Record<string, unknown>).display
-         if (!coding?.length && !text) return undefined
-         const out: Record<string, unknown> = {}
-         coding?.length && (out.coding = coding)
-         text && !textIsDup && (out.text = text)
-         return out
-      },
-      Coding: simplifyCoding,
-      Reference: (v) =>
-         typeof v.reference === "string"
-            ? v.reference
-            : pick(v, ["display", "identifier"]),
-      Identifier: (v) => pick(v, ["system", "value"]),
-      HumanName: (v) => pick(v, ["family", "given", "text"]),
-      Address: (v) => pick(v, ["line", "city", "state", "postalCode"]),
-      ContactPoint: (v) => pick(v, ["system", "value"]),
-      Period: (v) => pick(v, ["start", "end"]),
-      CodeableReference: (v) => {
-         const
-            ref = typeof v.reference === "object" && v.reference ? SIMPLIFIERS.Reference(v.reference as Record<string, unknown>) : undefined,
-            concept = typeof v.concept === "object" && v.concept ? SIMPLIFIERS.CodeableConcept(v.concept as Record<string, unknown>) : undefined
-         if (!ref && !concept) return undefined
-         const out: Record<string, unknown> = {}
-         ref !== undefined && (out.reference = ref)
-         concept !== undefined && (out.concept = concept)
-         return out
-      },
-   },
-
-   quantitySimplifier = (v: Record<string, unknown>) => pick(v, ["value", "unit"]),
-
-   simplify = (type: string | undefined, value: Record<string, unknown>): unknown => {
-      if (!type) return inferByShape(value)
-      if (SIMPLIFIERS[type]) return SIMPLIFIERS[type](value)
-      if (isType(type, "Quantity")) return quantitySimplifier(value)
-      return undefined
-   },
-
-   inferByShape = (v: Record<string, unknown>): unknown => {
-      if (Array.isArray(v.coding) || (typeof v.text === "string" && v.coding === undefined && v.system === undefined))
-         return SIMPLIFIERS.CodeableConcept(v)
-      if (typeof v.value === "number" && typeof v.unit === "string")
-         return quantitySimplifier(v)
-      if (typeof v.system === "string" && (typeof v.code === "string" || typeof v.display === "string"))
-         return simplifyCoding(v)
-      if (typeof v.reference === "string")
-         return SIMPLIFIERS.Reference(v)
-      if ((typeof v.reference === "object" && v.reference) || (typeof v.concept === "object" && v.concept))
-         return SIMPLIFIERS.CodeableReference(v)
-      return undefined
    }

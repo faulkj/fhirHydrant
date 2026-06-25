@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/server"
 import type { z } from "zod"
-import { config } from "../../config.ts"
+import { config } from "../../config/index.ts"
 import { log } from "../../log.ts"
 import { createFhirClient } from "../../fhir/auth/client.ts"
 import { withRetry, formatFhirError } from "../../fhir/utils.ts"

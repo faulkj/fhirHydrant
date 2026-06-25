@@ -1,10 +1,10 @@
-import { config } from "../config.ts"
+import { config } from "../config/index.ts"
 import { log } from "../log.ts"
 import { isMetadataAvailable, getResourceMeta } from "../fhir/model/metadata.ts"
 import { scopeAllowsResource } from "../fhir/auth/scopes.ts"
 
 /** Filters definitions against cached /metadata. Returns surviving definitions and skipped-tool reasons. */
-export const filterByMetadata = (defs: ResourceDefinition[]): { definitions: ResourceDefinition[]; skipped: CapabilitySummary["skippedTools"] } => {
+export const filterByMetadata = (defs: ResourceDefinition[]): { definitions: ResourceDefinition[], skipped: CapabilitySummary["skippedTools"] } => {
    if (!isMetadataAvailable() || config.metadataMode === "off")
       return { definitions: defs, skipped: [] }
 
@@ -51,7 +51,7 @@ export const filterByMetadata = (defs: ResourceDefinition[]): { definitions: Res
 /** Filters definitions against granted SMART scopes. Returns surviving definitions and skipped-tool reasons. */
 export const filterByScopes = (
    defs: ResourceDefinition[], scopeMap: Map<string, Set<ScopePermission>>,
-): { definitions: ResourceDefinition[]; skipped: CapabilitySummary["skippedTools"] } => {
+): { definitions: ResourceDefinition[], skipped: CapabilitySummary["skippedTools"] } => {
    if (scopeMap.size === 0) return { definitions: defs, skipped: [] }
 
    const

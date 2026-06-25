@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/server"
 import type { z } from "zod"
 import messages from "../../../config/messages/terminology.json" with { type: "json" }
-import { config } from "../../config.ts"
+import { config } from "../../config/index.ts"
 import { log } from "../../log.ts"
 import { withRetry, formatFhirError } from "../../fhir/utils.ts"
 import { emitAudit, auditTime, errorStatus } from "../../audit.ts"

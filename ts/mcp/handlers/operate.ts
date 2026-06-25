@@ -1,4 +1,4 @@
-import { config } from "../../config.ts"
+import { config } from "../../config/index.ts"
 import { log } from "../../log.ts"
 import { createFhirClient } from "../../fhir/auth/client.ts"
 import { withRetry, formatFhirError } from "../../fhir/utils.ts"
@@ -6,7 +6,7 @@ import { emitAudit, auditTime, errorStatus } from "../../audit.ts"
 import { extractFhirPath } from "../../fhir/transform/fhirpath.ts"
 import { extractResponseMode, resolveResponseMode } from "../../fhir/transform/compact.ts"
 import { applyResponsePipeline } from "../../fhir/transform/pipeline.ts"
-import { validateOperateArgs } from "../guards/operate.ts"
+import { validateOperateArgs } from "../guards/validate-operate.ts"
 
 /** Creates the handler function for the operate MCP tool. */
 export const makeOperateHandler = (enabledOps: OperationDefinition[]) =>
@@ -62,7 +62,7 @@ export const makeOperateHandler = (enabledOps: OperationDefinition[]) =>
       try {
          const
             client = createFhirClient(),
-            requestOpts: { url: string; method?: string; body?: string; headers?: Record<string, string>; signal?: AbortSignal } =
+            requestOpts: { url: string, method?: string, body?: string, headers?: Record<string, string>, signal?: AbortSignal } =
                op.method === "POST"
                   ? { url: fullUrl, method: "POST", ...(finalBody ? { body: finalBody, headers: { "Content-Type": "application/fhir+json" } } : {}) }
                   : { url: fullUrl }

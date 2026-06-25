@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
-import { config } from "../../config.ts"
+import { config } from "../../config/index.ts"
 import { log } from "../../log.ts"
 import { getConfigDir } from "./definitions.ts"
 import { validateOperations } from "./validate-operations.ts"
@@ -58,7 +58,7 @@ export const getOperation = (key: string): OperationDefinition | undefined =>
 
 /**
  * Re-reads operations.json and rebuilds the catalog.
- * Returns true on success; on failure, logs and retains the last valid catalog.
+ * Returns true on success, on failure, logs and retains the last valid catalog.
  */
 export const reloadOperations = (): boolean => {
    try {

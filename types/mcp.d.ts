@@ -26,6 +26,20 @@ interface TransportHandle {
    close: () => Promise<void>
 }
 
+/** Options for the shared read/search/history/paginate execution wrapper. */
+interface ReadOpts {
+   url: string
+   tool: string
+   resource?: string
+   op: AuditEvent["operation"]
+   args: Record<string, unknown>
+   t0: number
+   isBundle: boolean
+   allowCoalesce?: boolean
+   search?: { url: string; countInjected: boolean; countCapped: boolean; countSkipped: boolean }
+   notes?: string[]
+}
+
 /** Result of resource request validation — either success (directId + op) or an early-exit MCP error response. */
 type GuardResult =
    | { ok: true; directId: string | undefined; op: AuditEvent["operation"]; versionId?: string; parsedBody?: unknown }

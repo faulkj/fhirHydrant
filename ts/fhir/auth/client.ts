@@ -1,5 +1,5 @@
 import FHIR from "fhirclient"
-import { config } from "../../config.ts"
+import { config } from "../../config/index.ts"
 import { getTokenResponse } from "./auth.ts"
 
 const smart = (FHIR as unknown as (env: object) => SmartNamespace)({})

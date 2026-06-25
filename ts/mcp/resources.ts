@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/server"
 import * as z from "zod"
 import messages from "../../config/messages/write.json" with { type: "json" }
-import { config } from "../config.ts"
+import { config } from "../config/index.ts"
 import { log } from "../log.ts"
 import { getDefinitions, getSearchControls, buildShape } from "../fhir/model/definitions.ts"
 import { getResourceMeta, setSkippedTools } from "../fhir/model/metadata.ts"
@@ -21,11 +21,17 @@ const
 const augmentSchema = (
    def: ResourceDefinition, meta: ResourceMeta | undefined,
    controlParams: Record<string, string>, scopeMap: Map<string, Set<ScopePermission>>,
-): { schema: z.ZodObject<z.ZodRawShape>; injected: string[]; description: string; actions: ToolAction[] } => {
-   const merged = { ...def.searchParams }, injected: string[] = []
+): { schema: z.ZodObject<z.ZodRawShape>, injected: string[], description: string, actions: ToolAction[] } => {
+   const
+      merged = { ...def.searchParams },
+      injected: string[] = []
    for (const [param, desc] of Object.entries(controlParams)) {
       if (merged[param]) continue
-      if (LOCAL_CONTROLS.has(param)) { merged[param] = desc; injected.push(param); continue }
+      if (LOCAL_CONTROLS.has(param)) {
+         merged[param] = desc
+         injected.push(param)
+         continue
+      }
       else if (!meta) continue
       if (param === "_include" || param === "_revinclude") {
          const values = param === "_include" ? meta.includes : meta.revincludes

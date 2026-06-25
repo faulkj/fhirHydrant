@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto"
-import { config } from "../../config.ts"
+import { config } from "../../config/index.ts"
 import { log } from "../../log.ts"
 import { withAuditContext } from "../../audit.ts"
 import { jwksHandler } from "../../fhir/auth/jwks.ts"
 import { getTokenResponse } from "../../fhir/auth/auth.ts"
 import { isMetadataAvailable } from "../../fhir/model/metadata.ts"
 import { getRegisteredToolCount } from "../resources.ts"
+import { applyMcpCors, logFailedRequest } from "./http-cors.ts"
 
 /** Starts the Streamable HTTP MCP transport and returns a handle to attach a server and shut down the listener. */
 export const startHttp = async (): Promise<TransportHandle> => {
@@ -26,8 +27,9 @@ export const startHttp = async (): Promise<TransportHandle> => {
 
    app.use(logFailedRequest)
 
-   let mcpReady = false
-   let connectedServer: import("@modelcontextprotocol/server").McpServer | undefined
+   let
+      mcpReady = false,
+      connectedServer: import("@modelcontextprotocol/server").McpServer | undefined
 
    app.get("/health", (_req: Req, res: Res) => {
       const token = getTokenResponse()
@@ -105,43 +107,4 @@ export const startHttp = async (): Promise<TransportHandle> => {
    }
 }
 
-const
-   corsAllowedOrigins = new Set([
-      "https://chatgpt.com",
-      "https://chat.openai.com",
-   ]),
-   corsAllowedHeaders = [
-      "Content-Type",
-      "Authorization",
-      "Cache-Control",
-      "Accept",
-      "MCP-Protocol-Version",
-      "Mcp-Session-Id",
-      "mcp-session-id",
-   ].join(", "),
-   corsExposedHeaders = [
-      "mcp-session-id",
-      "x-session-id",
-      "MCP-Session-Id",
-   ].join(", "),
 
-   applyMcpCors = (req: Req, res: Res) => {
-      const origin = req.get("origin")
-      if (origin && corsAllowedOrigins.has(origin)) {
-         res.setHeader("Access-Control-Allow-Origin", origin)
-         res.setHeader("Access-Control-Allow-Credentials", "true")
-         res.vary("Origin")
-      }
-      res.setHeader("Access-Control-Allow-Methods", "GET,HEAD,POST,OPTIONS")
-      res.setHeader("Access-Control-Allow-Headers", corsAllowedHeaders)
-      res.setHeader("Access-Control-Expose-Headers", corsExposedHeaders)
-   },
-
-   logFailedRequest = (req: Req, res: Res, next: Next) => {
-      res.on("finish", () => {
-         if (res.statusCode < 400)
-            return
-         log.warn(`🌐 Request failed status=${res.statusCode} method=${req.method} path=${req.originalUrl} host=${req.headers.host ?? "-"} origin=${req.get("origin") ?? "-"} contentType=${req.get("content-type") ?? "-"} contentLength=${req.get("content-length") ?? "0"}`)
-      })
-      next()
-   }

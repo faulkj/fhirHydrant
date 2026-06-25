@@ -1,4 +1,4 @@
-import { config } from "../../config.ts"
+import { config } from "../../config/index.ts"
 import { log } from "../../log.ts"
 import { createFhirClient } from "../../fhir/auth/client.ts"
 import { withRetry, formatFhirError } from "../../fhir/utils.ts"
@@ -12,14 +12,14 @@ export const isWriteOp = (op: AuditEvent["operation"]): op is WriteAction =>
 
 /**
  * Executes a FHIR write operation (create/update/patch/delete) using fhirclient
- * native methods. Body validation and normalization is done by guards/request;
+ * native methods. Body validation and normalization is done by guards/request,
  * parsedBody is the already-validated (and id-injected for update) object.
  */
 export const executeWrite = async (
    toolName: string, def: ResourceDefinition,
    op: WriteAction, args: Record<string, unknown>, t0: number,
    parsedBody?: unknown,
-): Promise<{ content: { type: "text"; text: string }[]; isError?: true }> => {
+): Promise<{ content: { type: "text", text: string }[], isError?: true }> => {
    const
       logTag = `${def.resource}.${op[0].toUpperCase()}${op.slice(1)}`,
       id = typeof args["_id"] === "string" && args["_id"] ? args["_id"] : undefined,

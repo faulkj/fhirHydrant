@@ -1,7 +1,12 @@
-import { config } from "../../config.ts"
+import { config } from "../../config/index.ts"
 import { log } from "../../log.ts"
 import { createFhirClient } from "../auth/client.ts"
 import { withRetry } from "../utils.ts"
+
+const stringsFrom = (value: unknown, key?: string): string[] =>
+   Array.isArray(value)
+      ? value.map((entry) => key ? (entry as Record<string, unknown>)[key] : entry as string).filter(Boolean) as string[]
+      : []
 
 let
    cache: CapabilitySummary | null = null,
@@ -38,11 +43,7 @@ export const fetchMetadata = async (): Promise<void> => {
       const
          resources = Array.isArray(serverRest.resource) ? serverRest.resource as Array<Record<string, unknown>> : [],
          sysInteractions = new Set<string>(
-            Array.isArray(serverRest.interaction)
-               ? (serverRest.interaction as Array<Record<string, unknown>>)
-                  .map((i) => i.code as string)
-                  .filter(Boolean)
-               : [],
+            stringsFrom(serverRest.interaction, "code"),
          ),
          newIndex = new Map<string, ResourceMeta>(),
          summaryResources: CapabilitySummary["resources"] = []
@@ -52,31 +53,11 @@ export const fetchMetadata = async (): Promise<void> => {
          if (!type) continue
 
          const
-            interactions = new Set<string>(
-               Array.isArray(res.interaction)
-                  ? (res.interaction as Array<Record<string, unknown>>)
-                     .map((i) => i.code as string)
-                     .filter(Boolean)
-                  : [],
-            ),
-            searchParams = new Set<string>(
-               Array.isArray(res.searchParam)
-                  ? (res.searchParam as Array<Record<string, unknown>>)
-                     .map((p) => p.name as string)
-                     .filter(Boolean)
-                  : [],
-            ),
-            includes = Array.isArray(res.searchInclude)
-               ? (res.searchInclude as string[]).filter(Boolean)
-               : [],
-            revincludes = Array.isArray(res.searchRevInclude)
-               ? (res.searchRevInclude as string[]).filter(Boolean)
-               : [],
-            operations = Array.isArray(res.operation)
-               ? (res.operation as Array<Record<string, unknown>>)
-                  .map((o) => o.name as string)
-                  .filter(Boolean)
-               : []
+            interactions = new Set<string>(stringsFrom(res.interaction, "code")),
+            searchParams = new Set<string>(stringsFrom(res.searchParam, "name")),
+            includes = stringsFrom(res.searchInclude),
+            revincludes = stringsFrom(res.searchRevInclude),
+            operations = stringsFrom(res.operation, "name")
 
          newIndex.set(type, { interactions, searchParams, includes, revincludes, operations })
          summaryResources.push({

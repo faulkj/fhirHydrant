@@ -3,7 +3,7 @@ import { log } from "../log.ts"
 import { getOperations } from "../fhir/model/operations.ts"
 import { getTokenResponse } from "../fhir/auth/auth.ts"
 import { parseGrantedScopes } from "../fhir/auth/scopes.ts"
-import { filterOperationsByMetadata, filterOperationsByScopes, getSkippedOperations } from "./guards/operate.ts"
+import { filterOperationsByMetadata, filterOperationsByScopes, getSkippedOperations as _getSkippedOperations } from "./guards/operate.ts"
 import { addOperate } from "./tools/operate.ts"
 
 let enabledOps: OperationDefinition[] = []
@@ -12,7 +12,8 @@ let enabledOps: OperationDefinition[] = []
 export const getEnabledOperations = (): OperationDefinition[] => enabledOps
 
 /** Returns skipped operations with reasons — for capabilities output. */
-export { getSkippedOperations } from "./guards/operate.ts"
+export const getSkippedOperations = (): Array<{ key: string, reason: string, gate: "metadata" | "scope" }> =>
+   _getSkippedOperations()
 
 /** Registers the operate tool if at least one operation is enabled after gating. */
 export const registerOperations = (server: McpServer): void => {

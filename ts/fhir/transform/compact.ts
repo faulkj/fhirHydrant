@@ -1,4 +1,4 @@
-import { config } from "../../config.ts"
+import { config } from "../../config/index.ts"
 import { compactNode } from "./compact-model.ts"
 
 /**
@@ -8,18 +8,26 @@ import { compactNode } from "./compact-model.ts"
  */
 export const resolveResponseMode = (
    explicit: ResponseMode | null | undefined, directId?: string,
-): { effectiveMode: ResponseMode; wasDefaulted: boolean } | null => {
+): { effectiveMode: ResponseMode, wasDefaulted: boolean } | null => {
    if (explicit === null) return null
    const
       locked = config.responseMode === "compact-locked",
       effectiveMode: ResponseMode = locked
          ? "compact"
-         : explicit ?? (config.responseMode === "full" ? "full" : config.responseMode === "compact" ? "compact" : directId ? "full" : "compact"),
+         : explicit ?? (
+            config.responseMode === "full"
+               ? "full"
+               : config.responseMode === "compact"
+                  ? "compact"
+                  : directId
+                     ? "full"
+                     : "compact"
+         ),
       wasDefaulted = !locked && explicit === undefined
    return { effectiveMode, wasDefaulted }
 }
 
-/** Extracts and removes responseMode from tool args; returns undefined (absent), null (invalid), or the mode string. */
+/** Extracts and removes responseMode from tool args, returns undefined (absent), null (invalid), or the mode string. */
 export const extractResponseMode = (args: Record<string, unknown>): ResponseMode | null | undefined => {
    const raw = args["responseMode"]
    delete args["responseMode"]

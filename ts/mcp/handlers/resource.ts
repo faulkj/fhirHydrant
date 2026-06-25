@@ -50,7 +50,9 @@ export const makeHandler =
          at = typeof args["_at"] === "string" && args["_at"] ? args["_at"] : undefined,
          count = args["_count"] != null ? Number(args["_count"]) : undefined
 
-      let url: string, search: ReturnType<typeof buildSearchUrl> | undefined
+      let
+         url: string,
+         search: ReturnType<typeof buildSearchUrl> | undefined
       const extraNotes: string[] = cap.warning ? [cap.warning] : []
 
       if (op === "vread")

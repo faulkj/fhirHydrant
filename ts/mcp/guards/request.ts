@@ -77,12 +77,12 @@ const
       const hasId = typeof args["_id"] === "string" && args["_id"] !== ""
 
       if (!hasId && def.requireOneOf) {
-         const ok = def.requireOneOf.some((k) => { const v = args[k]; return typeof v === "string" && v !== "" })
+         const ok = def.requireOneOf.some((k) => typeof args[k] === "string" && args[k] !== "")
          if (!ok) return block(messages.requireOneOfFailed.replace("{keys}", def.requireOneOf.join(", ")), "search", { validationBlocked: true })
       }
 
       if (!hasId && def.requireCombination) {
-         const has = (k: string) => { const v = args[k]; return typeof v === "string" && v !== "" }
+         const has = (k: string) => typeof args[k] === "string" && args[k] !== ""
          if (!def.requireCombination.some((combo) => combo.every(has)))
             return block(
                messages.requireCombinationFailed

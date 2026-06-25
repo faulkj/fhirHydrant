@@ -1,31 +1,10 @@
 import messages from "../../../config/messages/core.json" with { type: "json" }
-import { config } from "../../config.ts"
+import { config } from "../../config/index.ts"
 import { applyFhirPath } from "./fhirpath.ts"
 import { compact } from "./compact.ts"
 import { bundleStats, responseNote } from "./response-notes.ts"
 import { enforceByteLimit } from "../utils.ts"
 import { tryChunkBundle } from "./bundle-chunks.ts"
-
-/** Options for the shared response pipeline. */
-interface PipelineOpts {
-   result: unknown
-   bundleResponse: boolean
-   fhirpathExpr?: string
-   effectiveMode: ResponseMode
-   wasDefaulted: boolean
-   extraNotes?: string[]
-}
-
-/** Result from the response pipeline — ready to emit as MCP content. */
-interface PipelineResult {
-   text: string
-   isError: boolean
-   stats: BundleStats | undefined
-   effectiveMode: ResponseMode
-   compacted: boolean
-   fhirpathFiltered: boolean
-   fhirpathMatchCount: number
-}
 
 /** Applies FHIRPath, compact, byte-limit, chunk fallback, and response notes to a FHIR response. */
 export const applyResponsePipeline = (opts: PipelineOpts): PipelineResult | { error: string } => {

@@ -1,4 +1,4 @@
-import { config } from "../../config.ts"
+import { config } from "../../config/index.ts"
 import { log } from "../../log.ts"
 import { isMetadataAvailable, getResourceMeta } from "../model/metadata.ts"
 
@@ -42,7 +42,9 @@ export const buildSearchUrl = (
    const params = new URLSearchParams()
    for (const [key, val] of Object.entries(args))
       !MCP_LOCAL.has(key) && val !== undefined && val !== "" && params.append(key, String(val))
-   let countInjected = false, countCapped = false
+   let
+      countInjected = false,
+      countCapped = false
    const countSkipped = !applyCount
    if (applyCount) {
       const s = shapeCount(params, resource)

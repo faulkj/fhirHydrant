@@ -1,5 +1,5 @@
 import messages from "../../config/messages/core.json" with { type: "json" }
-import { config } from "../config.ts"
+import { config } from "../config/index.ts"
 import { isMetadataAvailable, getResourceMeta } from "../fhir/model/metadata.ts"
 import { scopeActions } from "../fhir/auth/scopes.ts"
 
@@ -44,7 +44,7 @@ export const checkRuntimeCapability = (
    args: Record<string, unknown>,
    directId: string | undefined,
    op?: AuditEvent["operation"],
-): { error?: string; warning?: string } => {
+): { error?: string, warning?: string } => {
    if (!isMetadataAvailable() || config.metadataMode === "off") return {}
 
    const meta = getResourceMeta(def.resource)
@@ -66,7 +66,9 @@ export const checkRuntimeCapability = (
    if (!directId) {
       const
          mcpOnly = new Set(["action", "body", "fhirpath", "responseMode", "maxResults", "prefetch", "_vid", "_since", "_at"]),
-         unadvertised: string[] = [], badIncludes: string[] = [], badRevIncludes: string[] = []
+         unadvertised: string[] = [],
+         badIncludes: string[] = [],
+         badRevIncludes: string[] = []
       for (const [key, val] of Object.entries(args)) {
          if (key === "_id" || mcpOnly.has(key)) continue
          if (val === undefined || val === "") continue
@@ -106,7 +108,7 @@ const
    FHIR_DATE = /^(eq|ne|gt|lt|ge|le|sa|eb|ap)?\d{4}(-\d{2}(-\d{2}(T\d{2}(:\d{2}(:\d{2}(\.\d+)?)?)?(Z|[+-]\d{2}:\d{2})?)?)?)?$/,
    isDateParam = (name: string): boolean => name === "date" || name === "birthdate" || name.endsWith("-date") || name === "_since" || name === "_at",
 
-   capResult = (msg: string): { error?: string; warning?: string } =>
+   capResult = (msg: string): { error?: string, warning?: string } =>
       config.metadataMode === "strict"
          ? { error: msg }
          : { warning: msg },

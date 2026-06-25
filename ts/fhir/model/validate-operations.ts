@@ -79,7 +79,7 @@ export const validateOperationEntry = (
 }
 
 /** Validates the full operations.json array. */
-export const validateOperations = (raw: unknown): { entries: OperationDefinitionRaw[]; errors: string[] } => {
+export const validateOperations = (raw: unknown): { entries: OperationDefinitionRaw[], errors: string[] } => {
    if (!Array.isArray(raw)) return { entries: [], errors: ["config/operations.json must be an array"] }
    const
       errors: string[] = [],

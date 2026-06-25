@@ -14,24 +14,24 @@ if ((process.env["MCP_TRANSPORT"] ?? "http").toLowerCase() === "stdio") {
    console.info = (...args: unknown[]) => console.error(...args)
 }
 
-import { readFileSync, watch } from "node:fs"
+import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { McpServer } from "@modelcontextprotocol/server"
-import { config } from "./config.ts"
+import { config } from "./config/index.ts"
 import { log } from "./log.ts"
 import { fhirVersionLabel } from "./fhir/transform/fhir-model.ts"
 import { initAuditSinks } from "./audit.ts"
-import { startAuth, stopAuth, restartAuth } from "./fhir/auth/auth.ts"
-import { getConfigDir, reloadDefinitions, getRequestedScopes } from "./fhir/model/definitions.ts"
+import { startAuth, stopAuth } from "./fhir/auth/auth.ts"
+import { getConfigDir } from "./fhir/model/definitions.ts"
 import { fetchMetadata } from "./fhir/model/metadata.ts"
 import { registerAll } from "./mcp/resources.ts"
 import { registerCoreTools } from "./mcp/core-tools.ts"
 import { registerOperations } from "./mcp/operations.ts"
 import { registerBundle } from "./mcp/bundle.ts"
-import { reloadOperations } from "./fhir/model/operations.ts"
 import { startHttp } from "./mcp/transport/http.ts"
 import { startStdio } from "./mcp/transport/stdio.ts"
+import { startDefinitionsWatcher } from "./server-watcher.ts"
 
 const
    { version: pkgVersion } = JSON.parse(
@@ -67,54 +67,6 @@ const
       registerOperations(s)
       registerBundle(s)
       return s
-   }
-
-let restartingAuth = false
-
-const
-   watchFiles = new Set(["resources.json", "search-controls.json", "operations.json"]),
-   startDefinitionsWatcher = (): void => {
-      const watchDir = getConfigDir()
-
-      let debounce: ReturnType<typeof setTimeout> | undefined
-      watch(watchDir, (_eventType, filename) => {
-         if (!filename || !watchFiles.has(filename)) return
-         clearTimeout(debounce)
-         debounce = setTimeout(async () => {
-            if (filename === "operations.json") {
-               reloadOperations() && log.info("📋 Reloaded operations.json")
-               return
-            }
-            const
-               prevScopes = getRequestedScopes().join(","),
-               ok = reloadDefinitions()
-            if (!ok) return
-            log.info(`📋 Reloaded from ${filename}`)
-            log.info("📋 Metadata cache may be stale — restart to re-validate against /metadata")
-            if (getRequestedScopes().join(",") !== prevScopes) {
-               if (restartingAuth)
-                  return void log.warn(
-                     "📋 Auth restart already in progress — skipping",
-                  )
-               restartingAuth = true
-               try {
-                  log.info(
-                     "📋 Scopes changed — restarting auth...",
-                  )
-                  await restartAuth()
-                  log.info("📋 Auth restarted with new scopes")
-               } catch (err) {
-                  log.error(
-                     "📋 Auth restart failed:",
-                     err instanceof Error ? err.message : err,
-                  )
-               } finally {
-                  restartingAuth = false
-               }
-            }
-         }, 300)
-      })
-      log.info(`👀 Watching config/ for changes`)
    }
 
 const selfHostJwks = config.transport !== "stdio" && !config.fhirJwksUrl

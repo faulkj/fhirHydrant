@@ -8,7 +8,7 @@ export const extractFhirPath = (args: Record<string, unknown>): string | undefin
    return typeof raw === "string" && raw.trim() ? raw.trim() : undefined
 }
 
-/** Evaluates a FHIRPath expression against a result; returns matched nodes or an error string. */
+/** Evaluates a FHIRPath expression against a result, returns matched nodes or an error string. */
 export const applyFhirPath = (
    result: unknown, expression: string,
 ): { nodes: unknown[] } | { error: string } => {

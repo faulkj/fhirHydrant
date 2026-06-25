@@ -3,7 +3,7 @@ import { z } from "zod"
 import { existsSync, readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
-import { config } from "../config.ts"
+import { config } from "../config/index.ts"
 import { log } from "../log.ts"
 import { getSystemInteractions } from "../fhir/model/metadata.ts"
 import { getTokenResponse } from "../fhir/auth/auth.ts"
@@ -19,10 +19,14 @@ export const loadCoreTools = (): CoreToolDef[] =>
    JSON.parse(readFileSync(coreToolsPath(), "utf8")) as CoreToolDef[]
 
 /** Builds a Zod input schema from a core tool param definition map. */
-export const buildSchema = (params: Record<string, { type: string; optional?: boolean; description: string }>) => {
+export const buildSchema = (params: Record<string, { type: string, optional?: boolean, description: string }>) => {
    const shape: Record<string, z.ZodTypeAny> = {}
    for (const [key, p] of Object.entries(params)) {
-      const base = p.type === "boolean" ? z.boolean() : p.type === "number" ? z.number() : z.string()
+      const base = p.type === "boolean"
+         ? z.boolean()
+         : p.type === "number"
+            ? z.number()
+            : z.string()
       shape[key] = p.optional ? base.optional().describe(p.description) : base.describe(p.description)
    }
    return z.object(shape)

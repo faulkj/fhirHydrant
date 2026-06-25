@@ -3,7 +3,7 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import * as z from "zod"
 import { validateResources } from "./validate-definitions.ts"
-import { config } from "../../config.ts"
+import { config } from "../../config/index.ts"
 import { log } from "../../log.ts"
 
 /** Returns the current valid set of generated FHIR resource definitions. */

@@ -1,14 +1,14 @@
 import {
    get, opt, parseTransport, parsePort, parseMetadataMode,
    parseResponseMode, parseAllowedHosts, parsePaginationPaths,
-   parsePositiveInt, parseNonNegativeInt, parseAuditSinks, parseKeys,
    parseWriteCapabilities, parseOperations, parseFhirVersion,
-   parseBundleCapabilities, parseLogLevel,
-} from "./config-parsers.ts"
+} from "./parsers.ts"
+import { parsePositiveInt, parseNonNegativeInt, parseAuditSinks, parseBundleCapabilities, parseLogLevel } from "./parsers-extra.ts"
+import { parseKeys } from "./keys.ts"
 
-/** Validated runtime configuration loaded from environment variables. */
 const { activeKey, retiredKeys } = parseKeys()
 
+/** Validated runtime configuration loaded from environment variables. */
 export const config: Config = {
    fhirBaseUrl: get("FHIR_BASE_URL").replace(/\/$/, ""),
    fhirVersion: parseFhirVersion(),

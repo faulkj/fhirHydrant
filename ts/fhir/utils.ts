@@ -18,7 +18,6 @@ export const retryable = (err: unknown): boolean => {
    return false
 }
 
-/** Returns true when an error was caused by an AbortSignal timeout. */
 const isTimeout = (err: unknown): boolean =>
    err instanceof DOMException && err.name === "TimeoutError"
    || err instanceof Error && err.name === "AbortError"

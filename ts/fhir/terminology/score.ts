@@ -1,8 +1,3 @@
-/** Scores a LOINC concept's display against a search query for relevance ranking */
-export { scoreLoinc }
-
-/** Scores a SNOMED concept's display against a search query for relevance ranking */
-export { scoreSnomed }
 
 // ── helpers ──────────────────────────────────────────────────────────
 
@@ -25,7 +20,8 @@ const
 
 // ── LOINC scorer ─────────────────────────────────────────────────────
 
-const scoreLoinc = (display: string, query: string): number => {
+/** Scores a LOINC concept's display against a search query for relevance ranking */
+export const scoreLoinc = (display: string, query: string): number => {
    const
       d = display.toLowerCase(),
       q = query.trim().toLowerCase()
@@ -66,7 +62,8 @@ const scoreLoinc = (display: string, query: string): number => {
 
 // ── SNOMED scorer ────────────────────────────────────────────────────
 
-const scoreSnomed = (display: string, query: string): number => {
+/** Scores a SNOMED concept's display against a search query for relevance ranking */
+export const scoreSnomed = (display: string, query: string): number => {
    const
       d = display.toLowerCase(),
       q = query.trim().toLowerCase(),

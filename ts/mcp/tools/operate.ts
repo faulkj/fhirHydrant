@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/server"
 import { z } from "zod"
-import { config } from "../../config.ts"
+import { config } from "../../config/index.ts"
 import { makeOperateHandler } from "../handlers/operate.ts"
 import { readOnlyAnnotations, writeAnnotations } from "../annotations.ts"
 
@@ -10,8 +10,9 @@ export const addOperate = (
 ): void => {
    const
       opSummaries = enabledOps.map((o) => {
-         const target = o.resource ?? "any resource"
-         const level = o.level.join("/")
+         const
+            target = o.resource ?? "any resource",
+            level = o.level.join("/")
          return `${o.key} (${target} ${level}, ${o.method})`
       }),
 

@@ -1,4 +1,4 @@
-import { config } from "../../config.ts"
+import { config } from "../../config/index.ts"
 import r4 from "fhirpath/fhir-context/r4/index.js"
 import r5 from "fhirpath/fhir-context/r5/index.js"
 

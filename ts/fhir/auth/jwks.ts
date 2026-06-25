@@ -1,7 +1,6 @@
 import { createPrivateKey, createPublicKey } from "node:crypto"
-import { config } from "../../config.ts"
+import { config } from "../../config/index.ts"
 
-/** Cached JWKS JSON built once at module load from all configured keys. */
 const jwksJson: string = JSON.stringify({
    keys: [config.fhirActiveKey, ...config.fhirRetiredKeys].map(({ kid, privateKey }) => {
       const pub = createPublicKey(createPrivateKey(privateKey)).export({ format: "jwk" }) as Record<string, unknown>

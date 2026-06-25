@@ -1,5 +1,5 @@
 import messages from "../../../config/messages/write.json" with { type: "json" }
-import { config } from "../../config.ts"
+import { config } from "../../config/index.ts"
 import { getEnabledActions } from "../validation.ts"
 
 /** Validates a write-action request: checks capability gates, _id, body presence/shape, and resourceType. */

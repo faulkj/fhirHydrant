@@ -1,5 +1,5 @@
 import messages from "../../../config/messages/core.json" with { type: "json" }
-import { config } from "../../config.ts"
+import { config } from "../../config/index.ts"
 import { log } from "../../log.ts"
 import { createFhirClient } from "../../fhir/auth/client.ts"
 import { withRetry, formatFhirError } from "../../fhir/utils.ts"
@@ -7,21 +7,21 @@ import { emitAudit, auditTime, errorStatus } from "../../audit.ts"
 import { rebuildWithCount } from "../../fhir/transform/shaping.ts"
 import { extractFhirPath } from "../../fhir/transform/fhirpath.ts"
 import { extractResponseMode, resolveResponseMode } from "../../fhir/transform/compact.ts"
-import { coalesce, extractMaxResults, extractPrefetch } from "../../fhir/transform/coalesce.ts"
+import { coalesce } from "../../fhir/transform/coalesce.ts"
 import { applyResponsePipeline } from "../../fhir/transform/pipeline.ts"
 
-/** Options for the shared read/search/history/paginate execution wrapper. */
-interface ReadOpts {
-   url: string
-   tool: string
-   resource?: string
-   op: AuditEvent["operation"]
-   args: Record<string, unknown>
-   t0: number
-   isBundle: boolean
-   allowCoalesce?: boolean
-   search?: { url: string; countInjected: boolean; countCapped: boolean; countSkipped: boolean }
-   notes?: string[]
+const extractMaxResults = (args: Record<string, unknown>): number | undefined => {
+   const raw = args["maxResults"]
+   delete args["maxResults"]
+   if (raw === undefined || raw === null || raw === "") return undefined
+   const n = typeof raw === "number" ? raw : Number(raw)
+   return Number.isFinite(n) && n >= 1 ? Math.floor(n) : undefined
+}
+
+const extractPrefetch = (args: Record<string, unknown>): boolean => {
+   const raw = args["prefetch"]
+   delete args["prefetch"]
+   return String(raw).toLowerCase() !== "false"
 }
 
 /** Shared FHIR fetch → transform → audit execution. Returns an MCP tool response. */
@@ -39,7 +39,10 @@ export const executeRead = async (opts: ReadOpts) => {
       return { content: [{ type: "text" as const, text: "Invalid responseMode — must be \"compact\" or \"full\"" }], isError: true }
    const { effectiveMode, wasDefaulted } = resolved
 
-   let url = opts.url, retries = 0, currentCount = 0
+   let
+      url = opts.url,
+      retries = 0,
+      currentCount = 0
    log.info(`🔥 ${logTag} → ${url}`)
 
    try {

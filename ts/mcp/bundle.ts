@@ -1,5 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/server"
-import { config } from "../config.ts"
+import { config } from "../config/index.ts"
 import { log } from "../log.ts"
 import { isMetadataAvailable, getSystemInteractions } from "../fhir/model/metadata.ts"
 import { getDefinitions } from "../fhir/model/definitions.ts"
@@ -11,8 +11,9 @@ export const registerBundle = (server: McpServer): void => {
    if (config.bundleCapabilities.size === 0) return
 
    if (isMetadataAvailable() && config.metadataMode === "strict") {
-      const sys = getSystemInteractions()
-      const hasAny = [...config.bundleCapabilities].some((t) => sys.has(t))
+      const
+         sys = getSystemInteractions(),
+         hasAny = [...config.bundleCapabilities].some((t) => sys.has(t))
       if (!hasAny) {
          log.info(`📦 Bundle tool skipped — /metadata does not advertise ${[...config.bundleCapabilities].join(" or ")}`)
          return

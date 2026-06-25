@@ -32,7 +32,8 @@ const prune = (): void => {
       if (now - v.createdAt > CACHE_TTL_MS) cache.delete(k)
 
    while (cache.size > CACHE_MAX_ENTRIES) {
-      let oldest: string | undefined,
+      let
+         oldest: string | undefined,
          oldestTime = Infinity
       for (const [k, v] of cache)
          if (v.accessedAt < oldestTime) oldest = k, oldestTime = v.accessedAt

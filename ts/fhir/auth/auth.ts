@@ -1,5 +1,5 @@
 import fhirStarter from "fhirstarterjs"
-import { config } from "../../config.ts"
+import { config } from "../../config/index.ts"
 import { log } from "../../log.ts"
 import { getRequestedScopes } from "../model/definitions.ts"
 

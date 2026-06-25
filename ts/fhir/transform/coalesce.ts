@@ -1,25 +1,9 @@
-import { config } from "../../config.ts"
+import { config } from "../../config/index.ts"
 import { log } from "../../log.ts"
 import { withRetry, enforceByteLimit } from "../utils.ts"
 import { compact } from "./compact.ts"
 import { tryChunkBundle } from "./bundle-chunks.ts"
 import { coalesceNote } from "./response-notes.ts"
-
-/** Extracts and removes `maxResults` from tool args; returns parsed positive int or undefined. */
-export const extractMaxResults = (args: Record<string, unknown>): number | undefined => {
-   const raw = args["maxResults"]
-   delete args["maxResults"]
-   if (raw === undefined || raw === null || raw === "") return undefined
-   const n = typeof raw === "number" ? raw : Number(raw)
-   return Number.isFinite(n) && n >= 1 ? Math.floor(n) : undefined
-}
-
-/** Extracts and removes `prefetch` from tool args; returns false only when explicitly disabled. */
-export const extractPrefetch = (args: Record<string, unknown>): boolean => {
-   const raw = args["prefetch"]
-   delete args["prefetch"]
-   return String(raw).toLowerCase() !== "false"
-}
 
 /**
  * Coalesces multiple upstream FHIR pages into one compact Bundle.
@@ -28,7 +12,7 @@ export const extractPrefetch = (args: Record<string, unknown>): boolean => {
  */
 export const coalesce = async (
    firstResult: unknown,
-   client: { request: (opts: { url: string; signal?: AbortSignal }) => Promise<unknown> },
+   client: { request: (opts: { url: string, signal?: AbortSignal }) => Promise<unknown> },
    label: string,
    maxResults?: number,
    t0?: number,
@@ -64,7 +48,10 @@ export const coalesce = async (
       const compactEntries = Array.isArray(compacted.entry) ? compacted.entry as unknown[] : []
       for (const entry of compactEntries) {
          const url = (entry as Record<string, unknown>)?.fullUrl as string | undefined
-         if (url && seen.has(url)) { dupsSkipped++; continue }
+         if (url && seen.has(url)) {
+            dupsSkipped++
+            continue
+         }
          url && seen.add(url)
          entries.push(entry)
       }
@@ -117,7 +104,9 @@ export const coalesce = async (
       prefix = `${note}\n\n`,
       shaped = enforceByteLimit(`${prefix}${json}`, config.fhirMaxResponseBytes)
 
-   let text = shaped.text, isError = !!shaped.isError
+   let
+      text = shaped.text,
+      isError = !!shaped.isError
    if (shaped.isError) {
       const chunked = tryChunkBundle(bundle, prefix, config.fhirMaxResponseBytes)
       if (chunked) text = chunked.text, isError = false
