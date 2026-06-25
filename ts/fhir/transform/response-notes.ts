@@ -1,3 +1,5 @@
+import messages from "../../../config/messages/core.json" with { type: "json" }
+
 /** Parses Bundle stats from a FHIR response — shared between response notes and audit. */
 export const bundleStats = (result: unknown, json: string): BundleStats | undefined => {
    if (!result || typeof result !== "object") return undefined
@@ -27,13 +29,19 @@ export const responseNote = (result: unknown, json: string): string | undefined 
    if (typeof rt !== "string") return undefined
    const stats = bundleStats(result, json)
    if (!stats) return `${rt} jsonBytes=${Buffer.byteLength(json, "utf8")}`
-   const parts = [
-      `Bundle entries=${stats.entries}`,
-      stats.total !== undefined ? `total=${stats.total}` : undefined,
-      `jsonBytes=${stats.jsonBytes}`,
-   ].filter(Boolean).join(" ")
-   const base = stats.nextUrl ? `${parts}. Next: ${stats.nextUrl}` : parts
-   const btype = r.type as string | undefined
+   const
+      parts = [
+         `Bundle entries=${stats.entries}`,
+         stats.total !== undefined ? `total=${stats.total}` : undefined,
+         `jsonBytes=${stats.jsonBytes}`,
+      ].filter(Boolean).join(" "),
+
+      warning = stats.nextUrl
+         ? (messages as Record<string, string>)["responsePartial"]?.replace("{entries}", String(stats.entries))
+         : undefined,
+      base = stats.nextUrl ? `${parts}. Next: ${stats.nextUrl}` : parts,
+      noted = warning ? `${warning}\n${base}` : base,
+      btype = r.type as string | undefined
    if ((btype === "batch-response" || btype === "transaction-response") && Array.isArray(r.entry)) {
       const counts: Record<string, number> = {}
       for (const e of r.entry as Array<Record<string, unknown>>) {
@@ -42,9 +50,9 @@ export const responseNote = (result: unknown, json: string): string | undefined 
          counts[code] = (counts[code] ?? 0) + 1
       }
       const statusParts = Object.entries(counts).map(([code, n]) => `${n}x${code}`).join(", ")
-      return `${base} status: ${statusParts}`
+      return `${noted} status: ${statusParts}`
    }
-   return base
+   return noted
 }
 
 /** Builds a summary note for a coalesced multi-page fetch. */
@@ -54,7 +62,7 @@ export const coalesceNote = (
    const parts = [
       `Prefetched ${pages} page${pages > 1 ? "s" : ""} (${upstream} upstream → ${returned} compact)`,
       reason ? `stopped: ${reason}` : undefined,
-      hasMore ? "More available — call paginate with the next link (responseMode=compact)." : undefined,
+      hasMore ? (messages as Record<string, string>)["coalescePartial"]?.replace("{returned}", String(returned)) : undefined,
    ].filter(Boolean)
    return parts.join(". ")
 }

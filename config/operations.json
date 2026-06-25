@@ -5,7 +5,7 @@
       "resource": "Patient",
       "level": ["instance"],
       "method": "GET",
-      "description": "Retrieve a patient's complete clinical record. Returns a Bundle of all resources related to the patient. Provide id at the top level of the operate call. Optional filters: start, end (date range), _type (comma-separated resource types to include), _since (only resources updated after this instant), _count (page size).",
+      "description": "Retrieve resources related to a patient. Returns a Bundle that may be paginated — a next link means more data is available. Provide id at the top level of the operate call. Optional filters: start, end (date range), _type (comma-separated resource types to include), _since (only resources updated after this instant), _count (page size).",
       "params": {
          "start": { "type": "string", "optional": true, "description": "Start date for care date range filter (YYYY-MM-DD)" },
          "end": { "type": "string", "optional": true, "description": "End date for care date range filter (YYYY-MM-DD)" },
@@ -23,7 +23,7 @@
       "resource": "Observation",
       "level": ["type"],
       "method": "GET",
-      "description": "Fetch the most recent or last N observations for a subject, grouped by code. Requires patient or subject AND category or code. Use max to control how many observations per group (default 1).",
+      "description": "Fetch the most recent or last N observations for a subject, grouped by code. Requires patient or subject AND category or code. Use max to control how many observations per group (default 1). Use this for recent grouped values, not full date-range analysis. For longitudinal analysis, search Observation by patient/code/category/date and paginate until the requested range is covered.",
       "params": {
          "patient": { "type": "string", "optional": true, "description": "Patient reference (e.g. Patient/123)" },
          "subject": { "type": "string", "optional": true, "description": "Subject reference (e.g. Patient/123)" },
@@ -59,7 +59,7 @@
       "resource": "DocumentReference",
       "level": ["type"],
       "method": "GET",
-      "description": "Find document references for a patient. US Core operation that returns a Bundle of DocumentReference resources. Requires patient. Optional date range and type filters.",
+      "description": "Find document references for a patient. US Core operation that returns a Bundle of DocumentReference resources. Requires patient. Optional date range and type filters. Use for document discovery or narrative retrieval; for quantitative analysis, check structured resources first.",
       "params": {
          "patient": { "type": "string", "description": "Patient reference (e.g. Patient/123)" },
          "start": { "type": "string", "optional": true, "description": "Start date for document period filter (YYYY-MM-DD)" },
