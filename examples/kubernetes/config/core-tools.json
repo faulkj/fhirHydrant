@@ -1,0 +1,16 @@
+[
+   {
+      "name": "paginate",
+      "description": "Fetch the next page of FHIR Bundle results using a server-returned pagination URL.",
+      "params": {
+         "url": {
+            "type": "string",
+            "description": "Pagination URL from a FHIR Bundle link[rel=next].url value"
+         }
+      }
+   },
+   {
+      "name": "capabilities",
+      "description": "Returns the FHIR server's CapabilityStatement summary, registered tools, and metadata notes."
+   }
+]

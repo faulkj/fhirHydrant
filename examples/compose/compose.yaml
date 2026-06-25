@@ -1,0 +1,11 @@
+services:
+   fhirhydrant:
+      build: .
+      ports:
+         - "5000:5000"
+      environment:
+         FHIR_BASE_URL: ${FHIR_BASE_URL}
+         FHIR_CLIENT_ID: ${FHIR_CLIENT_ID}
+         FHIR_ACTIVE_KEY: ${FHIR_ACTIVE_KEY}
+         FHIR_JWKS_URL: ${FHIR_JWKS_URL:-}
+      restart: unless-stopped

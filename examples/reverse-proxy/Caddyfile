@@ -1,0 +1,3 @@
+mcp.example.org {
+   reverse_proxy fhirhydrant:5000
+}

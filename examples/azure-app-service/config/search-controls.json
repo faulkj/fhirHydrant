@@ -1,0 +1,6 @@
+{
+   "_count": "Maximum number of results per page",
+   "_sort": "Sort order (prefix with - for descending)",
+   "_summary": "Return summary or subset of resource fields",
+   "_elements": "Comma-separated list of element names to include"
+}

@@ -1,0 +1,33 @@
+[
+   {
+      "key": "everything",
+      "operation": "$everything",
+      "resource": "Patient",
+      "level": ["instance"],
+      "method": "GET",
+      "description": "Retrieve a patient's complete clinical record as a Bundle.",
+      "params": {
+         "_type": { "type": "string", "optional": true, "description": "Comma-separated resource types to include" }
+      },
+      "bundleResponse": true,
+      "auditOperation": "everything",
+      "affectsState": false
+   },
+   {
+      "key": "lastn",
+      "operation": "$lastn",
+      "resource": "Observation",
+      "level": ["type"],
+      "method": "GET",
+      "description": "Fetch the most recent observations for a patient, grouped by code.",
+      "params": {
+         "patient": { "type": "string", "optional": true, "description": "Patient reference" },
+         "category": { "type": "string", "optional": true, "description": "Observation category (e.g. vital-signs, laboratory)" },
+         "code": { "type": "string", "optional": true, "description": "LOINC or SNOMED code(s)" }
+      },
+      "requiresOneOf": [["patient"], ["category", "code"]],
+      "bundleResponse": true,
+      "auditOperation": "lastn",
+      "affectsState": false
+   }
+]

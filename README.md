@@ -38,6 +38,7 @@ be expanded, trimmed, or replaced through config files without source changes.
 - [FHIR Version Support](#fhir-version-support)
 - [Customizing Tools And Messages](#customizing-tools-and-messages)
 - [Transports](#transports)
+- [Deployment Examples](#deployment-examples)
 - [Development](#development)
 
 ## Quick Start
@@ -455,6 +456,13 @@ MCP client config:
 
 Use a reverse proxy for TLS and user authentication when exposing HTTP beyond
 localhost. Set `ALLOWED_HOSTS` when binding to a public interface.
+
+## Deployment Examples
+
+The [`examples/`](examples/) directory has standalone deployment examples for
+Docker Compose, reverse proxy (Caddy), Azure Container Apps, Azure App Service,
+and Kubernetes. Each includes a Dockerfile that installs from npm and a
+`config/` overlay demonstrating how to override different config files.
 
 ## Development
 
