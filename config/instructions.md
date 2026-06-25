@@ -5,10 +5,10 @@ fhirHydrant's tools expose FHIR endpoints over MCP.
 Use these tools to search for or read clinical resources from the configured
 FHIR server.
 
-Call `capabilities` before making clinical queries to understand which resource
-types, interactions, and search parameters the server supports. This helps you
-choose the right tool and parameters for each request and avoids calls the
-server cannot handle.
+Call `capabilities` when you need to discover or confirm which resource types,
+interactions, search parameters, or named operations the server supports. If the
+needed tool and parameters are already known from the current tool schema, you
+may query directly.
 
 Prefer search first when the user describes a patient, encounter, condition,
 observation, or other clinical concept without a known FHIR resource ID. Use
