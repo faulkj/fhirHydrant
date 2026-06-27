@@ -76,5 +76,3 @@ interface TerminologySearchCacheEntry {
 
 /** Allowed operation invocation levels. */
 type OperationLevel = "system" | "type" | "instance"
-
-

@@ -100,4 +100,3 @@ type FhirVersion = "R4" | "R4B" | "R5"
 
 /** Allowed log level strings for the LOG_LEVEL env var. */
 type LogLevel = "error" | "warn" | "info" | "debug"
-
