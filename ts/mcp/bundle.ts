@@ -6,18 +6,20 @@ import { getDefinitions } from "../fhir/model/definitions.ts"
 import { loadCoreTools, buildSchema } from "./core-tools.ts"
 import { addBundle } from "./tools/bundle.ts"
 
+/** True when the bundle tool is enabled — capabilities configured and (in strict mode) advertised in /metadata. */
+export const isBundleEnabled = (): boolean => {
+   if (config.bundleCapabilities.size === 0) return false
+   if (isMetadataAvailable() && config.metadataMode === "strict")
+      return [...config.bundleCapabilities].some((t) => getSystemInteractions().has(t))
+   return true
+}
+
 /** Registers the bundle tool if bundle capabilities are configured and metadata gates pass. */
 export const registerBundle = (server: McpServer): void => {
-   if (config.bundleCapabilities.size === 0) return
-
-   if (isMetadataAvailable() && config.metadataMode === "strict") {
-      const
-         sys = getSystemInteractions(),
-         hasAny = [...config.bundleCapabilities].some((t) => sys.has(t))
-      if (!hasAny) {
-         log.info(`📦 Bundle tool skipped — /metadata does not advertise ${[...config.bundleCapabilities].join(" or ")}`)
-         return
-      }
+   if (!isBundleEnabled()) {
+      config.bundleCapabilities.size > 0
+         && log.info(`📦 Bundle tool skipped — /metadata does not advertise ${[...config.bundleCapabilities].join(" or ")}`)
+      return
    }
 
    const

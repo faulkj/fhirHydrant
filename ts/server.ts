@@ -62,7 +62,9 @@ const
    ),
    makeServer = (): McpServer => {
       resolveEnabledOperations()
-      const s = new McpServer(SERVER_INFO, { instructions: buildInstructions() })
+      const
+         instructions = buildInstructions() || undefined,
+         s = new McpServer(SERVER_INFO, { instructions })
       registerAll(s)
       registerCoreTools(s)
       registerOperations(s)
