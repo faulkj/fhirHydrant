@@ -422,13 +422,13 @@
    {
       "resource": "Patient",
       "toolName": "patient",
-      "description": "Search or read FHIR Patient records exposed by the configured FHIR server. For direct read, provide _id alone. For search, local validation accepts only: identifier; given + family + birthdate; given + family + legal-sex + telecom; or given + family + gender + telecom. Other parameter combinations return a structured validation error.",
+      "description": "Search for or read a FHIR Patient resource. For direct read, provide _id alone. For search, you MUST supply one of these minimum data sets — name alone is never sufficient: (1) identifier (MRN, FHIR ID, or other system|value identifier), (2) given + family + birthdate, or (3) given + family + legal-sex (or gender) + telecom. Always ask the user for enough information to satisfy one of these sets before searching.",
       "supportsDirectRead": true,
       "searchParams": {
          "_id": "Patient resource ID — performs direct read when provided alone",
          "family": "Family (last) name",
          "given": "Given (first) name",
-         "name": "Name token. Not accepted by local validation unless paired with an allowed parameter set; ignored when family or given is also provided.",
+         "name": "Any part of the patient's name — ignored when family or given is also provided",
          "birthdate": "Date of birth in YYYY-MM-DD format",
          "gender": "Administrative gender: female, male, other, unknown",
          "legal-sex": "Legal sex — takes precedence over gender when both are provided: female, male, nonbinary, x, unknown",
