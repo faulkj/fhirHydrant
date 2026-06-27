@@ -3,6 +3,7 @@ import { config } from "../../config/index.ts"
 import { applyFhirPath } from "./fhirpath.ts"
 import { compact } from "./compact.ts"
 import { bundleStats, responseNote } from "./response-notes.ts"
+import { outcomeNote } from "./outcomes.ts"
 import { enforceByteLimit } from "../utils.ts"
 import { tryChunkBundle } from "./bundle-chunks.ts"
 
@@ -35,6 +36,7 @@ export const applyResponsePipeline = (opts: PipelineOpts): PipelineResult | { er
    const notes = [
       ...(extraNotes ?? []),
       bundleResponse && stats ? responseNote(result, json) : undefined,
+      outcomeNote(result),
       filtered ? messages.fhirpathFiltered.replace("{matchCount}", String(matchCount)).replace("{sourceBytes}", String(sourceBytes)) : undefined,
       wasDefaulted && compacted ? messages.responseModeCompact : undefined,
    ].filter(Boolean)

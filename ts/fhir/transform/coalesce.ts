@@ -4,6 +4,7 @@ import { withRetry, enforceByteLimit } from "../utils.ts"
 import { compact } from "./compact.ts"
 import { tryChunkBundle } from "./bundle-chunks.ts"
 import { coalesceNote } from "./response-notes.ts"
+import { outcomeNote } from "./outcomes.ts"
 
 /**
  * Coalesces multiple upstream FHIR pages into one compact Bundle.
@@ -21,6 +22,7 @@ export const coalesce = async (
       start = t0 ?? Date.now(),
       entries: unknown[] = [],
       seen = new Set<string>(),
+      outcomeNotes = new Set<string>(),
       cap = maxResults ?? config.prefetchMaxEntries
 
    let
@@ -45,12 +47,17 @@ export const coalesce = async (
       const pageJson = JSON.stringify(current)
       rawBytes += Buffer.byteLength(pageJson, "utf8")
 
+      const pageOutcome = outcomeNote(current)
+      pageOutcome && outcomeNotes.add(pageOutcome)
+
       const pageEntries = Array.isArray(b.entry) ? b.entry as unknown[] : []
       entriesSeen += pageEntries.length
 
       const compacted = compact(current) as Record<string, unknown>
       const compactEntries = Array.isArray(compacted.entry) ? compacted.entry as unknown[] : []
       for (const entry of compactEntries) {
+         const res = (entry as Record<string, unknown>)?.resource as Record<string, unknown> | undefined
+         if (res?.resourceType === "OperationOutcome") continue
          const url = (entry as Record<string, unknown>)?.fullUrl as string | undefined
          if (url && seen.has(url)) {
             dupsSkipped++
@@ -104,8 +111,9 @@ export const coalesce = async (
    const
       hasMore = truncated && !!nextUrl,
       note = coalesceNote(pages, entriesSeen, entries.length, hasMore, truncated ? truncateReason : undefined, serverTotal),
+      noteWithOutcomes = [note, ...outcomeNotes].join("\n"),
       json = JSON.stringify(bundle),
-      prefix = `${note}\n\n`,
+      prefix = `${noteWithOutcomes}\n\n`,
       shaped = enforceByteLimit(`${prefix}${json}`, config.fhirMaxResponseBytes)
 
    let
