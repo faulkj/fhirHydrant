@@ -18,6 +18,13 @@ this page. Call `paginate` with the URL from the `Next:` line in that same
 header to continue. Whether to continue depends on whether the retrieved data
 already covers the requested range — see Retrieval Discipline rule 5.
 
+The `next` link is the authoritative signal that more results exist — always
+trust it over `total`. A Bundle `total` (shown as `total=` or `server total=`
+in the header) is the server's reported match count and may be absent,
+approximate, or smaller than the number of records you can actually page
+through. Never conclude that retrieval is complete just because the returned
+entry count reached `total`; if a `next` link is present, keep paginating.
+
 Search results default to compact mode, which strips FHIR noise (meta,
 extensions, narrative, contained resources) and simplifies data types for
 token efficiency while preserving clinical meaning. Compact responses keep
