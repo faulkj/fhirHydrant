@@ -57,10 +57,11 @@ export const responseNote = (result: unknown, json: string): string | undefined 
 
 /** Builds a summary note for a coalesced multi-page fetch. */
 export const coalesceNote = (
-   pages: number, upstream: number, returned: number, hasMore: boolean, reason?: string,
+   pages: number, upstream: number, returned: number, hasMore: boolean, reason?: string, serverTotal?: number,
 ): string => {
    const parts = [
       `Prefetched ${pages} page${pages > 1 ? "s" : ""} (${upstream} upstream → ${returned} compact)`,
+      serverTotal !== undefined ? `server total=${serverTotal}` : undefined,
       reason ? `stopped: ${reason}` : undefined,
       hasMore ? (messages as Record<string, string>)["coalescePartial"]?.replace("{returned}", String(returned)) : undefined,
    ].filter(Boolean)

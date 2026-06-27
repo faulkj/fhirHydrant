@@ -32,11 +32,15 @@ export const coalesce = async (
       truncated = false,
       truncateReason: string | undefined = undefined,
       bundleType: unknown = undefined,
+      serverTotal: number | undefined = undefined,
       current: unknown = firstResult
 
    while (current) {
       const b = current as Record<string, unknown>
-      if (pages === 0) bundleType = b.type
+      if (pages === 0) {
+         bundleType = b.type
+         typeof b.total === "number" && (serverTotal = b.total)
+      }
 
       const pageJson = JSON.stringify(current)
       rawBytes += Buffer.byteLength(pageJson, "utf8")
@@ -93,13 +97,13 @@ export const coalesce = async (
 
    const bundle: Record<string, unknown> = { resourceType: "Bundle" }
    bundleType !== undefined && (bundle.type = bundleType)
-   bundle.total = entries.length
+   serverTotal !== undefined && (bundle.total = serverTotal)
    entries.length && (bundle.entry = entries)
    truncated && nextUrl && (bundle.link = [{ relation: "next", url: nextUrl }])
 
    const
       hasMore = truncated && !!nextUrl,
-      note = coalesceNote(pages, entriesSeen, entries.length, hasMore, truncated ? truncateReason : undefined),
+      note = coalesceNote(pages, entriesSeen, entries.length, hasMore, truncated ? truncateReason : undefined, serverTotal),
       json = JSON.stringify(bundle),
       prefix = `${note}\n\n`,
       shaped = enforceByteLimit(`${prefix}${json}`, config.fhirMaxResponseBytes)
