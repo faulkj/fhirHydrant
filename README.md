@@ -385,7 +385,8 @@ Everything in `config/` is editable without source changes.
 | `resources.json` | FHIR resource tools, search params, direct-read behavior, and `requireOneOf` rules |
 | `operations.json` | Named operation catalog for `operate` |
 | `search-controls.json` | Descriptions for `_count`, `_sort`, `_summary`, `_elements`, `_include`, `_revinclude`, `fhirpath`, `responseMode`, `maxResults`, and `prefetch` |
-| `instructions.md` | MCP server instructions shown to the client/model |
+| `instructions/manifest.json` | Ordered list of instruction fragments to compose, each with an optional `when` gate (`terminology`, `writes`, `operations`, `bundle`). Custom builds reorder, add, or remove sections by editing this file. |
+| `instructions/*.md` | Instruction fragments referenced by the manifest. Gated sections are included only when their feature is enabled; the `{{OPERATIONS_LIST}}` token is replaced with the live operation catalog. |
 | `messages/*.json` | User-facing messages, errors, and response notes (split by domain: core, write, operations, terminology, bundle) |
 | `core-tools.json` | Built-in tool descriptions and param hints |
 

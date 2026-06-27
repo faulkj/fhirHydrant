@@ -16,7 +16,8 @@ want deployment slots, built-in auth, or VNet integration. Uses port 8080
 
 Azure Container Apps via `az containerapp up --source .`. Azure builds the
 image, provides HTTPS and a public URL, and scales to zero when idle. Uses port
-8080 (Azure default). Overrides `instructions.md` with custom MCP instructions.
+8080 (Azure default). Overrides `instructions/manifest.json` with a custom
+fragment list, replacing the default composed instructions.
 
 ### [compose](compose/)
 

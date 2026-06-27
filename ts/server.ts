@@ -27,8 +27,9 @@ import { getConfigDir } from "./fhir/model/definitions.ts"
 import { fetchMetadata } from "./fhir/model/metadata.ts"
 import { registerAll } from "./mcp/resources.ts"
 import { registerCoreTools } from "./mcp/core-tools.ts"
-import { registerOperations } from "./mcp/operations.ts"
+import { registerOperations, resolveEnabledOperations } from "./mcp/operations.ts"
 import { registerBundle } from "./mcp/bundle.ts"
+import { buildInstructions } from "./mcp/instructions.ts"
 import { startHttp } from "./mcp/transport/http.ts"
 import { startStdio } from "./mcp/transport/stdio.ts"
 import { startDefinitionsWatcher } from "./server-watcher.ts"
@@ -38,7 +39,6 @@ const
       readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "package.json"), "utf8"),
    ) as { version: string },
    SERVER_INFO = { name: "fhirhydrant", version: pkgVersion },
-   SERVER_INSTRUCTIONS = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "config", "instructions.md"), "utf8").trim(),
 
    explicitServerUrl = process.env["FHIR_SERVER_URL"],
    explicitTermUrl = config.fhirTerminologyBaseUrl,
@@ -61,7 +61,8 @@ const
          && log.warn(`💡 FHIR_TERMINOLOGY_BASE_URL points to /r4 but FHIR_VERSION is R5 — consider using https://tx.fhir.org/r5`)
    ),
    makeServer = (): McpServer => {
-      const s = new McpServer(SERVER_INFO, { instructions: SERVER_INSTRUCTIONS })
+      resolveEnabledOperations()
+      const s = new McpServer(SERVER_INFO, { instructions: buildInstructions() })
       registerAll(s)
       registerCoreTools(s)
       registerOperations(s)

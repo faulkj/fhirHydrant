@@ -12,6 +12,17 @@ interface CoreToolDef {
    params: Record<string, CoreToolParam>
 }
 
+/** Gate keys that conditionally include an instruction section, mapped to config predicates by the composer. */
+type InstructionGate = "terminology" | "writes" | "operations" | "bundle"
+
+/** A single ordered entry in config/instructions/manifest.json. */
+interface InstructionSection {
+   /** Markdown filename within config/instructions/ (e.g. "core.md"). */
+   file: string
+   /** Optional feature gate — the section is included only when the named feature is enabled. Omit for always-on sections. */
+   when?: InstructionGate
+}
+
 /** Parsed stats from a FHIR Bundle response — shared between response notes and audit. */
 interface BundleStats {
    entries: number

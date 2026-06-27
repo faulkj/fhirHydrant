@@ -15,8 +15,8 @@ export const getEnabledOperations = (): OperationDefinition[] => enabledOps
 export const getSkippedOperations = (): Array<{ key: string, reason: string, gate: "metadata" | "scope" }> =>
    _getSkippedOperations()
 
-/** Registers the operate tool if at least one operation is enabled after gating. */
-export const registerOperations = (server: McpServer): void => {
+/** Runs operation gating (metadata + scope) and caches the enabled set. Safe to call before server construction. */
+export const resolveEnabledOperations = (): OperationDefinition[] => {
    const
       all = getOperations(),
       scopeMap = parseGrantedScopes(getTokenResponse().scope),
@@ -24,12 +24,18 @@ export const registerOperations = (server: McpServer): void => {
       afterScope = filterOperationsByScopes(afterMeta, scopeMap)
 
    enabledOps = afterScope
+   return enabledOps
+}
 
-   if (enabledOps.length === 0) {
+/** Registers the operate tool if at least one operation is enabled after gating. */
+export const registerOperations = (server: McpServer): void => {
+   const ops = enabledOps.length > 0 ? enabledOps : resolveEnabledOperations()
+
+   if (ops.length === 0) {
       log.info("📋 No FHIR operations enabled — operate tool not registered")
       return
    }
 
-   log.info(`📋 Registering operate tool with ${enabledOps.length} operation(s): ${enabledOps.map((o) => o.key).join(", ")}`)
-   addOperate(server, enabledOps)
+   log.info(`📋 Registering operate tool with ${ops.length} operation(s): ${ops.map((o) => o.key).join(", ")}`)
+   addOperate(server, ops)
 }

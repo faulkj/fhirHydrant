@@ -1,0 +1,12 @@
+[
+   { "file": "core.md" },
+   { "file": "responses.md" },
+   { "file": "pagination.md" },
+   { "file": "fhirpath.md" },
+   { "file": "search-tips.md" },
+   { "file": "retrieval.md" },
+   { "file": "terminology.md", "when": "terminology" },
+   { "file": "writes.md", "when": "writes" },
+   { "file": "operations.md", "when": "operations" },
+   { "file": "bundle.md", "when": "bundle" }
+]
