@@ -31,6 +31,7 @@ interface AuditEvent {
    metadataBlocked?: boolean
    scopeBlocked?: boolean
    validationBlocked?: boolean
+   dryRun?: boolean
    fhirpathFiltered?: boolean
    fhirpathMatchCount?: number
    responseMode?: ResponseMode

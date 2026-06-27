@@ -13,6 +13,7 @@
    "validatePatchBadPath": "patch entry {index}: \"path\" must be a JSON Pointer string starting with '/'",
    "validateServerFailed": "Server $validate reported issues before write:\n{issues}",
    "validateLocalFailed": "Payload validation failed:\n{issues}",
+   "writeDryRun": "DRY RUN — {action} {resourceType} validated but not executed (FHIR_WRITE_DRY_RUN=true). No changes were made to the FHIR server.",
    "writeActionCreate": "Use action=create with body containing full FHIR {resourceType} JSON to create a new resource.",
    "writeActionUpdate": "Use action=update with _id and body containing the complete FHIR {resourceType} JSON to replace an existing resource.",
    "writeActionPatch": "Use action=patch with _id and body containing a JSON Patch array (RFC 6902) to partially update a {resourceType}.",

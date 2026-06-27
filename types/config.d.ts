@@ -54,6 +54,8 @@ interface Config {
    writeCapabilities: Set<WriteAction>
    /** Write-payload validation level: off (none), local (client-side structural), server (local + server $validate preflight). */
    validateWrites: "off" | "local" | "server"
+   /** FHIR_WRITE_DRY_RUN — when true, writes are validated and logged but never executed against the FHIR server. Defaults to false. */
+   writeDryRun: boolean
    /** FHIR_OPERATIONS — allowed operation catalog keys; undefined enables all, empty set disables all. */
    operations: Set<string> | undefined
    /** FHIR_PREFETCH_MAX_PAGES — max upstream pages fetched per coalesced compact search. Defaults to 5. */

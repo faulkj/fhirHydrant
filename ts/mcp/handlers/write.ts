@@ -72,6 +72,15 @@ export const executeWrite = async (
          }
       }
 
+      if (config.writeDryRun) {
+         log.info(`🧪 ${logTag} DRY RUN → ${op} ${def.resource}${id ? '/' + id : ''} (not executed)`)
+         emitAudit({
+            ts: new Date().toISOString(), tool: toolName, resource: def.resource,
+            operation: op, status: "ok", durationMs: auditTime(t0), dryRun: true,
+         })
+         return { content: [{ type: "text" as const, text: messages.writeDryRun.replace("{action}", op).replace("{resourceType}", def.resource) }] }
+      }
+
       log.info(`🔥 ${logTag} → ${op} ${def.resource}${id ? '/' + id : ''}`)
       const
          result = await withRetry(`${def.resource} ${op}`, () => {
