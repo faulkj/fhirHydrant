@@ -17,6 +17,7 @@ export const startHttp = async (): Promise<TransportHandle> => {
          await import("@modelcontextprotocol/node"),
       app = createMcpExpressApp({
          host: config.bindHost,
+         jsonLimit: config.mcpJsonLimit,
          ...(config.allowedHosts ? { allowedHosts: config.allowedHosts } : {}),
       }),
       transport = new NodeStreamableHTTPServerTransport({

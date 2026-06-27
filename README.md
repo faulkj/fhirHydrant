@@ -346,6 +346,7 @@ See [.env.example](.env.example) for a complete sample.
 | `FHIR_MAX_COUNT` | `0` | Cap on explicit caller `_count` values; 0 = no cap |
 | `FHIR_MAX_RESPONSE_BYTES` | `262144` | Byte limit for tool responses; oversized Bundles are chunked |
 | `FHIR_REQUEST_TIMEOUT_MS` | `30000` | Per-attempt timeout for outgoing FHIR requests |
+| `MCP_JSON_LIMIT` | `4mb` | Max accepted MCP request body size (Express json limit string); raise if large write/bundle payloads are rejected |
 | `FHIR_RESPONSE_MODE` | unset | `compact`, `full`, or `compact-locked`; unset means search defaults compact and direct reads default full |
 | `FHIR_WRITE_CAPABILITIES` | unset | Comma-separated write actions: `create`, `update`, `patch`, `delete` |
 | `FHIR_VALIDATE_WRITES` | `local` | `off`, `local` (client-side structural checks), or `server` (local + server `$validate` preflight for create/update) |

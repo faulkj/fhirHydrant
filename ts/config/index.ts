@@ -49,6 +49,7 @@ export const config: Config = {
    prefetchTimeoutMs: parsePositiveInt("FHIR_PREFETCH_TIMEOUT_MS", 25000),
    bundleCapabilities: parseBundleCapabilities(),
    bundleWritesEnabled: opt("FHIR_BUNDLE_WRITES_ENABLED")?.toLowerCase() === "true",
+   mcpJsonLimit: opt("MCP_JSON_LIMIT")?.trim() || "4mb",
 }
 
 if (config.fhirDefaultCount > 0 && config.fhirMaxCount > 0 && config.fhirDefaultCount > config.fhirMaxCount)

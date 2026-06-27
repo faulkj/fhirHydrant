@@ -68,6 +68,8 @@ interface Config {
    bundleCapabilities: Set<BundleType>
    /** FHIR_BUNDLE_WRITES_ENABLED — allow write entries inside Bundles (also gated by writeCapabilities). Defaults to false. */
    bundleWritesEnabled: boolean
+   /** MCP_JSON_LIMIT — max accepted MCP request body size, as an Express json limit string (e.g. "4mb"). Defaults to 4mb. */
+   mcpJsonLimit: string
 }
 
 /** The four FHIR write interactions that can be enabled via FHIR_WRITE_CAPABILITIES. */
