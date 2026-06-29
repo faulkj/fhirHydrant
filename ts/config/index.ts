@@ -4,7 +4,7 @@ import {
    parseWriteCapabilities, parseOperations, parseFhirVersion,
    parseValidateWrites,
 } from "./parsers.ts"
-import { parsePositiveInt, parseNonNegativeInt, parseAuditSinks, parseBundleCapabilities, parseLogLevel } from "./parsers-extra.ts"
+import { parsePositiveInt, parseNonNegativeInt, parseAuditSinks, parseAuditHttpFormat, parseBundleCapabilities, parseLogLevel } from "./parsers-extra.ts"
 import { parseKeys } from "./keys.ts"
 
 const { activeKey, retiredKeys } = parseKeys()
@@ -34,6 +34,9 @@ export const config: Config = {
    fhirMaxResponseBytes: parsePositiveInt("FHIR_MAX_RESPONSE_BYTES", 262144),
    auditSinks: parseAuditSinks(),
    auditFile: opt("FHIR_AUDIT_FILE") ?? "./audit.jsonl",
+   auditHttpUrl: opt("FHIR_AUDIT_HTTP_URL")?.trim() || undefined,
+   auditHttpFormat: parseAuditHttpFormat(),
+   auditHttpAuth: opt("FHIR_AUDIT_HTTP_AUTH")?.trim() || undefined,
    auditUserHeader: opt("FHIR_AUDIT_USER_HEADER")?.trim() || undefined,
    fhirRequestTimeoutMs: parsePositiveInt("FHIR_REQUEST_TIMEOUT_MS", 30000),
    paginationPaths: parsePaginationPaths(),
@@ -57,3 +60,6 @@ if (config.fhirDefaultCount > 0 && config.fhirMaxCount > 0 && config.fhirDefault
    throw new Error(
       `FHIR_DEFAULT_COUNT (${config.fhirDefaultCount}) must not exceed FHIR_MAX_COUNT (${config.fhirMaxCount})`,
    )
+
+if (config.auditSinks.includes("http") && !config.auditHttpUrl)
+   throw new Error(`FHIR_AUDIT_SINK includes "http" but FHIR_AUDIT_HTTP_URL is not set`)

@@ -3,31 +3,40 @@ import { accessSync, constants } from "node:fs"
 import { dirname } from "node:path"
 import { AsyncLocalStorage } from "node:async_hooks"
 import { log } from "./log.ts"
+import { httpSink, toFhirAuditEvent } from "./audit-http.ts"
 
 const auditContext = new AsyncLocalStorage<AuditContext>()
 
 let sinks: AuditSinkFn[] = []
 
 /** Initializes audit sinks from config. Call once at startup before any tool dispatch. */
-export const initAuditSinks = (names: AuditSinkName[], filePath: string): void => {
+export const initAuditSinks = (opts: AuditSinkInit): void => {
    sinks = []
    const active: string[] = []
-   for (const name of names) {
+   for (const name of opts.sinks) {
       if (name === "console")
          sinks.push((e) => console.log(`\x1b[33m🔍 ${JSON.stringify(e)}\x1b[0m`)),
          active.push("console")
       else if (name === "file") {
          try {
-            try { accessSync(filePath, constants.W_OK) }
-            catch { accessSync(dirname(filePath), constants.W_OK) }
+            try { accessSync(opts.file, constants.W_OK) }
+            catch { accessSync(dirname(opts.file), constants.W_OK) }
             sinks.push((e) =>
-               void appendFile(filePath, JSON.stringify(e) + "\n", "utf8")
+               void appendFile(opts.file, JSON.stringify(e) + "\n", "utf8")
                   .catch((err) => log.error(`🔍 File write failed: ${err instanceof Error ? err.message : err}`)),
             )
             active.push("file")
          } catch {
-            log.warn(`🔍 Audit file not writable: ${filePath} — file sink disabled`)
+            log.warn(`🔍 Audit file not writable: ${opts.file} — file sink disabled`)
          }
+      }
+      else if (name === "http" && opts.httpUrl) {
+         const
+            fhir = opts.httpFormat === "fhir-auditevent",
+            shape = fhir ? toFhirAuditEvent : (e: AuditEvent) => e,
+            contentType = fhir ? "application/fhir+json" : "application/json"
+         sinks.push(httpSink(opts.httpUrl, shape, contentType, opts.httpAuth)),
+         active.push(`http (${opts.httpFormat})`)
       }
    }
    active.length && log.info(`🔍 Active sinks: ${active.join(", ")}`)

@@ -38,6 +38,12 @@ interface Config {
    auditSinks: AuditSinkName[]
    /** FHIR_AUDIT_FILE — path for the file audit sink. Defaults to ./audit.jsonl. */
    auditFile: string
+   /** FHIR_AUDIT_HTTP_URL — destination URL for the http audit sink; required when the http sink is active. */
+   auditHttpUrl: string | undefined
+   /** FHIR_AUDIT_HTTP_FORMAT — http sink body shape: raw (internal AuditEvent JSON) or fhir-auditevent (FHIR R4 AuditEvent). Defaults to raw. */
+   auditHttpFormat: AuditHttpFormat
+   /** FHIR_AUDIT_HTTP_AUTH — Authorization header value sent verbatim by the http sink; undefined when unset. */
+   auditHttpAuth: string | undefined
    /** FHIR_AUDIT_USER_HEADER — request header whose value is recorded as the audit user; undefined when unset. */
    auditUserHeader: string | undefined
    /** FHIR_REQUEST_TIMEOUT_MS — per-attempt timeout for outgoing FHIR requests. Defaults to 30000. */
@@ -102,3 +108,6 @@ type FhirVersion = "R4" | "R4B" | "R5"
 
 /** Allowed log level strings for the LOG_LEVEL env var. */
 type LogLevel = "error" | "warn" | "info" | "debug"
+
+/** http audit sink body format: raw internal AuditEvent JSON, or a FHIR R4 AuditEvent resource. */
+type AuditHttpFormat = "raw" | "fhir-auditevent"

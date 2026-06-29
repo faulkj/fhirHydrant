@@ -5,10 +5,32 @@ interface AuditContext {
 }
 
 /** Allowed audit sink names. */
-type AuditSinkName = "console" | "file"
+type AuditSinkName = "console" | "file" | "http"
 
 /** A sink function that receives a structured audit event. */
 type AuditSinkFn = (event: AuditEvent) => void
+
+/** Initialization contract for the audit subsystem — see initAuditSinks. */
+interface AuditSinkInit {
+   sinks: AuditSinkName[]
+   file: string
+   httpUrl: string | undefined
+   httpFormat: AuditHttpFormat
+   httpAuth: string | undefined
+}
+
+/** Minimal FHIR R4 AuditEvent resource emitted by the http sink in fhir-auditevent format. */
+interface FhirAuditEvent {
+   resourceType: "AuditEvent"
+   type: { system: string; code: string; display?: string }
+   subtype?: { system: string; code: string }[]
+   action?: "C" | "R" | "U" | "D" | "E"
+   recorded: string
+   outcome?: "0" | "4" | "8" | "12"
+   agent: { requestor: boolean; who?: { display: string } }[]
+   source: { observer: { display: string } }
+   entity?: { type: { system: string; code: string } }[]
+}
 
 /** Structured, PHI-free audit event emitted for every FHIR MCP operation. */
 interface AuditEvent {

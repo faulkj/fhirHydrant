@@ -38,12 +38,20 @@ export const parseLogLevel = (): number => {
 export const parseAuditSinks = (): AuditSinkName[] => {
    const
       raw = opt("FHIR_AUDIT_SINK"),
-      valid = new Set<AuditSinkName>(["console", "file"]),
+      valid = new Set<AuditSinkName>(["console", "file", "http"]),
       names = raw?.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean) ?? [],
       good = names.filter((n): n is AuditSinkName => valid.has(n as AuditSinkName)),
       bad = names.filter((n) => !valid.has(n as AuditSinkName))
    bad.length && console.warn(`📋 Ignoring unknown audit sinks: ${bad.join(", ")}`)
    return good
+}
+
+/** Parses FHIR_AUDIT_HTTP_FORMAT into raw or fhir-auditevent, defaults to raw, throws on invalid. */
+export const parseAuditHttpFormat = (): AuditHttpFormat => {
+   const raw = (opt("FHIR_AUDIT_HTTP_FORMAT") ?? "raw").trim().toLowerCase()
+   if (raw !== "raw" && raw !== "fhir-auditevent")
+      throw new Error(`Invalid FHIR_AUDIT_HTTP_FORMAT="${raw}" — must be "raw" or "fhir-auditevent"`)
+   return raw
 }
 
 /** Parses FHIR_BUNDLE_CAPABILITIES into a Set of allowed Bundle types, empty when unset or "none". */

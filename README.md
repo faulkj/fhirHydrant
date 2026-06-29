@@ -277,7 +277,16 @@ round-trips from many "next page" calls down to one.
 
 ## Audit Events
 
-Set `FHIR_AUDIT_SINK` to `console`, `file`, or both.
+Set `FHIR_AUDIT_SINK` to any combination of `console`, `file`, and `http`.
+
+The `http` sink POSTs each audit event to an external collector, SIEM, or FHIR
+audit repository (not the FHIR server itself). Set `FHIR_AUDIT_HTTP_URL` to the
+destination and `FHIR_AUDIT_HTTP_FORMAT` to either `raw` (the internal
+PHI-light audit JSON, for generic collectors such as Splunk HEC or Datadog) or
+`fhir-auditevent` (a FHIR R4 `AuditEvent` resource, recommended for ATNA and
+healthcare audit repositories). An optional `FHIR_AUDIT_HTTP_AUTH` value is sent
+verbatim as the `Authorization` header. Delivery is fire-and-forget with a 5s
+timeout; transport failures are logged and never affect tool responses.
 
 Audit events include timestamp, tool, resource type when applicable, operation,
 status, duration, response size, pagination summary, request ID, and optional
@@ -360,8 +369,11 @@ See [.env.example](.env.example) for a complete sample.
 | `FHIR_PREFETCH_MAX_ENTRIES` | `5000` | Max upstream entries accumulated before stopping |
 | `FHIR_PREFETCH_MAX_BYTES` | `2097152` | Max raw bytes fetched before stopping |
 | `FHIR_PREFETCH_TIMEOUT_MS` | `25000` | Wall-clock budget for the coalescing loop |
-| `FHIR_AUDIT_SINK` | unset | `console`, `file`, or both |
+| `FHIR_AUDIT_SINK` | unset | Any combination of `console`, `file`, `http` |
 | `FHIR_AUDIT_FILE` | `./audit.jsonl` | JSONL file used when the `file` audit sink is enabled |
+| `FHIR_AUDIT_HTTP_URL` | unset | Destination URL for the `http` audit sink; required when `http` is enabled |
+| `FHIR_AUDIT_HTTP_FORMAT` | `raw` | `raw` (internal AuditEvent JSON) or `fhir-auditevent` (FHIR R4 AuditEvent) |
+| `FHIR_AUDIT_HTTP_AUTH` | unset | Authorization header value sent verbatim by the `http` sink |
 | `FHIR_AUDIT_USER_HEADER` | unset | Proxy-authenticated user header copied into audit events |
 | `LOG_LEVEL` | `info` | Log verbosity: `error`, `warn`, `info`, or `debug` |
 
