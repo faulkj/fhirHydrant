@@ -1,4 +1,4 @@
-# fhirHydrant
+# fhirHydrant: _FHIR MCP Server_
 
 A modern, fully configurable, open-source Node.js MCP server for R4+ FHIR APIs. It
 connects MCP-compatible clients to clinical data over SMART on FHIR v2 Backend
