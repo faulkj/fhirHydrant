@@ -2,7 +2,6 @@ import { randomUUID } from "node:crypto"
 import { config } from "../../config/index.ts"
 import { log } from "../../log.ts"
 import { withAuditContext } from "../../audit.ts"
-import { jwksHandler } from "../../fhir/auth/jwks.ts"
 import { getTokenResponse } from "../../fhir/auth/auth.ts"
 import { isMetadataAvailable } from "../../fhir/model/metadata.ts"
 import { getRegisteredToolCount } from "../resources.ts"
@@ -44,10 +43,11 @@ export const startHttp = async (): Promise<TransportHandle> => {
       })
    })
 
-   if (!config.fhirJwksUrl) {
+   if (config.authEnabled && !config.fhirJwksUrl) {
+      const { jwksHandler } = await import("../../fhir/auth/jwks.ts")
       app.get("/jwks", jwksHandler)
       log.log(`🔑 Serving JWKS at http://${config.bindHost === "127.0.0.1" ? "localhost" : config.bindHost}:${config.port}/jwks`)
-   } else
+   } else if (config.authEnabled)
       log.log("🔑 External JWKS URL configured — /jwks disabled")
 
    app.use("/mcp", (req: Req, res: Res, next: Next) => {

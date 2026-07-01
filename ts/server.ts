@@ -45,8 +45,12 @@ const
 
    _ = (
       log.info(`📋 fhirhydrant v${pkgVersion}`),
-      log.debug(`🔑 Active kid: ${config.fhirActiveKey.kid}`),
-      config.fhirRetiredKeys.length && log.info(`🔑 JWKS: ${1 + config.fhirRetiredKeys.length} keys`),
+      config.authEnabled
+         ? (
+            log.debug(`🔑 Active kid: ${config.fhirActiveKey.kid}`),
+            config.fhirRetiredKeys.length && log.info(`🔑 JWKS: ${1 + config.fhirRetiredKeys.length} keys`)
+         )
+         : log.warn(`🔓 Auth mode: none — requests sent unauthenticated`),
       initAuditSinks({
          sinks: config.auditSinks,
          file: config.auditFile,
@@ -78,9 +82,9 @@ const
       return s
    }
 
-const selfHostJwks = config.transport !== "stdio" && !config.fhirJwksUrl
+const selfHostJwks = config.authEnabled && config.transport !== "stdio" && !config.fhirJwksUrl
 
-if (!selfHostJwks) await startAuth()
+if (config.authEnabled && !selfHostJwks) await startAuth()
 
 const { attach, close } =
    config.transport === "stdio"

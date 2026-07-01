@@ -2,12 +2,17 @@ import {
    get, opt, parseTransport, parsePort, parseMetadataMode,
    parseResponseMode, parseAllowedHosts, parsePaginationPaths,
    parseWriteCapabilities, parseOperations, parseFhirVersion,
-   parseValidateWrites,
+   parseValidateWrites, parseAuthMode,
 } from "./parsers.ts"
 import { parsePositiveInt, parseNonNegativeInt, parseAuditSinks, parseAuditHttpFormat, parseBundleCapabilities, parseLogLevel } from "./parsers-extra.ts"
 import { parseKeys } from "./keys.ts"
 
-const { activeKey, retiredKeys } = parseKeys()
+const
+   authMode = parseAuthMode(),
+   { activeKey, retiredKeys } =
+      authMode === "smart"
+         ? parseKeys()
+         : { activeKey: { kid: "", privateKey: "" }, retiredKeys: [] }
 
 /** Validated runtime configuration loaded from environment variables. */
 export const config: Config = {
@@ -19,7 +24,11 @@ export const config: Config = {
    get fhirTokenEndpoint() {
       return opt("FHIR_TOKEN_URL") ?? `${this.fhirBaseUrl}/oauth2/token`
    },
-   fhirClientId: get("FHIR_CLIENT_ID"),
+   authMode,
+   get authEnabled() {
+      return this.authMode === "smart"
+   },
+   fhirClientId: authMode === "smart" ? get("FHIR_CLIENT_ID") : "",
    fhirActiveKey: activeKey,
    fhirRetiredKeys: retiredKeys,
    fhirJwksUrl: opt("FHIR_JWKS_URL"),

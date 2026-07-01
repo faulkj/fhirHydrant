@@ -49,6 +49,14 @@ export const parseTransport = (): "http" | "stdio" => {
    return val as "http" | "stdio"
 }
 
+/** Parses FHIR_AUTH, defaults to "smart". "none" disables SMART auth for public no-auth endpoints. */
+export const parseAuthMode = (): "smart" | "none" => {
+   const val = (opt("FHIR_AUTH") ?? "smart").toLowerCase()
+   if (val !== "smart" && val !== "none")
+      throw new Error(`Invalid FHIR_AUTH="${val}" — must be "smart" or "none"`)
+   return val as "smart" | "none"
+}
+
 /** Parses PORT, defaults to 5000. */
 export const parsePort = (): number => {
    const

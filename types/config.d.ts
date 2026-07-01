@@ -8,9 +8,13 @@ interface Config {
    readonly fhirServerUrl: string
    /** Derived OAuth2 token endpoint — FHIR_TOKEN_URL when set, else `${fhirBaseUrl}/oauth2/token`. */
    readonly fhirTokenEndpoint: string
-   /** FHIR_CLIENT_ID — SMART Backend Services client_id used in the JWT client assertion. Required. */
+   /** FHIR_AUTH — smart (SMART Backend Services) or none (unauthenticated, for public test endpoints). Defaults to smart. */
+   authMode: "smart" | "none"
+   /** Derived — true when authMode is smart. Single source of truth for auth-enabled branches. */
+   readonly authEnabled: boolean
+   /** FHIR_CLIENT_ID — SMART Backend Services client_id used in the JWT client assertion. Required when authMode is smart; empty otherwise. */
    fhirClientId: string
-   /** FHIR_ACTIVE_KEY — current signing key (PKCS#8 PEM) with its thumbprint-derived kid. */
+   /** FHIR_ACTIVE_KEY — current signing key (PKCS#8 PEM) with its thumbprint-derived kid. Placeholder when authMode is none. */
    fhirActiveKey: KeyPair
    /** FHIR_RETIRED_KEYS — additional keys still published in the JWKS for rotation; empty when unset. */
    fhirRetiredKeys: KeyPair[]

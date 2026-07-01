@@ -46,12 +46,15 @@ be expanded, trimmed, or replaced through config files without source changes.
 ### Requirements
 
 - Node.js >= 24
-- A supported FHIR server with SMART Backend Services support
-- A SMART Backend Services client registration
-- An RSA-2048 private key whose public key is available through JWKS
+- A supported FHIR server
+- For SMART auth (default): a SMART Backend Services client registration and an
+  RSA-2048 private key whose public key is available through JWKS
+
+To run against a public, unauthenticated FHIR test server, set `FHIR_AUTH=none`
+and skip the client and key entirely (see [Unauthenticated Access](#unauthenticated-access)).
 
 The stdio transport usually needs an externally hosted JWKS URL. The built-in
-`/jwks` endpoint is available only when fhirHydrant runs over HTTP.
+`/jwks` endpoint is available only when fhirHydrant runs over HTTP with SMART auth.
 
 ### Install
 
@@ -97,6 +100,29 @@ For desktop MCP clients, stdio is usually the simplest transport:
 `FHIR_ACTIVE_KEY` is your RSA PKCS#8 private key, base64-encoded. The `kid` is
 derived automatically at startup via a truncated JWK Thumbprint and logged to
 the console.
+
+#### Unauthenticated Access
+
+To point fhirHydrant at a public, unauthenticated FHIR endpoint (handy for
+testing against open sandboxes), set `FHIR_AUTH=none`. No client ID or signing
+key is required, no token is requested, and requests are sent without an
+`Authorization` header:
+
+```json
+{
+   "mcpServers": {
+      "fhirhydrant": {
+         "command": "npx",
+         "args": ["-y", "fhirhydrant"],
+         "env": {
+            "MCP_TRANSPORT": "stdio",
+            "FHIR_AUTH": "none",
+            "FHIR_SERVER_URL": "https://hapi.fhir.org/baseR4"
+         }
+      }
+   }
+}
+```
 
 ## Tools
 
@@ -337,13 +363,14 @@ See [.env.example](.env.example) for a complete sample.
 | Variable | Description |
 | --- | --- |
 | `FHIR_BASE_URL` | Base URL used to derive the FHIR server URL and token URL |
-| `FHIR_CLIENT_ID` | SMART Backend Services client ID |
-| `FHIR_ACTIVE_KEY` | Base64-encoded RSA PKCS#8 PEM signing key |
+| `FHIR_CLIENT_ID` | SMART Backend Services client ID (not needed when `FHIR_AUTH=none`) |
+| `FHIR_ACTIVE_KEY` | Base64-encoded RSA PKCS#8 PEM signing key (not needed when `FHIR_AUTH=none`) |
 
 ### Optional
 
 | Variable | Default | Description |
 | --- | --- | --- |
+| `FHIR_AUTH` | `smart` | `smart` (SMART Backend Services) or `none` (unauthenticated, for public test endpoints) |
 | `FHIR_RETIRED_KEYS` | unset | Comma-separated base64-encoded PEMs for JWKS rotation |
 | `FHIR_VERSION` | `R4` | Active R4+ FHIR release; controls derived URL, FHIRPath model, and compact model metadata |
 | `FHIR_SERVER_URL` | `<base>/api/FHIR/<FHIR_VERSION>` | Explicit FHIR API URL override |
