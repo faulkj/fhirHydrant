@@ -421,7 +421,8 @@ different version.
 
 ## Customizing Tools And Messages
 
-Everything in `config/` is editable without source changes.
+Most of `config/` is customizable without source changes (the exception is
+`messages/*.json`, which are compiled in — see below).
 
 Config is resolved as a **partial overlay**: for each file, a `./config/<file>`
 in the current working directory (if present) overrides the packaged default,
