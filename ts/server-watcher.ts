@@ -1,7 +1,8 @@
-import { watch } from "node:fs"
+import { watch, existsSync } from "node:fs"
 import { join } from "node:path"
 import { log } from "./log.ts"
-import { getConfigDir, reloadDefinitions, getRequestedScopes } from "./fhir/model/definitions.ts"
+import { reloadDefinitions, getRequestedScopes } from "./fhir/model/definitions.ts"
+import { configDirs } from "./fhir/model/config-paths.ts"
 import { restartAuth } from "./fhir/auth/auth.ts"
 import { reloadOperations } from "./fhir/model/operations.ts"
 
@@ -11,17 +12,19 @@ let
 
 const watchFiles = new Set(["search-controls.json", "operations.json"])
 
-/** Watches the config directory (and resources/ subfolder) for changes and hot-reloads. */
+/** Watches every config root (local override + packaged) and their resources/ subfolders for changes and hot-reloads. */
 export const startDefinitionsWatcher = (): void => {
-   const watchDir = getConfigDir()
-
-   watch(watchDir, (_eventType, filename) => {
-      if (!filename || !watchFiles.has(filename)) return
-      if (filename === "operations.json")
-         return void reload(() => reloadOperations() && log.info("📋 Reloaded operations.json"))
-      reload(reloadDefinitions, filename)
-   })
-   watch(join(watchDir, "resources"), () => reload(reloadDefinitions, "resources/"))
+   for (const watchDir of configDirs()) {
+      watch(watchDir, (_eventType, filename) => {
+         if (!filename || !watchFiles.has(filename)) return
+         if (filename === "operations.json")
+            return void reload(() => reloadOperations() && log.info("📋 Reloaded operations.json"))
+         reload(reloadDefinitions, filename)
+      })
+      const resources = join(watchDir, "resources")
+      if (existsSync(resources))
+         watch(resources, () => reload(reloadDefinitions, "resources/"))
+   }
 
    log.info(`👀 Watching config/ for changes`)
 }

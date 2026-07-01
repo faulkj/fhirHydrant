@@ -1,9 +1,8 @@
-import { existsSync, readFileSync } from "node:fs"
-import { dirname, join } from "node:path"
-import { fileURLToPath } from "node:url"
+import { readFileSync } from "node:fs"
 import * as z from "zod"
 import { validateResources } from "./validate-definitions.ts"
 import { loadResourceFiles } from "./resource-files.ts"
+import { resolveConfigFile } from "./config-paths.ts"
 import { config } from "../../config/index.ts"
 import { log } from "../../log.ts"
 
@@ -15,19 +14,6 @@ export const getRequestedScopes = (): string[] => snapshot.scopes
 
 /** Returns the user-editable search-control descriptions from config/search-controls.json. */
 export const getSearchControls = (): Record<string, string> => snapshot.searchControls
-
-const configDir = (): string => {
-   const
-      here = dirname(fileURLToPath(import.meta.url)),
-      candidates = [join(here, "..", "config"), join(here, "../../..", "config")],
-      found = candidates.find((c) => existsSync(join(c, "resources")))
-   if (!found)
-      throw new Error(`config/resources/ not found — looked in: ${candidates.join(", ")}`)
-   return found
-}
-
-/** Returns the absolute path to the config directory (bundled or source mode). */
-export const getConfigDir = (): string => configDir()
 
 /** Builds a Zod shape from search params, auto-injecting _id when needed. */
 export const buildShape = (
@@ -47,9 +33,8 @@ export const buildShape = (
 
 const parse = (): DefinitionsSnapshot => {
    const
-      dir = getConfigDir(),
-      rawResources = loadResourceFiles(dir),
-      rawControls = JSON.parse(readFileSync(join(dir, "search-controls.json"), "utf8")) as unknown,
+      rawResources = loadResourceFiles(),
+      rawControls = JSON.parse(readFileSync(resolveConfigFile("search-controls.json"), "utf8")) as unknown,
       result = validateResources(rawResources)
    if (result.errors.length > 0)
       throw new Error(`config/resources/: ${result.errors.join("; ")}`)

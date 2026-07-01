@@ -1,8 +1,7 @@
 import { existsSync, readFileSync } from "node:fs"
-import { join } from "node:path"
 import { config } from "../config/index.ts"
 import { log } from "../log.ts"
-import { getConfigDir } from "../fhir/model/definitions.ts"
+import { resolveConfigFile } from "../fhir/model/config-paths.ts"
 import { getEnabledOperations } from "./operations.ts"
 import { isBundleEnabled } from "./bundle.ts"
 
@@ -15,14 +14,13 @@ import { isBundleEnabled } from "./bundle.ts"
 export const buildInstructions = (): string => {
    try {
       const
-         dir = join(getConfigDir(), "instructions"),
-         included = loadManifest(dir).filter((s) => !s.when || GATES[s.when]()),
+         included = loadManifest().filter((s) => !s.when || GATES[s.when]()),
          list = opsList(getEnabledOperations())
 
       log.info(`📋 Instructions composed from: ${included.map((s) => s.file).join(", ") || "(none)"}`)
 
       return included
-         .map((s) => read(dir, s.file).replace("{{OPERATIONS_LIST}}", list))
+         .map((s) => read(s.file).replace("{{OPERATIONS_LIST}}", list))
          .join("\n\n")
          .trim()
    } catch (err) {
@@ -39,8 +37,8 @@ const
       bundle: () => isBundleEnabled(),
    },
 
-   loadManifest = (dir: string): InstructionSection[] => {
-      const path = join(dir, "manifest.json")
+   loadManifest = (): InstructionSection[] => {
+      const path = resolveConfigFile("instructions/manifest.json")
       if (!existsSync(path)) {
          log.warn("📋 No config/instructions/manifest.json — instructions disabled")
          return []
@@ -71,8 +69,8 @@ const
       return true
    },
 
-   read = (dir: string, file: string): string => {
-      const path = join(dir, file)
+   read = (file: string): string => {
+      const path = resolveConfigFile(`instructions/${file}`)
       return existsSync(path) ? readFileSync(path, "utf8").trim() : ""
    },
 

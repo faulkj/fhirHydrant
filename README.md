@@ -423,6 +423,21 @@ different version.
 
 Everything in `config/` is editable without source changes.
 
+Config is resolved as a **partial overlay**: for each file, a `./config/<file>`
+in the current working directory (if present) overrides the packaged default,
+and anything you omit falls back to the built-in default. So npm installs work
+out of the box, and to customize you drop a `./config` folder next to where you
+launch the server containing **only** the files you want to change.
+
+- A file you provide (e.g. `./config/search-controls.json`) overrides just that
+  packaged file; same for a resource of the same name (e.g.
+  `./config/resources/patient.json` overrides the built-in Patient).
+- A new resource file (e.g. `./config/resources/myresource.json`) adds a tool.
+- The overlay can override and add, but **cannot remove** a packaged resource. To
+  ship a strictly minimal catalog, remove the packaged `config/resources/` files
+  (see the compose example).
+- `messages/*.json` are compiled in and are not overlayable at runtime.
+
 | File | Purpose |
 | --- | --- |
 | `resources/*.json` | FHIR resource tools (one file per resource): search params, direct-read behavior, and `requireOneOf` rules |

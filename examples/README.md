@@ -44,9 +44,11 @@ Update the `Caddyfile` with your domain, copy `.env.example` to `.env`, then
 ## Custom Config
 
 fhirHydrant ships with default config files for resources, operations, search
-controls, instructions, and messages. You can override any of them by placing
-your version in the example's `config/` folder — the Dockerfile copies it over
-the package defaults at build time.
+controls, and instructions. Config is a **partial overlay**: each Dockerfile
+copies the example's `config/` folder to `/app/config`, and the server prefers a
+`./config/<file>` over the packaged default per-file. Add only the files you want
+to change — anything not overridden keeps the package default.
 
-Each example demonstrates a different override. Add only the files you want to
-change - anything not overridden keeps the package default.
+The overlay can shadow and add files but cannot remove a packaged resource, so
+the compose example (which ships a strictly minimal catalog) also deletes the
+packaged `config/resources/` folder before copying its own.

@@ -1,10 +1,9 @@
 import type { McpServer } from "@modelcontextprotocol/server"
 import { z } from "zod"
-import { existsSync, readFileSync } from "node:fs"
-import { dirname, join } from "node:path"
-import { fileURLToPath } from "node:url"
+import { readFileSync } from "node:fs"
 import { config } from "../config/index.ts"
 import { log } from "../log.ts"
+import { resolveConfigFile } from "../fhir/model/config-paths.ts"
 import { getSystemInteractions } from "../fhir/model/metadata.ts"
 import { getTokenResponse } from "../fhir/auth/auth.ts"
 import { parseGrantedScopes } from "../fhir/auth/scopes.ts"
@@ -16,7 +15,7 @@ import { addSystemHistory } from "./tools/history.ts"
 
 /** Loads all core tool definitions from config/core-tools.json. */
 export const loadCoreTools = (): CoreToolDef[] =>
-   JSON.parse(readFileSync(coreToolsPath(), "utf8")) as CoreToolDef[]
+   JSON.parse(readFileSync(resolveConfigFile("core-tools.json"), "utf8")) as CoreToolDef[]
 
 /** Builds a Zod input schema from a core tool param definition map. */
 export const buildSchema = (params: Record<string, { type: string, optional?: boolean, description: string }>) => {
@@ -66,11 +65,3 @@ export const registerCoreTools = (server: McpServer): void => {
    } else
       log.debug("📋 System history tool disabled — requires system history-system interaction and wildcard read scope (system/*.r)")
 }
-
-const
-   coreToolsPath = (): string => {
-      const
-         bundled = join(dirname(fileURLToPath(import.meta.url)), "..", "config", "core-tools.json"),
-         source = join(dirname(fileURLToPath(import.meta.url)), "../..", "config", "core-tools.json")
-      return existsSync(bundled) ? bundled : source
-   }

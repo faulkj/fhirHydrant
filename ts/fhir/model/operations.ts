@@ -1,14 +1,13 @@
 import { existsSync, readFileSync } from "node:fs"
-import { join } from "node:path"
 import { config } from "../../config/index.ts"
 import { log } from "../../log.ts"
-import { getConfigDir } from "./definitions.ts"
+import { resolveConfigFile } from "./config-paths.ts"
 import { validateOperations } from "./validate-operations.ts"
 
 let catalog: OperationDefinition[] = []
 
 const load = (): OperationDefinition[] => {
-   const path = join(getConfigDir(), "operations.json")
+   const path = resolveConfigFile("operations.json")
    if (!existsSync(path)) {
       log.info("📋 No config/operations.json found — operations disabled")
       return []
