@@ -14,15 +14,20 @@ const
          ? parseKeys()
          : { activeKey: { kid: "", privateKey: "" }, retiredKeys: [] }
 
+const requireBaseUrl = (base: string | undefined): string => {
+   if (!base) throw new Error("Missing required env var: FHIR_BASE_URL (or set FHIR_SERVER_URL to point at the FHIR API root directly)")
+   return base
+}
+
 /** Validated runtime configuration loaded from environment variables. */
 export const config: Config = {
-   fhirBaseUrl: get("FHIR_BASE_URL").replace(/\/$/, ""),
+   fhirBaseUrl: (opt("FHIR_BASE_URL") ?? "").replace(/\/$/, "") || undefined,
    fhirVersion: parseFhirVersion(),
    get fhirServerUrl() {
-      return opt("FHIR_SERVER_URL") ?? `${this.fhirBaseUrl}/api/FHIR/${this.fhirVersion}`
+      return opt("FHIR_SERVER_URL") ?? `${requireBaseUrl(this.fhirBaseUrl)}/api/FHIR/${this.fhirVersion}`
    },
    get fhirTokenEndpoint() {
-      return opt("FHIR_TOKEN_URL") ?? `${this.fhirBaseUrl}/oauth2/token`
+      return opt("FHIR_TOKEN_URL") ?? `${requireBaseUrl(this.fhirBaseUrl)}/oauth2/token`
    },
    authMode,
    get authEnabled() {

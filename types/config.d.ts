@@ -1,7 +1,7 @@
 /** Validated runtime configuration shape — see config.ts. */
 interface Config {
-   /** FHIR_BASE_URL — base server URL with any trailing slash stripped. Required. */
-   fhirBaseUrl: string
+   /** FHIR_BASE_URL — base server URL with any trailing slash stripped. Required unless FHIR_SERVER_URL (and, for smart auth, FHIR_TOKEN_URL) are set explicitly. */
+   fhirBaseUrl: string | undefined
    /** FHIR_VERSION — R4, R4B, or R5. Defaults to R4. Drives FHIRPath evaluation and compact model metadata. */
    fhirVersion: FhirVersion
    /** Derived FHIR REST root — FHIR_SERVER_URL when set, else `${fhirBaseUrl}/api/FHIR/${fhirVersion}`. */

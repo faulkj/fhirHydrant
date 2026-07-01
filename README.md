@@ -362,7 +362,7 @@ See [.env.example](.env.example) for a complete sample.
 
 | Variable | Description |
 | --- | --- |
-| `FHIR_BASE_URL` | Base URL used to derive the FHIR server URL and token URL |
+| `FHIR_BASE_URL` | Base URL used to derive the FHIR server URL and token URL. Optional when `FHIR_SERVER_URL` is set (and, for smart auth, `FHIR_TOKEN_URL`) |
 | `FHIR_CLIENT_ID` | SMART Backend Services client ID (not needed when `FHIR_AUTH=none`) |
 | `FHIR_ACTIVE_KEY` | Base64-encoded RSA PKCS#8 PEM signing key (not needed when `FHIR_AUTH=none`) |
 
