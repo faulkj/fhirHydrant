@@ -80,7 +80,7 @@ export const checkRuntimeCapability = (
             if (!meta.revincludes.includes(val as string) && !meta.revincludes.includes("*")) badRevIncludes.push(val as string)
             continue
          }
-         if (!meta.searchParams.has(key)) unadvertised.push(key)
+         if (!def.trustConfig && !meta.searchParams.has(key)) unadvertised.push(key)
       }
 
       const parts: string[] = []
