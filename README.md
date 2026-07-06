@@ -463,7 +463,6 @@ resource name (e.g. `patient.json`). Each object has these fields:
 | `supportsDirectRead` | `boolean` | Enables `GET /ResourceType/{id}` via `_id` |
 | `searchParams` | `Record<string,string>` | FHIR search params and descriptions |
 | `requireOneOf` | `(string \| string[])[]` | Search requires at least one option. A string is a single required param; a nested array is a param set where every param is required. `["patient"]` accepts `patient`; `[["given","family"],["identifier"]]` accepts `given`+`family` together, or `identifier` |
-| `trustConfig` | `boolean` | When `true`, the config's `searchParams`/`requireOneOf` are trusted over an under-reporting `CapabilityStatement` (e.g. a server that has search enabled but only advertises `_id`). Skips `/metadata` search-param pruning from the tool schema **and** the per-request search-param advertisement check (so `strict` mode won't block a configured param that `/metadata` omits). Read/search/vread/history interaction gates, `_include`/`_revinclude` validation, date validation, and SMART scopes all still apply |
 
 `searchParams` values are descriptions, not a full FHIR capability model.
 Server-specific search behavior can still apply.
