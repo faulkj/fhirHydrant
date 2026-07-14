@@ -1,8 +1,8 @@
 import messages from "../../../config/messages/core.json" with { type: "json" }
 import { log } from "../../log.ts"
 import { getDefinitions } from "../../fhir/model/definitions.ts"
-import { getTokenResponse } from "../../fhir/auth/auth.ts"
-import { parseGrantedScopes, scopeActions } from "../../fhir/auth/scopes.ts"
+import { scopeActions } from "../../fhir/auth/scopes.ts"
+import { getEffectiveScope } from "../authz/context.ts"
 import { emitAudit, auditTime } from "../../audit.ts"
 import { canShapeCount, buildSearchUrl, buildHistoryUrl } from "../../fhir/transform/shaping.ts"
 import { checkRuntimeCapability } from "../validation.ts"
@@ -26,7 +26,7 @@ export const makeHandler =
       // Scope check — history-instance/history-type check as ToolAction "history"
       const
          scopeAction = (op === "history-instance" || op === "history-type") ? "history" : op,
-         scopeAllowed = scopeActions(def.resource, parseGrantedScopes(getTokenResponse().scope))
+         scopeAllowed = scopeActions(def.resource, getEffectiveScope())
       if (!scopeAllowed.has(scopeAction as ToolAction)) {
          log.debug(`🔑 ${def.resource}.${op} scope blocked — not permitted by granted scopes`)
          emitAudit({ ts: new Date().toISOString(), tool: toolName, resource: def.resource, operation: op, status: "blocked", durationMs: auditTime(t0), scopeBlocked: true })

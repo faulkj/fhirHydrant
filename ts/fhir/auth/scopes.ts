@@ -1,3 +1,13 @@
+/** Renders a resource → permissions map back to a space-separated SMART v2 scope string, or undefined when empty. */
+export const scopePermsToString = (scopeMap: Map<string, Set<ScopePermission>>): string | undefined => {
+   const tokens: string[] = []
+   for (const [resource, perms] of scopeMap) {
+      if (resource === "\u0000deny" || perms.size === 0) continue
+      tokens.push(`system/${resource}.${[...perms].join("")}`)
+   }
+   return tokens.length ? tokens.join(" ") : undefined
+}
+
 /** Parses a SMART v2 (or v1) granted scope string into a resource → permissions map. */
 export const parseGrantedScopes = (scope: string | undefined): Map<string, Set<ScopePermission>> => {
    const map = new Map<string, Set<ScopePermission>>()

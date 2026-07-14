@@ -386,6 +386,10 @@ See [.env.example](.env.example) for a complete sample.
 | `FHIR_MAX_RESPONSE_BYTES` | `262144` | Byte limit for tool responses; oversized Bundles are chunked |
 | `FHIR_REQUEST_TIMEOUT_MS` | `30000` | Per-attempt timeout for outgoing FHIR requests |
 | `MCP_JSON_LIMIT` | `4mb` | Max accepted MCP request body size (Express json limit string); raise if large write/bundle payloads are rejected |
+| `MCP_AUTHZ` | `none` | Authorization provider: `none` or `entra`. Gates tools per caller (HTTP + `Authorization: Bearer` only) |
+| `MCP_ROLE_PREFIX` | `FhirHydrant` | Prefix on granted role values (e.g. `FhirHydrant.Patient.Read`) |
+| `MCP_ENTRA_TENANT_ID` | unset | Entra tenant GUID (not a domain alias); required when `MCP_AUTHZ=entra` |
+| `MCP_ENTRA_AUDIENCE` | unset | API application (client) ID expected in the v2 access token `aud`; required when `MCP_AUTHZ=entra` |
 | `FHIR_RESPONSE_MODE` | unset | `compact`, `full`, or `compact-locked`; unset means search defaults compact and direct reads default full |
 | `FHIR_WRITE_CAPABILITIES` | unset | Comma-separated write actions: `create`, `update`, `patch`, `delete` |
 | `FHIR_VALIDATE_WRITES` | `local` | `off`, `local` (client-side structural checks), or `server` (local + server `$validate` preflight for create/update) |
@@ -518,8 +522,44 @@ MCP client config:
 }
 ```
 
+When authorization is enabled, `authz` reports the active provider and `tools`
+is omitted because the registered tool count is caller-specific.
+
 Use a reverse proxy for TLS and user authentication when exposing HTTP beyond
 localhost. Set `ALLOWED_HOSTS` when binding to a public interface.
+
+## Per-caller authorization (Entra, optional)
+
+By default (`MCP_AUTHZ=none`) every caller sees the full tool set gated only by
+`/metadata` and the backend SMART scopes. Setting `MCP_AUTHZ=entra` adds an
+optional per-caller layer: each `/mcp` request must carry an
+`Authorization: Bearer <token>` issued by Microsoft Entra, and the caller's
+**App Roles** determine which tools are built for that request. This is
+MCP-layer authorization only — it never replaces the FHIR server's own
+authorization, and it can only *subtract* from what the backend SMART token and
+config already allow.
+
+The API app registration must set `requestedAccessTokenVersion` to `2` in its
+manifest. The provider validates tenant-specific v2 issuers and expects
+`MCP_ENTRA_AUDIENCE` to be the API application's client ID.
+
+Tools a caller lacks a role for are not registered at all — they are absent from
+`tools/list`, not merely blocked. Helper tools (`capabilities`, `paginate`,
+`terminology_lookup`, `code_search`) are never gated.
+
+App Role values (with the default `FhirHydrant` prefix):
+
+| Role | Grants |
+| --- | --- |
+| `FhirHydrant.<Resource>.Read` | search, read, vread, history for that resource |
+| `FhirHydrant.<Resource>.Write` | read actions plus create, update, patch, delete (subject to `FHIR_WRITE_CAPABILITIES`) |
+| `FhirHydrant.Operation.<key>` | the named operation via the `operate` tool (e.g. `FhirHydrant.Operation.everything`) |
+| `FhirHydrant.Bundle` | the `bundle` tool |
+| `FhirHydrant.SystemHistory.Read` | the system-wide `system_history` tool |
+| `FhirHydrant.Admin` | all of the above, still bounded by backend SMART scopes, `/metadata`, and write/bundle/operation config |
+
+Requires HTTP transport; `MCP_AUTHZ=entra` with `MCP_TRANSPORT=stdio` fails at
+startup. Missing or invalid bearer tokens receive `401`.
 
 ## Deployment Examples
 

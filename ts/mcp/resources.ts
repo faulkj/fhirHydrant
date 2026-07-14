@@ -5,15 +5,13 @@ import { config } from "../config/index.ts"
 import { log } from "../log.ts"
 import { getDefinitions, getSearchControls, buildShape } from "../fhir/model/definitions.ts"
 import { getResourceMeta, setSkippedTools } from "../fhir/model/metadata.ts"
-import { getTokenResponse } from "../fhir/auth/auth.ts"
-import { parseGrantedScopes } from "../fhir/auth/scopes.ts"
+import { getEffectiveScope, getMutable } from "./authz/context.ts"
 import { filterByMetadata, filterByScopes } from "./filter-definitions.ts"
 import { getEnabledActions } from "./validation.ts"
 import { makeHandler } from "./handlers/resource.ts"
 import { readOnlyAnnotations, writeAnnotations } from "./annotations.ts"
 
 let registeredCount = 0
-
 const
    LOCAL_CONTROLS = new Set(["fhirpath", "maxResults", "prefetch", ...(config.responseMode !== "compact-locked" ? ["responseMode"] : [])]),
    WRITE_WITH_BODY = new Set<ToolAction>(["create", "update", "patch"])
@@ -100,11 +98,13 @@ export const getRegisteredToolCount = (): number => registeredCount
 export const registerAll = (server: McpServer): void => {
    const
       controlParams = getSearchControls(),
-      scopeMap = parseGrantedScopes(getTokenResponse().scope),
+      scopeMap = getEffectiveScope(),
       metaResult = filterByMetadata(getDefinitions()),
-      scopeResult = filterByScopes(metaResult.definitions, scopeMap)
+      scopeResult = filterByScopes(metaResult.definitions, scopeMap),
+      skippedTools = [...metaResult.skipped, ...scopeResult.skipped],
+      mutable = getMutable()
 
-   setSkippedTools([...metaResult.skipped, ...scopeResult.skipped])
+   mutable ? (mutable.skippedTools = skippedTools) : setSkippedTools(skippedTools)
    scopeMap.size > 0 && log.info(`🔑 Scope gate active — ${scopeResult.definitions.length}/${metaResult.definitions.length} resource(s) allowed`)
 
    for (const def of scopeResult.definitions) {
@@ -125,6 +125,6 @@ export const registerAll = (server: McpServer): void => {
          makeHandler(def.toolName),
       )
    }
-   registeredCount = scopeResult.definitions.length
-   log.info(`📋 Registered ${registeredCount} resource tool(s)`)
+   if (!mutable) registeredCount = scopeResult.definitions.length
+   log.info(`📋 Registered ${scopeResult.definitions.length} resource tool(s)`)
 }

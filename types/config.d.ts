@@ -82,7 +82,16 @@ interface Config {
    bundleWritesEnabled: boolean
    /** MCP_JSON_LIMIT — max accepted MCP request body size, as an Express json limit string (e.g. "4mb"). Defaults to 4mb. */
    mcpJsonLimit: string
+   /** MCP_AUTHZ — authorization provider: none (off) or a provider key (e.g. entra). Defaults to none. */
+   mcpAuthz: AuthzMode
+   /** Derived — true when mcpAuthz is not none. Single source of truth for authz-enabled branches. */
+   readonly authzEnabled: boolean
+   /** MCP_ROLE_PREFIX — prefix on granted role values (e.g. FhirHydrant.Patient.Read). Defaults to FhirHydrant. */
+   mcpRolePrefix: string
 }
+
+/** Authorization provider selector — none disables, any other value names a registered provider. */
+type AuthzMode = "none" | "entra"
 
 /** The four FHIR write interactions that can be enabled via FHIR_WRITE_CAPABILITIES. */
 type WriteAction = "create" | "update" | "patch" | "delete"

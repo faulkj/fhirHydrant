@@ -2,13 +2,14 @@ import {
    get, opt, parseTransport, parsePort, parseMetadataMode,
    parseResponseMode, parseAllowedHosts, parsePaginationPaths,
    parseWriteCapabilities, parseOperations, parseFhirVersion,
-   parseValidateWrites, parseAuthMode,
+   parseValidateWrites, parseAuthMode, parseMcpAuthz,
 } from "./parsers.ts"
 import { parsePositiveInt, parseNonNegativeInt, parseAuditSinks, parseAuditHttpFormat, parseBundleCapabilities, parseLogLevel } from "./parsers-extra.ts"
 import { parseKeys } from "./keys.ts"
 
 const
    authMode = parseAuthMode(),
+   mcpAuthz = parseMcpAuthz(),
    { activeKey, retiredKeys } =
       authMode === "smart"
          ? parseKeys()
@@ -68,6 +69,11 @@ export const config: Config = {
    bundleCapabilities: parseBundleCapabilities(),
    bundleWritesEnabled: opt("FHIR_BUNDLE_WRITES_ENABLED")?.toLowerCase() === "true",
    mcpJsonLimit: opt("MCP_JSON_LIMIT")?.trim() || "4mb",
+   mcpAuthz,
+   get authzEnabled() {
+      return this.mcpAuthz !== "none"
+   },
+   mcpRolePrefix: opt("MCP_ROLE_PREFIX")?.trim() || "FhirHydrant",
 }
 
 if (config.fhirDefaultCount > 0 && config.fhirMaxCount > 0 && config.fhirDefaultCount > config.fhirMaxCount)
@@ -77,3 +83,6 @@ if (config.fhirDefaultCount > 0 && config.fhirMaxCount > 0 && config.fhirDefault
 
 if (config.auditSinks.includes("http") && !config.auditHttpUrl)
    throw new Error(`FHIR_AUDIT_SINK includes "http" but FHIR_AUDIT_HTTP_URL is not set`)
+
+if (config.authzEnabled && config.transport === "stdio")
+   throw new Error(`MCP_AUTHZ=${config.mcpAuthz} requires HTTP transport — stdio has no per-request caller identity`)

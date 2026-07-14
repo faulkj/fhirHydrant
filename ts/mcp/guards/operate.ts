@@ -2,13 +2,23 @@ import { config } from "../../config/index.ts"
 import { log } from "../../log.ts"
 import { getResourceMeta, isMetadataAvailable } from "../../fhir/model/metadata.ts"
 import { scopeAllowsResource } from "../../fhir/auth/scopes.ts"
-import { getTokenResponse } from "../../fhir/auth/auth.ts"
-import { parseGrantedScopes } from "../../fhir/auth/scopes.ts"
+import { getMutable } from "../authz/context.ts"
 
 let skippedOps: Array<{ key: string, reason: string, gate: "metadata" | "scope" }> = []
 
-/** Returns operations skipped during gating — for capabilities output. */
-export const getSkippedOperations = (): typeof skippedOps => skippedOps
+const
+   sink = (): typeof skippedOps => {
+      const mutable = getMutable()
+      if (!mutable) return skippedOps
+      return mutable.skippedOps ??= []
+   },
+
+   reset = (): void => {
+      sink().length = 0
+   }
+
+/** Returns operations skipped during gating — per request when authz is on. */
+export const getSkippedOperations = (): typeof skippedOps => sink()
 
 /** Filters operations against cached /metadata. In strict mode, operations are skipped when the resource is missing or the operation is not advertised. In warn mode, unadvertised operations are registered with a debug note. */
 export const filterOperationsByMetadata = (
@@ -17,7 +27,7 @@ export const filterOperationsByMetadata = (
    if (!isMetadataAvailable() || config.metadataMode === "off") return ops
 
    const enabled: OperationDefinition[] = []
-   skippedOps = []
+   reset()
 
    for (const op of ops) {
       if (!op.resource) {
@@ -28,7 +38,7 @@ export const filterOperationsByMetadata = (
       if (!meta && config.metadataMode === "strict") {
          const reason = `${op.resource} not in /metadata`
          log.debug(`🏥 ${reason} — operation "${op.key}" skipped`)
-         skippedOps.push({ key: op.key, reason, gate: "metadata" })
+         sink().push({ key: op.key, reason, gate: "metadata" })
          continue
       }
       if (meta) {
@@ -37,7 +47,7 @@ export const filterOperationsByMetadata = (
             if (config.metadataMode === "strict") {
                const reason = `${op.resource} does not advertise ${op.operation}`
                log.debug(`🏥 ${reason} — operation "${op.key}" skipped`)
-               skippedOps.push({ key: op.key, reason, gate: "metadata" })
+               sink().push({ key: op.key, reason, gate: "metadata" })
                continue
             }
             log.debug(`🏥 ${op.resource} does not advertise ${op.operation} — registering anyway (warn mode)`)
@@ -64,7 +74,7 @@ export const filterOperationsByScopes = (
       } else {
          const reason = `${op.resource} not in granted scopes`
          log.debug(`🔑 ${reason} — operation "${op.key}" skipped`)
-         skippedOps.push({ key: op.key, reason, gate: "scope" })
+         sink().push({ key: op.key, reason, gate: "scope" })
       }
    }
    return enabled

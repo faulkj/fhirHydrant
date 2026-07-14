@@ -46,6 +46,12 @@ export const initAuditSinks = (opts: AuditSinkInit): void => {
 export const withAuditContext = <T>(ctx: AuditContext, fn: () => T): T =>
    auditContext.run(ctx, fn)
 
+/** Sets the audit `user` on the current request context (e.g. a validated authz subject). No-op outside a context. */
+export const setAuditUser = (user: string | undefined): void => {
+   const ctx = auditContext.getStore()
+   if (ctx && user) ctx.user = user
+}
+
 /** Dispatches a structured audit event to all active sinks, merging request-scoped context. */
 export const emitAudit = (event: AuditEvent): void => {
    const

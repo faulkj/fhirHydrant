@@ -12,6 +12,7 @@ import { addCapabilities } from "./tools/capabilities.ts"
 import { addTerminologyLookup } from "./tools/terminology-lookup.ts"
 import { addCodeSearch } from "./tools/code-search.ts"
 import { addSystemHistory } from "./tools/history.ts"
+import { getDecision } from "./authz/context.ts"
 
 /** Loads all core tool definitions from config/core-tools.json. */
 export const loadCoreTools = (): CoreToolDef[] =>
@@ -54,8 +55,10 @@ export const registerCoreTools = (server: McpServer): void => {
    const
       sysInteractions = getSystemInteractions(),
       scopeMap = parseGrantedScopes(getTokenResponse().scope),
+      decision = getDecision(),
       historyAllowed = (config.metadataMode === "off" || sysInteractions.has("history-system"))
          && (scopeMap.size === 0 || scopeMap.get("*")?.has("r"))
+         && (!decision || decision.admin || decision.systemHistory)
    if (historyAllowed) {
       const historyParams = config.responseMode === "compact-locked"
          ? Object.fromEntries(Object.entries(def("system_history").params).filter(([k]) => k !== "responseMode"))
@@ -63,5 +66,5 @@ export const registerCoreTools = (server: McpServer): void => {
       addSystemHistory(server, def("system_history").description, buildSchema(historyParams))
       log.debug("📋 System history tool enabled")
    } else
-      log.debug("📋 System history tool disabled — requires system history-system interaction and wildcard read scope (system/*.r)")
+      log.debug("📋 System history tool disabled — requires metadata, system/*.r, and authz permission")
 }

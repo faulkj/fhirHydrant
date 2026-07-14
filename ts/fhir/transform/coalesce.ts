@@ -1,10 +1,8 @@
 import { config } from "../../config/index.ts"
-import { log } from "../../log.ts"
-import { withRetry, enforceByteLimit } from "../utils.ts"
-import { compact } from "./compact.ts"
+import { enforceByteLimit } from "../utils.ts"
+import { coalescePages } from "./coalesce-pages.ts"
 import { tryChunkBundle } from "./bundle-chunks.ts"
 import { coalesceNote } from "./response-notes.ts"
-import { outcomeNote } from "./outcomes.ts"
 
 /**
  * Coalesces multiple upstream FHIR pages into one compact Bundle.
@@ -20,101 +18,20 @@ export const coalesce = async (
 ): Promise<CoalesceResult> => {
    const
       start = t0 ?? Date.now(),
-      entries: unknown[] = [],
-      seen = new Set<string>(),
-      outcomeNotes = new Set<string>(),
-      cap = maxResults ?? config.prefetchMaxEntries
+      cap = maxResults ?? config.prefetchMaxEntries,
+      s = await coalescePages(firstResult, client, label, cap, start),
+      bundle: Record<string, unknown> = { resourceType: "Bundle" }
 
-   let
-      pages = 0,
-      entriesSeen = 0,
-      dupsSkipped = 0,
-      rawBytes = 0,
-      nextUrl: string | undefined = undefined,
-      truncated = false,
-      truncateReason: string | undefined = undefined,
-      bundleType: unknown = undefined,
-      serverTotal: number | undefined = undefined,
-      current: unknown = firstResult
-
-   while (current) {
-      const b = current as Record<string, unknown>
-      if (pages === 0) {
-         bundleType = b.type
-         typeof b.total === "number" && (serverTotal = b.total)
-      }
-
-      const pageJson = JSON.stringify(current)
-      rawBytes += Buffer.byteLength(pageJson, "utf8")
-
-      const pageOutcome = outcomeNote(current)
-      pageOutcome && outcomeNotes.add(pageOutcome)
-
-      const pageEntries = Array.isArray(b.entry) ? b.entry as unknown[] : []
-      entriesSeen += pageEntries.length
-
-      const compacted = compact(current) as Record<string, unknown>
-      const compactEntries = Array.isArray(compacted.entry) ? compacted.entry as unknown[] : []
-      for (const entry of compactEntries) {
-         const res = (entry as Record<string, unknown>)?.resource as Record<string, unknown> | undefined
-         if (res?.resourceType === "OperationOutcome") continue
-         const url = (entry as Record<string, unknown>)?.fullUrl as string | undefined
-         if (url && seen.has(url)) {
-            dupsSkipped++
-            continue
-         }
-         url && seen.add(url)
-         entries.push(entry)
-      }
-      pages++
-
-      const links = Array.isArray(b.link) ? b.link as Record<string, unknown>[] : []
-      nextUrl = links.find((l) => l?.relation === "next" && typeof l?.url === "string")?.url as string | undefined
-
-      if (!nextUrl) break
-      if (pages >= config.prefetchMaxPages)
-         truncated = true, truncateReason = "maxPages"
-      else if (entries.length >= cap)
-         truncated = true, truncateReason = "maxResults"
-      else if (entriesSeen >= config.prefetchMaxEntries)
-         truncated = true, truncateReason = "maxEntries"
-      else if (rawBytes >= config.prefetchMaxBytes)
-         truncated = true, truncateReason = "maxBytes"
-      else if (Date.now() - start >= config.prefetchTimeoutMs)
-         truncated = true, truncateReason = "timeout"
-      if (truncated) break
-
-      try {
-         log.debug(`📦 ${label} fetching page ${pages + 1} → ${nextUrl}`)
-         current = await withRetry(
-            label,
-            (signal) => client.request({ url: nextUrl!, signal }),
-            3,
-            config.fhirRequestTimeoutMs,
-         )
-      } catch {
-         truncated = true
-         truncateReason = "fetchError"
-         break
-      }
-   }
-
-   truncated && log.debug(`📦 Coalesce truncated: ${truncateReason} after ${pages} pages, ${entries.length} entries`)
-   dupsSkipped && log.debug(`📦 ${label}: deduplicated ${dupsSkipped} included resource(s) across pages`)
-
-   const bundle: Record<string, unknown> = { resourceType: "Bundle" }
-   bundleType !== undefined && (bundle.type = bundleType)
-   serverTotal !== undefined && (bundle.total = serverTotal)
-   entries.length && (bundle.entry = entries)
-   truncated && nextUrl && (bundle.link = [{ relation: "next", url: nextUrl }])
+   s.bundleType !== undefined && (bundle.type = s.bundleType)
+   s.serverTotal !== undefined && (bundle.total = s.serverTotal)
+   s.entries.length && (bundle.entry = s.entries)
+   s.truncated && s.nextUrl && (bundle.link = [{ relation: "next", url: s.nextUrl }])
 
    const
-      hasMore = truncated && !!nextUrl,
-      note = coalesceNote(pages, entriesSeen, entries.length, hasMore, truncated ? truncateReason : undefined, serverTotal),
-      noteWithOutcomes = [note, ...outcomeNotes].join("\n"),
-      json = JSON.stringify(bundle),
-      prefix = `${noteWithOutcomes}\n\n`,
-      shaped = enforceByteLimit(`${prefix}${json}`, config.fhirMaxResponseBytes)
+      hasMore = s.truncated && !!s.nextUrl,
+      note = coalesceNote(s.pages, s.entriesSeen, s.entries.length, hasMore, s.truncated ? s.truncateReason : undefined, s.serverTotal),
+      prefix = `${[note, ...s.outcomeNotes].join("\n")}\n\n`,
+      shaped = enforceByteLimit(`${prefix}${JSON.stringify(bundle)}`, config.fhirMaxResponseBytes)
 
    let
       text = shaped.text,
@@ -127,11 +44,11 @@ export const coalesce = async (
    return {
       text,
       isError,
-      pagesFetched: pages,
-      entriesSeen,
-      entriesReturned: entries.length,
-      rawBytes,
-      truncated,
-      ...(truncateReason && { truncateReason }),
+      pagesFetched: s.pages,
+      entriesSeen: s.entriesSeen,
+      entriesReturned: s.entries.length,
+      rawBytes: s.rawBytes,
+      truncated: s.truncated,
+      ...(s.truncateReason && { truncateReason: s.truncateReason }),
    }
 }

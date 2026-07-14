@@ -33,7 +33,7 @@ interface BundleStats {
 
 /** Handle returned by transport start functions; provides attach (bind server factory) and close operations. */
 interface TransportHandle {
-   attach: (factory: () => import("@modelcontextprotocol/server").McpServer) => Promise<void>
+   attach: (factory: ServerFactory) => Promise<void>
    close: () => Promise<void>
 }
 
@@ -77,6 +77,20 @@ interface CoalesceResult {
    rawBytes: number
    truncated: boolean
    truncateReason?: string
+}
+
+/** Accumulated state from walking upstream FHIR pages, before response shaping. */
+interface CoalescePages {
+   entries: unknown[]
+   outcomeNotes: Set<string>
+   pages: number
+   entriesSeen: number
+   rawBytes: number
+   nextUrl?: string
+   truncated: boolean
+   truncateReason?: string
+   bundleType: unknown
+   serverTotal?: number
 }
 
 /** Summary of a successfully preflighted Bundle — entry counts and resource types touched. */

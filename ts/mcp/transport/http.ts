@@ -5,6 +5,7 @@ import { withAuditContext } from "../../audit.ts"
 import { getTokenResponse } from "../../fhir/auth/auth.ts"
 import { isMetadataAvailable } from "../../fhir/model/metadata.ts"
 import { getRegisteredToolCount } from "../resources.ts"
+import { handleAuthzRequest } from "../authz/http.ts"
 import { applyMcpCors, logFailedRequest } from "./http-cors.ts"
 
 /** Starts the Streamable HTTP MCP transport and returns a handle to attach a server and shut down the listener. */
@@ -29,6 +30,7 @@ export const startHttp = async (): Promise<TransportHandle> => {
 
    let
       mcpReady = false,
+      serverFactory: ServerFactory | undefined,
       connectedServer: import("@modelcontextprotocol/server").McpServer | undefined
 
    app.get("/health", (_req: Req, res: Res) => {
@@ -37,7 +39,7 @@ export const startHttp = async (): Promise<TransportHandle> => {
          status: "ok",
          mcp: mcpReady,
          metadata: isMetadataAvailable(),
-         tools: getRegisteredToolCount(),
+         ...(config.authzEnabled ? { authz: config.mcpAuthz } : { tools: getRegisteredToolCount() }),
          auth: token.access_token !== undefined,
          ...(token.expires_in !== undefined && { tokenExpiresIn: token.expires_in }),
       })
@@ -70,7 +72,10 @@ export const startHttp = async (): Promise<TransportHandle> => {
       const
          requestId = randomUUID(),
          user = config.auditUserHeader ? req.get(config.auditUserHeader)?.trim() || undefined : undefined
-      await withAuditContext({ requestId, ...(user ? { user } : {}) }, () => transport.handleRequest(req, res, req.body))
+      await withAuditContext({ requestId, ...(user ? { user } : {}) }, () =>
+         config.authzEnabled && serverFactory
+            ? handleAuthzRequest(req.get("authorization"), req, res, req.body, serverFactory)
+            : transport.handleRequest(req, res, req.body))
    })
 
    app.use((err: Error, _req: Req, res: Res, _next: Next) => {
@@ -94,6 +99,12 @@ export const startHttp = async (): Promise<TransportHandle> => {
 
    return {
       attach: async (factory) => {
+         serverFactory = factory
+         if (config.authzEnabled) {
+            log.log(`🔒 MCP authz: ${config.mcpAuthz} — per-request server builds, Authorization required on /mcp`)
+            mcpReady = true
+            return
+         }
          connectedServer = factory()
          await connectedServer.connect(transport)
          mcpReady = true

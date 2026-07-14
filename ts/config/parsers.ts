@@ -57,6 +57,14 @@ export const parseAuthMode = (): "smart" | "none" => {
    return val as "smart" | "none"
 }
 
+/** Parses MCP_AUTHZ, defaults to "none". Names the authorization provider (e.g. "entra"). */
+export const parseMcpAuthz = (): AuthzMode => {
+   const val = (opt("MCP_AUTHZ") ?? "none").toLowerCase()
+   if (val !== "none" && val !== "entra")
+      throw new Error(`Invalid MCP_AUTHZ="${val}" — must be "none" or "entra"`)
+   return val as AuthzMode
+}
+
 /** Parses PORT, defaults to 5000. */
 export const parsePort = (): number => {
    const

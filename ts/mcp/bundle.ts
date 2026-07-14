@@ -3,12 +3,15 @@ import { config } from "../config/index.ts"
 import { log } from "../log.ts"
 import { isMetadataAvailable, getSystemInteractions } from "../fhir/model/metadata.ts"
 import { getDefinitions } from "../fhir/model/definitions.ts"
+import { getDecision } from "./authz/context.ts"
 import { loadCoreTools, buildSchema } from "./core-tools.ts"
 import { addBundle } from "./tools/bundle.ts"
 
-/** True when the bundle tool is enabled — capabilities configured and (in strict mode) advertised in /metadata. */
+/** True when the bundle tool is enabled — capabilities configured, metadata-advertised (strict), and authz-permitted. */
 export const isBundleEnabled = (): boolean => {
    if (config.bundleCapabilities.size === 0) return false
+   const decision = getDecision()
+   if (decision && !decision.admin && !decision.bundle) return false
    if (isMetadataAvailable() && config.metadataMode === "strict")
       return [...config.bundleCapabilities].some((t) => getSystemInteractions().has(t))
    return true

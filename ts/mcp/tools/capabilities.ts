@@ -4,7 +4,8 @@ import messages from "../../../config/messages/core.json" with { type: "json" }
 import { fetchMetadata, getCapabilitySummary } from "../../fhir/model/metadata.ts"
 import { getDefinitions } from "../../fhir/model/definitions.ts"
 import { getTokenResponse } from "../../fhir/auth/auth.ts"
-import { parseGrantedScopes } from "../../fhir/auth/scopes.ts"
+import { getDecision, getEffectiveScope, getMutable } from "../authz/context.ts"
+import { scopePermsToString } from "../../fhir/auth/scopes.ts"
 import { formatFhirError } from "../../fhir/utils.ts"
 import { log } from "../../log.ts"
 import { emitAudit, auditTime, errorStatus } from "../../audit.ts"
@@ -32,7 +33,7 @@ export const addCapabilities = (
             }
             const
                defsByType = new Map(getDefinitions().map((d) => [d.resource, d])),
-               scopeMap = parseGrantedScopes(getTokenResponse().scope),
+               scopeMap = getEffectiveScope(),
                operations = getEnabledOperations().map((o) => ({
                   key: o.key, operation: o.operation, resource: o.resource,
                   level: o.level, method: o.method,
@@ -45,7 +46,8 @@ export const addCapabilities = (
                skippedOperations = getSkippedOperations(),
                enriched = {
                   ...summary,
-                  grantedScope: getTokenResponse().scope,
+                  skippedTools: getMutable()?.skippedTools ?? summary.skippedTools,
+                  grantedScope: scopePermsToString(scopeMap) ?? (getDecision() ? "" : getTokenResponse().scope),
                   resources: summary.resources.map((r) => {
                      const def = defsByType.get(r.type)
                      return { ...r, enabledOperations: def ? getEnabledActions(def, scopeMap) : [] }

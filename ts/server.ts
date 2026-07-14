@@ -29,6 +29,7 @@ import { registerCoreTools } from "./mcp/core-tools.ts"
 import { registerOperations, resolveEnabledOperations } from "./mcp/operations.ts"
 import { registerBundle } from "./mcp/bundle.ts"
 import { buildInstructions } from "./mcp/instructions.ts"
+import { validateAuthzConfig } from "./mcp/authz/providers.ts"
 import { startHttp } from "./mcp/transport/http.ts"
 import { startStdio } from "./mcp/transport/stdio.ts"
 import { startDefinitionsWatcher } from "./server-watcher.ts"
@@ -80,6 +81,8 @@ const
       registerBundle(s)
       return s
    }
+
+await validateAuthzConfig()
 
 const selfHostJwks = config.authEnabled && config.transport !== "stdio" && !config.fhirJwksUrl
 
