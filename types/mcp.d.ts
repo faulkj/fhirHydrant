@@ -62,13 +62,14 @@ type GuardResult =
    | { ok: true; directId: string | undefined; op: AuditEvent["operation"]; versionId?: string; parsedBody?: unknown }
    | { ok: false; response: { content: { type: "text"; text: string }[]; isError: true } }
 
-/** Result from tryChunkBundle when chunking is possible. */
+/** Result from tryChunkBundle when chunking is possible — the first chunk's envelope. */
 interface ChunkBuildResult {
-   text: string
+   envelope: FhirEnvelope
 }
 
-/** Return shape from the coalescing loop — MCP-ready response plus audit stats. */
+/** Return shape from the coalescing loop — canonical envelope plus audit stats. */
 interface CoalesceResult {
+   envelope: FhirEnvelope
    text: string
    isError: boolean
    pagesFetched: number

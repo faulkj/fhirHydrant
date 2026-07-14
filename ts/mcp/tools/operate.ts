@@ -3,6 +3,7 @@ import { z } from "zod"
 import { config } from "../../config/index.ts"
 import { makeOperateHandler } from "../handlers/operate.ts"
 import { readOnlyAnnotations, writeAnnotations } from "../annotations.ts"
+import { fhirOutputSchema } from "../output.ts"
 
 /** Registers the operate MCP tool with a dynamic description built from the enabled catalog. */
 export const addOperate = (
@@ -39,7 +40,7 @@ export const addOperate = (
 
    server.registerTool(
       "operate",
-      { description, inputSchema: z.object(shape), annotations },
+      { description, inputSchema: z.object(shape), outputSchema: fhirOutputSchema, annotations },
       makeOperateHandler(enabledOps),
    )
 }

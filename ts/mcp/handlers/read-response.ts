@@ -65,13 +65,13 @@ export const executeRead = async (opts: ReadOpts) => {
                log.debug(`🟢 ${logTag} OK (coalesced ${c.pagesFetched} pages, ${c.entriesReturned} entries)`)
                emitAudit({
                   ts: new Date().toISOString(), tool, resource, operation: op,
-                  status: c.isError ? "truncated" : "ok", durationMs: auditTime(t0), httpStatus: 200,
+                  status: c.envelope.truncated ? "truncated" : "ok", durationMs: auditTime(t0), httpStatus: 200,
                   prefetchPages: c.pagesFetched, prefetchEntries: c.entriesReturned,
                   prefetchRawBytes: c.rawBytes, prefetchTruncated: c.truncated || undefined,
                   ...(c.truncateReason && { prefetchTruncateReason: c.truncateReason }),
                   responseMode: effectiveMode, compacted: true,
                })
-               return { content: [{ type: "text" as const, text: c.text }], ...(c.isError && { isError: true }) }
+               return { content: [{ type: "text" as const, text: c.text }], structuredContent: c.envelope }
             }
          }
 
@@ -89,8 +89,10 @@ export const executeRead = async (opts: ReadOpts) => {
             return { content: [{ type: "text" as const, text: pipeline.error }], isError: true }
          }
 
-         // Count auto-retry: only for search paths with a rebuildable URL
-         if (pipeline.isError && search && pipeline.stats) {
+         const env = pipeline.envelope
+
+         // Count auto-retry: only for truncated search paths with a rebuildable URL
+         if (env.truncated && search && pipeline.stats) {
             const next = Math.floor((currentCount || pipeline.stats.entries || config.fhirDefaultCount) / 2)
             if (next >= 1) {
                currentCount = next
@@ -104,18 +106,15 @@ export const executeRead = async (opts: ReadOpts) => {
          log.debug(`🟢 ${logTag} OK (${pipeline.stats?.entries ?? 1}E, ${auditTime(t0)}ms)`)
          emitAudit({
             ts: new Date().toISOString(), tool, resource, operation: op,
-            status: pipeline.isError ? "truncated" : "ok", durationMs: auditTime(t0), httpStatus: 200,
+            status: env.truncated ? "truncated" : "ok", durationMs: auditTime(t0), httpStatus: 200,
             ...(pipeline.stats && { bundleEntries: pipeline.stats.entries, bundleTotal: pipeline.stats.total, hasNext: !!pipeline.stats.nextUrl }),
             ...(search && { countInjected: search.countInjected, countCapped: search.countCapped, countSkipped: search.countSkipped }),
             ...(retries > 0 && { autoRetryCount: retries }),
-            ...(pipeline.fhirpathFiltered && { fhirpathFiltered: true, fhirpathMatchCount: pipeline.fhirpathMatchCount }),
-            responseMode: pipeline.effectiveMode,
-            ...(pipeline.compacted && { compacted: true }),
+            ...(env.fhirpathFiltered && { fhirpathFiltered: true, fhirpathMatchCount: env.fhirpathMatchCount }),
+            responseMode: env.responseMode,
+            ...(env.compacted && { compacted: true }),
          })
-         return {
-            content: [{ type: "text" as const, text: pipeline.text }],
-            ...(pipeline.isError && { isError: true }),
-         }
+         return { content: [{ type: "text" as const, text: pipeline.text }], structuredContent: env }
       }
    } catch (err) {
       const { log: errLog, client } = formatFhirError(err)

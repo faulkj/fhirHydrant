@@ -1,63 +1,67 @@
 import messages from "../../../config/messages/core.json" with { type: "json" }
-import { config } from "../../config/index.ts"
 import { applyFhirPath } from "./fhirpath.ts"
 import { compact } from "./compact.ts"
-import { bundleStats, responseNote } from "./response-notes.ts"
+import { bundleStats } from "./response-notes.ts"
 import { outcomeNote } from "./outcomes.ts"
-import { enforceByteLimit } from "../utils.ts"
-import { tryChunkBundle } from "./bundle-chunks.ts"
+import { finalizeEnvelope } from "./finalize.ts"
 
-/** Applies FHIRPath, compact, byte-limit, chunk fallback, and response notes to a FHIR response. */
+const detectResourceType = (data: unknown): string | undefined => {
+   if (!data || typeof data !== "object" || Array.isArray(data)) return undefined
+   const rt = (data as Record<string, unknown>).resourceType
+   return typeof rt === "string" ? rt : undefined
+}
+
+/** Builds the canonical response envelope from a FHIR result, applying FHIRPath, compact, notes, and byte limit. */
 export const applyResponsePipeline = (opts: PipelineOpts): PipelineResult | { error: string } => {
    const
-      { result, bundleResponse, fhirpathExpr, effectiveMode, wasDefaulted, extraNotes } = opts
+      { result, bundleResponse, fhirpathExpr, effectiveMode, wasDefaulted, extraNotes } = opts,
+      sourceBytes = Buffer.byteLength(JSON.stringify(result), "utf8"),
+      stats = bundleResponse ? bundleStats(result, JSON.stringify(result)) : undefined
 
    let
-      json = JSON.stringify(result, null, 2),
-      stats = bundleResponse ? bundleStats(result, json) : undefined,
+      data: unknown = result,
       filtered = false,
       matchCount = 0,
       compacted = false
-
-   const sourceBytes = Buffer.byteLength(json, "utf8")
 
    if (fhirpathExpr) {
       const fp = applyFhirPath(result, fhirpathExpr)
       if ("error" in fp) return { error: messages.fhirpathError.replace("{error}", fp.error) }
       filtered = true
       matchCount = fp.nodes.length
-      json = JSON.stringify(fp.nodes, null, 2)
+      data = fp.nodes
    }
 
    if (effectiveMode === "compact") {
-      json = JSON.stringify(compact(JSON.parse(json)))
+      data = compact(data)
       compacted = true
    }
-   const notes = [
-      ...(extraNotes ?? []),
-      bundleResponse && stats ? responseNote(result, json) : undefined,
-      outcomeNote(result),
-      filtered ? messages.fhirpathFiltered.replace("{matchCount}", String(matchCount)).replace("{sourceBytes}", String(sourceBytes)) : undefined,
-      wasDefaulted && compacted ? messages.responseModeCompact : undefined,
-   ].filter(Boolean)
 
    const
-      prefix = notes.length ? notes.join("\n") + "\n\n" : "",
-      shaped = enforceByteLimit(`${prefix}${json}`, config.fhirMaxResponseBytes)
+      resourceType = detectResourceType(data),
+      notes = [
+         ...(extraNotes ?? []),
+         stats?.nextUrl ? messages.responsePartial.replace("{entries}", String(stats.entries)) : undefined,
+         outcomeNote(result),
+         filtered ? messages.fhirpathFiltered.replace("{matchCount}", String(matchCount)).replace("{sourceBytes}", String(sourceBytes)) : undefined,
+         wasDefaulted && compacted ? messages.responseModeCompact : undefined,
+      ].filter((n): n is string => !!n),
 
-   if (shaped.isError && bundleResponse) {
-      const chunked = tryChunkBundle(JSON.parse(json), prefix, config.fhirMaxResponseBytes)
-      if (chunked)
-         return { text: chunked.text, isError: false, stats, effectiveMode, compacted, fhirpathFiltered: filtered, fhirpathMatchCount: matchCount }
-   }
+      envelope: FhirEnvelope = {
+         status: "ok",
+         responseMode: effectiveMode,
+         compacted,
+         truncated: false,
+         isBundle: bundleResponse,
+         hasMore: !!stats?.nextUrl,
+         notes,
+         ...(resourceType && { resourceType }),
+         ...(filtered && { fhirpathFiltered: true, fhirpathMatchCount: matchCount }),
+         ...(stats && { bundle: { entries: stats.entries, ...(stats.total !== undefined && { total: stats.total }), jsonBytes: stats.jsonBytes } }),
+         ...(stats?.nextUrl && { continuation: { kind: "page" as const, url: stats.nextUrl } }),
+         data,
+      },
 
-   return {
-      text: shaped.text,
-      isError: !!shaped.isError,
-      stats,
-      effectiveMode,
-      compacted,
-      fhirpathFiltered: filtered,
-      fhirpathMatchCount: matchCount,
-   }
+      final = finalizeEnvelope(envelope, filtered ? undefined : result)
+   return { envelope: final.envelope, text: final.text, isError: final.isError, stats }
 }

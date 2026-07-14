@@ -91,19 +91,20 @@ export const makeOperateHandler = (enabledOps: OperationDefinition[]) =>
             return { content: [{ type: "text" as const, text: pipeline.error }], isError: true }
          }
 
+         const env = pipeline.envelope
          log.debug(`🟢 ${logTag} OK (${Buffer.byteLength(pipeline.text, "utf8")}B, ${auditTime(t0)}ms)`)
          emitAudit({
             ts: new Date().toISOString(), tool: "operate", resource,
             operation: op.auditOperation as AuditEvent["operation"],
-            status: pipeline.isError ? "truncated" : "ok",
+            status: env.truncated ? "truncated" : "ok",
             durationMs: auditTime(t0), httpStatus: 200,
             jsonBytes: Buffer.byteLength(pipeline.text, "utf8"),
             ...(pipeline.stats && { bundleEntries: pipeline.stats.entries, bundleTotal: pipeline.stats.total, hasNext: !!pipeline.stats.nextUrl }),
-            ...(pipeline.fhirpathFiltered && { fhirpathFiltered: true, fhirpathMatchCount: pipeline.fhirpathMatchCount }),
-            responseMode: pipeline.effectiveMode,
-            ...(pipeline.compacted && { compacted: true }),
+            ...(env.fhirpathFiltered && { fhirpathFiltered: true, fhirpathMatchCount: env.fhirpathMatchCount }),
+            responseMode: env.responseMode,
+            ...(env.compacted && { compacted: true }),
          })
-         return { content: [{ type: "text" as const, text: pipeline.text }], ...(pipeline.isError && { isError: true }) }
+         return { content: [{ type: "text" as const, text: pipeline.text }], structuredContent: env }
       } catch (err) {
          const { log: errLog, client } = formatFhirError(err)
          log.error(`🔴 ${logTag} ERR ${errLog} (${auditTime(t0)}ms)`)

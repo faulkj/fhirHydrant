@@ -1,7 +1,6 @@
 import { config } from "../../config/index.ts"
-import { enforceByteLimit } from "../utils.ts"
 import { coalescePages } from "./coalesce-pages.ts"
-import { tryChunkBundle } from "./bundle-chunks.ts"
+import { finalizeEnvelope } from "./finalize.ts"
 import { coalesceNote } from "./response-notes.ts"
 
 /**
@@ -30,20 +29,26 @@ export const coalesce = async (
    const
       hasMore = s.truncated && !!s.nextUrl,
       note = coalesceNote(s.pages, s.entriesSeen, s.entries.length, hasMore, s.truncated ? s.truncateReason : undefined, s.serverTotal),
-      prefix = `${[note, ...s.outcomeNotes].join("\n")}\n\n`,
-      shaped = enforceByteLimit(`${prefix}${JSON.stringify(bundle)}`, config.fhirMaxResponseBytes)
-
-   let
-      text = shaped.text,
-      isError = !!shaped.isError
-   if (shaped.isError) {
-      const chunked = tryChunkBundle(bundle, prefix, config.fhirMaxResponseBytes)
-      if (chunked) text = chunked.text, isError = false
-   }
+      envelope: FhirEnvelope = {
+         status: "ok",
+         responseMode: "compact",
+         compacted: true,
+         truncated: false,
+         isBundle: true,
+         hasMore,
+         notes: [note, ...s.outcomeNotes],
+         resourceType: "Bundle",
+         bundle: { entries: s.entries.length, ...(s.serverTotal !== undefined && { total: s.serverTotal }), jsonBytes: Buffer.byteLength(JSON.stringify(bundle), "utf8") },
+         ...(hasMore && s.nextUrl && { continuation: { kind: "page" as const, url: s.nextUrl } }),
+         prefetch: { pages: s.pages, upstreamEntries: s.entriesSeen, returnedEntries: s.entries.length },
+         data: bundle,
+      },
+      final = finalizeEnvelope(envelope, bundle)
 
    return {
-      text,
-      isError,
+      envelope: final.envelope,
+      text: final.text,
+      isError: final.isError,
       pagesFetched: s.pages,
       entriesSeen: s.entriesSeen,
       entriesReturned: s.entries.length,

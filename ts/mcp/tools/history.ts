@@ -3,6 +3,7 @@ import type { z } from "zod"
 import { buildHistoryUrl } from "../../fhir/transform/shaping.ts"
 import { validateDateArgs } from "../validation.ts"
 import { readOnlyAnnotations } from "../annotations.ts"
+import { fhirOutputSchema } from "../output.ts"
 import { executeRead } from "../handlers/read-response.ts"
 
 /** Registers the system-level _history core tool. */
@@ -11,7 +12,7 @@ export const addSystemHistory = (
 ): void => {
    server.registerTool(
       "system_history",
-      { description, inputSchema, annotations: readOnlyAnnotations },
+      { description, inputSchema, outputSchema: fhirOutputSchema, annotations: readOnlyAnnotations },
       async (args: Record<string, unknown>) => {
          const
             t0 = Date.now(),

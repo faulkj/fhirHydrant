@@ -1,16 +1,24 @@
 import type { McpServer } from "@modelcontextprotocol/server"
 import type { z } from "zod"
 import messages from "../../../config/messages/terminology.json" with { type: "json" }
-import { config } from "../../config/index.ts"
 import { log } from "../../log.ts"
-import { enforceByteLimit, formatFhirError } from "../../fhir/utils.ts"
+import { formatFhirError } from "../../fhir/utils.ts"
 import { emitAudit, auditTime, errorStatus } from "../../audit.ts"
 import { resolveSystem } from "../../fhir/terminology/systems.ts"
 import { loincSearch, snomedSearch } from "../../fhir/terminology/search.ts"
 import { readOnlyAnnotations } from "../annotations.ts"
+import { codeSearchOutputSchema } from "../output.ts"
 
 const
    text = (s: string) => ({ type: "text" as const, text: s }),
+
+   toResults = (page: string[]): Array<{ code: string, display: string }> =>
+      page.map((line) => {
+         const i = line.indexOf(" - ")
+         return i < 0 ? { code: line, display: "" } : { code: line.slice(0, i), display: line.slice(i + 3) }
+      }),
+
+   emit = (structured: Record<string, unknown>) => ({ content: [text(JSON.stringify(structured))], structuredContent: structured }),
 
    parseIntParam = (value: unknown, defaultVal: number, min: number, max?: number): number | undefined => {
       if (value === undefined || value === "") return defaultVal
@@ -24,7 +32,7 @@ export const addCodeSearch = (
 ): void => {
    server.registerTool(
       "code_search",
-      { description, inputSchema, annotations: readOnlyAnnotations },
+      { description, inputSchema, outputSchema: codeSearchOutputSchema, annotations: readOnlyAnnotations },
       async (args: Record<string, unknown>) => {
          const
             t0 = Date.now(),
@@ -46,52 +54,26 @@ export const addCodeSearch = (
             return audit("blocked"), { content: [text(messages.terminologyInvalidOffset.replace("{offset}", String(args["offset"])))], isError: true }
 
          try {
-            const isLoinc = systemKey === "loinc"
-
-            if (isLoinc) {
-               const { page, total, exhausted, fallback } = await loincSearch(resolved.vsUrl, filter, offset, count)
-
-               if (!page.length) {
-                  audit("ok", 200)
-                  const msg = offset > 0
-                     ? messages.terminologyNoMoreResults.replace("{system}", "LOINC").replace("{filter}", filter).replace("{offset}", String(offset))
-                     : messages.terminologySearchNoResults.replace("{system}", "LOINC").replace("{filter}", filter)
-                  return { content: [text(msg)] }
-               }
-
+            if (systemKey === "loinc") {
                const
-                  from = offset + 1,
-                  to = offset + page.length,
-                  suffix = exhausted ? "" : "+",
-                  fallbackNote = fallback ? `No exact matches for "${filter}" — showing results for "${fallback}" ranked by relevance.\n` : "",
-                  header = `${fallbackNote}LOINC search: ${from}–${to} of ${total}${suffix} results for "${filter}"`,
-                  hasMore = offset + count < total || !exhausted,
-                  hint = hasMore ? `\nNext page: offset=${offset + count}` : "",
-                  body = `${header}\n\n${page.join("\n")}${hint}`,
-                  shaped = enforceByteLimit(body, config.fhirMaxResponseBytes)
-
+                  { page, total, exhausted, fallback } = await loincSearch(resolved.vsUrl, filter, offset, count),
+                  hasMore = page.length > 0 && (offset + count < total || !exhausted)
                log.debug(`🟢 code_search OK — ${page.length} results (${auditTime(t0)}ms)`)
-               audit(shaped.isError ? "truncated" : "ok", 200)
-               return { content: [text(shaped.text)], ...(shaped.isError && { isError: true }) }
+               audit("ok", 200)
+               return emit({
+                  system: systemKey, filter, count, offset, total,
+                  hasMore, ...(hasMore && { nextOffset: offset + count }),
+                  ...(fallback && { fallback }), results: toResults(page),
+               })
             }
 
             const { page, total } = await snomedSearch(resolved.vsUrl, filter, offset, count)
-
-            if (!page.length) {
-               audit("ok", 200)
-               return { content: [text(messages.terminologySearchNoResults.replace("{system}", "SNOMED").replace("{filter}", filter))] }
-            }
-
-            const
-               header = total !== undefined
-                  ? `SNOMED search: ${page.length} of ${total} results for "${filter}"`
-                  : `SNOMED search: ${page.length} results for "${filter}"`,
-               body = `${header}\n\n${page.join("\n")}`,
-               shaped = enforceByteLimit(body, config.fhirMaxResponseBytes)
-
             log.debug(`🟢 code_search OK — ${page.length} results, SNOMED (${auditTime(t0)}ms)`)
-            audit(shaped.isError ? "truncated" : "ok", 200)
-            return { content: [text(shaped.text)], ...(shaped.isError && { isError: true }) }
+            audit("ok", 200)
+            return emit({
+               system: systemKey, filter, count, offset,
+               ...(total !== undefined && { total }), results: toResults(page),
+            })
          } catch (err) {
             const { log: errLog, client } = formatFhirError(err)
             log.error(`🔴 code_search ERR ${errLog} (${auditTime(t0)}ms)`)

@@ -53,15 +53,50 @@ interface PipelineOpts {
    extraNotes?: string[]
 }
 
-/** Result from the response pipeline — ready to emit as MCP content. */
+/** Result from the response pipeline — carries the canonical envelope plus emit hints. */
 interface PipelineResult {
+   envelope: FhirEnvelope
    text: string
    isError: boolean
    stats: BundleStats | undefined
-   effectiveMode: ResponseMode
+}
+
+/** Where to fetch the remainder of a paged/chunked result — one place for the model to look. */
+interface EnvelopeContinuation {
+   kind: "page" | "chunk"
+   url: string
+}
+
+/** Multi-page coalescing summary surfaced to the model. */
+interface EnvelopePrefetch {
+   pages: number
+   upstreamEntries: number
+   returnedEntries: number
+}
+
+/** Bundle-specific counters lifted from BundleStats. */
+interface EnvelopeBundle {
+   entries: number
+   total?: number
+   jsonBytes: number
+}
+
+/** Canonical structured response envelope shared by all FHIR-wrapping MCP tools. */
+interface FhirEnvelope {
+   status: "ok" | "truncated"
+   responseMode: ResponseMode
    compacted: boolean
-   fhirpathFiltered: boolean
-   fhirpathMatchCount: number
+   truncated: boolean
+   isBundle: boolean
+   hasMore: boolean
+   notes: string[]
+   resourceType?: string
+   fhirpathFiltered?: boolean
+   fhirpathMatchCount?: number
+   bundle?: EnvelopeBundle
+   continuation?: EnvelopeContinuation
+   prefetch?: EnvelopePrefetch
+   data?: unknown
 }
 
 /** Trimmed, JSON-serializable summary of the FHIR server's CapabilityStatement. */

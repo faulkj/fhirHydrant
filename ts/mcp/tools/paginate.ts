@@ -4,10 +4,12 @@ import messages from "../../../config/messages/core.json" with { type: "json" }
 import { log } from "../../log.ts"
 import { emitAudit, auditTime } from "../../audit.ts"
 import { isChunkUrl, retrieveChunk } from "../../fhir/transform/bundle-chunks.ts"
+import { serializeEnvelope } from "../../fhir/transform/serialize.ts"
 import { scopeActions } from "../../fhir/auth/scopes.ts"
 import { getDecision, getEffectiveScope } from "../authz/context.ts"
 import { validatePageUrl, pageUrlResource } from "./validate-page-url.ts"
 import { readOnlyAnnotations } from "../annotations.ts"
+import { fhirOutputSchema } from "../output.ts"
 import { executeRead } from "../handlers/read-response.ts"
 
 const paginateScopeDenied = (validatedUrl: string): string | undefined => {
@@ -28,21 +30,21 @@ export const addPaginate = (
 ): void => {
    server.registerTool(
       "paginate",
-      { description, inputSchema, annotations: readOnlyAnnotations },
+      { description, inputSchema, outputSchema: fhirOutputSchema, annotations: readOnlyAnnotations },
       async (args: Record<string, unknown>) => {
          const t0 = Date.now()
          try {
             const validatedUrl = validatePageUrl(args["url"] as string)
 
             if (isChunkUrl(validatedUrl)) {
-               const text = retrieveChunk(validatedUrl)
-               if (!text) {
+               const envelope = retrieveChunk(validatedUrl)
+               if (!envelope) {
                   emitAudit({ ts: new Date().toISOString(), tool: "paginate", operation: "paginate", status: "error", durationMs: auditTime(t0) })
                   return { content: [{ type: "text" as const, text: (messages as Record<string, string>)["paginationChunkExpired"] ?? "Chunk expired. Re-fetch the original server page URL." }], isError: true }
                }
                log.debug("🟢 Paginate (chunk)")
                emitAudit({ ts: new Date().toISOString(), tool: "paginate", operation: "paginate", status: "ok", durationMs: auditTime(t0) })
-               return { content: [{ type: "text" as const, text }] }
+               return { content: [{ type: "text" as const, text: serializeEnvelope(envelope) }], structuredContent: envelope }
             }
 
             const deny = paginateScopeDenied(validatedUrl)

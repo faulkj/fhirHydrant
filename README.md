@@ -285,6 +285,22 @@ FHIR noise and common datatypes such as `meta`, narrative, extensions,
 FHIRPath runs locally; the FHIR server never sees the expression. If evaluation
 fails, the raw response is withheld and an error is returned.
 
+### Structured Response Envelope
+
+Every FHIR-data tool (resource tools, `paginate`, `operate`, `bundle`,
+`system_history`) returns a single structured envelope, advertised via each
+tool's `outputSchema` and returned as `structuredContent` (the text content is
+the same envelope serialized). It carries the FHIR payload (`data`) plus
+metadata: response mode, a `hasMore`/`continuation` pagination signal, Bundle and
+coalescing stats, and human-readable `notes`. The full field list is the tool's
+`outputSchema`.
+
+Oversized responses are chunked when possible (`data` preserved, retrievable via
+`continuation`); if unchunkable, the envelope is marked `status: "truncated"`
+with `data` omitted. Truncation is a successful-but-partial result, not an error.
+The capabilities and terminology tools return their own structured shapes rather
+than this FHIR envelope.
+
 ### Page Coalescing
 
 When compact mode is active for a search (resource tools or paginate), the
@@ -297,8 +313,8 @@ round-trips from many "next page" calls down to one.
 - `prefetch=false` disables coalescing for one call
 - `_count` still controls the upstream FHIR page size
 - Coalescing stops at configurable page, entry, byte, and time limits
-- The Bundle's `link[next]` URL points to where the server stopped; call
-  `paginate` with `responseMode=compact` to continue
+- `continuation.url` points to where the server stopped; call `paginate` with
+  `responseMode=compact` to continue (`hasMore` indicates more remain)
 - FHIRPath-filtered requests stay single-page (no coalescing)
 - `responseMode=full` always returns a single upstream page
 

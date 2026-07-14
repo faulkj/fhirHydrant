@@ -10,6 +10,7 @@ import { filterByMetadata, filterByScopes } from "./filter-definitions.ts"
 import { getEnabledActions } from "./validation.ts"
 import { makeHandler } from "./handlers/resource.ts"
 import { readOnlyAnnotations, writeAnnotations } from "./annotations.ts"
+import { fhirOutputSchema } from "./output.ts"
 
 let registeredCount = 0
 const
@@ -113,15 +114,12 @@ export const registerAll = (server: McpServer): void => {
          { schema, injected, description, actions } = augmentSchema(def, meta, controlParams, scopeMap),
          hasWrites = actions.some((a) => WRITE_WITH_BODY.has(a) || a === "delete"),
          annotations = hasWrites
-            ? writeAnnotations(
-               actions.includes("delete"),
-               !actions.some((a) => a === "create" || a === "patch"),
-            )
+            ? writeAnnotations(actions.includes("delete"), !actions.some((a) => a === "create" || a === "patch"))
             : readOnlyAnnotations
       injected.length && log.debug(`📋 ${def.resource}: injected ${injected.join(", ")}`)
       server.registerTool(
          def.toolName,
-         { description, inputSchema: schema, annotations },
+         { description, inputSchema: schema, outputSchema: fhirOutputSchema, annotations },
          makeHandler(def.toolName),
       )
    }

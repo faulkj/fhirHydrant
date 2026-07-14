@@ -1,4 +1,3 @@
-import messages from "../../config/messages/core.json" with { type: "json" }
 import { log } from "../log.ts"
 
 /** Checks whether an error is transient and eligible for retry. */
@@ -66,15 +65,4 @@ export const formatFhirError = (err: unknown): { log: string, client: string } =
    return issues.length
       ? { log: `${status} — ${issues[0]}`, client: `${status}\n${issues.join("\n")}` }
       : { log: status, client: status }
-}
-
-/** Returns the text unchanged or an error payload when it exceeds the byte limit. */
-export const enforceByteLimit = (text: string, limit: number): { text: string, isError?: true } => {
-   const bytes = Buffer.byteLength(text, "utf8")
-   return bytes <= limit ? { text } : {
-      text: messages.responseTooLarge
-         .replace("{bytes}", bytes.toString())
-         .replace("{limit}", limit.toString()),
-      isError: true,
-   }
 }

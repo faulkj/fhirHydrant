@@ -19,40 +19,20 @@ export const bundleStats = (result: unknown, json: string): BundleStats | undefi
    }
 }
 
-/** Builds a compact text note for a FHIR response — always includes the resourceType label,
- *  enriches Bundles with entry count, total, next link, and appends jsonBytes for all types.
- *  For batch-response/transaction-response, appends per-status counts. */
-export const responseNote = (result: unknown, json: string): string | undefined => {
+/** Builds a per-status count note for a batch-response/transaction-response Bundle (e.g. "2x200, 1x404"), or undefined. */
+export const batchStatusNote = (result: unknown): string | undefined => {
    if (!result || typeof result !== "object") return undefined
    const r = result as Record<string, unknown>
-   const rt = r.resourceType
-   if (typeof rt !== "string") return undefined
-   const stats = bundleStats(result, json)
-   if (!stats) return `${rt} jsonBytes=${Buffer.byteLength(json, "utf8")}`
-   const
-      parts = [
-         `Bundle entries=${stats.entries}`,
-         stats.total !== undefined ? `total=${stats.total}` : undefined,
-         `jsonBytes=${stats.jsonBytes}`,
-      ].filter(Boolean).join(" "),
-
-      warning = stats.nextUrl
-         ? (messages as Record<string, string>)["responsePartial"]?.replace("{entries}", String(stats.entries))
-         : undefined,
-      base = stats.nextUrl ? `${parts}. Next: ${stats.nextUrl}` : parts,
-      noted = warning ? `${warning}\n${base}` : base,
-      btype = r.type as string | undefined
-   if ((btype === "batch-response" || btype === "transaction-response") && Array.isArray(r.entry)) {
-      const counts: Record<string, number> = {}
-      for (const e of r.entry as Array<Record<string, unknown>>) {
-         const resp = e?.response as Record<string, unknown> | undefined
-         const code = typeof resp?.status === "string" ? resp.status.split(" ")[0] : "unknown"
-         counts[code] = (counts[code] ?? 0) + 1
-      }
-      const statusParts = Object.entries(counts).map(([code, n]) => `${n}x${code}`).join(", ")
-      return `${noted} status: ${statusParts}`
+   const btype = r.type as string | undefined
+   if ((btype !== "batch-response" && btype !== "transaction-response") || !Array.isArray(r.entry)) return undefined
+   const counts: Record<string, number> = {}
+   for (const e of r.entry as Array<Record<string, unknown>>) {
+      const
+         resp = e?.response as Record<string, unknown> | undefined,
+         code = typeof resp?.status === "string" ? resp.status.split(" ")[0] : "unknown"
+      counts[code] = (counts[code] ?? 0) + 1
    }
-   return noted
+   return `status: ${Object.entries(counts).map(([code, n]) => `${n}x${code}`).join(", ")}`
 }
 
 /** Builds a summary note for a coalesced multi-page fetch. */

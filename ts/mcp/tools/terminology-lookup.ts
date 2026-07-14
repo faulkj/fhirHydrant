@@ -7,6 +7,7 @@ import { withRetry, formatFhirError } from "../../fhir/utils.ts"
 import { emitAudit, auditTime, errorStatus } from "../../audit.ts"
 import { resolveSystem, txFetch } from "../../fhir/terminology/systems.ts"
 import { readOnlyAnnotations } from "../annotations.ts"
+import { terminologyLookupOutputSchema } from "../output.ts"
 
 /** Registers the terminology_lookup tool for CodeSystem/$lookup queries */
 export const addTerminologyLookup = (
@@ -14,7 +15,7 @@ export const addTerminologyLookup = (
 ): void => {
    server.registerTool(
       "terminology_lookup",
-      { description, inputSchema, annotations: readOnlyAnnotations },
+      { description, inputSchema, outputSchema: terminologyLookupOutputSchema, annotations: readOnlyAnnotations },
       async (args: Record<string, unknown>) => {
          const
             t0 = Date.now(),
@@ -39,20 +40,22 @@ export const addTerminologyLookup = (
 
             if (!display) {
                emitAudit({ ts: new Date().toISOString(), tool: "terminology_lookup", operation: "lookup", status: "ok", durationMs: auditTime(t0), httpStatus: 200, system: systemKey })
-               return { content: [{ type: "text" as const, text: messages.terminologyLookupNotFound.replace("{system}", systemKey.toUpperCase()).replace("{code}", code) }] }
+               const notFound = { system: systemKey, code, found: false }
+               return { content: [{ type: "text" as const, text: JSON.stringify(notFound) }], structuredContent: notFound }
             }
 
-            const
-               label = systemKey.toUpperCase(),
-               lines = [
-                  `${label} ${code} - ${display}`,
-                  version ? `Version: ${version}` : undefined,
-                  inactive ? "Status: inactive" : undefined,
-               ].filter(Boolean)
+            const resolvedCode = {
+               system: systemKey,
+               code,
+               found: true,
+               display,
+               ...(version && { version }),
+               ...(inactive && { inactive: true }),
+            }
 
             emitAudit({ ts: new Date().toISOString(), tool: "terminology_lookup", operation: "lookup", status: "ok", durationMs: auditTime(t0), httpStatus: 200, system: systemKey })
             log.debug(`🟢 terminology_lookup OK (${auditTime(t0)}ms)`)
-            return { content: [{ type: "text" as const, text: lines.join("\n") }] }
+            return { content: [{ type: "text" as const, text: JSON.stringify(resolvedCode) }], structuredContent: resolvedCode }
          } catch (err) {
             const { log: errLog, client } = formatFhirError(err)
             log.error(`🔴 terminology_lookup ERR ${errLog} (${auditTime(t0)}ms)`)

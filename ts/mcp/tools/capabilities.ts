@@ -12,6 +12,7 @@ import { emitAudit, auditTime, errorStatus } from "../../audit.ts"
 import { getEnabledActions } from "../validation.ts"
 import { getEnabledOperations, getSkippedOperations } from "../operations.ts"
 import { readOnlyAnnotations } from "../annotations.ts"
+import { capabilitiesOutputSchema } from "../output.ts"
 
 /** Registers the capabilities tool for querying the FHIR server's CapabilityStatement. */
 export const addCapabilities = (
@@ -19,7 +20,7 @@ export const addCapabilities = (
 ): void => {
    server.registerTool(
       "capabilities",
-      { description, inputSchema, annotations: readOnlyAnnotations },
+      { description, inputSchema, outputSchema: capabilitiesOutputSchema, annotations: readOnlyAnnotations },
       async (args: Record<string, unknown>) => {
          const t0 = Date.now()
          try {
@@ -27,8 +28,10 @@ export const addCapabilities = (
             const summary = getCapabilitySummary()
             if (!summary) {
                emitAudit({ ts: new Date().toISOString(), tool: "capabilities", operation: "capabilities", status: "ok", durationMs: auditTime(t0) })
+               const unavailable = { available: false, note: messages.capabilitiesUnavailable }
                return {
                   content: [{ type: "text" as const, text: messages.capabilitiesUnavailable }],
+                  structuredContent: unavailable,
                }
             }
             const
@@ -58,6 +61,7 @@ export const addCapabilities = (
             emitAudit({ ts: new Date().toISOString(), tool: "capabilities", operation: "capabilities", status: "ok", durationMs: auditTime(t0), ...(args["refresh"] ? { httpStatus: 200 } : {}) })
             return {
                content: [{ type: "text" as const, text: JSON.stringify(enriched, null, 2) }],
+               structuredContent: enriched,
             }
          } catch (err) {
             const { log: errLog, client } = formatFhirError(err)

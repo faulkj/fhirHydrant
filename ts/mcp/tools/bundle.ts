@@ -8,8 +8,10 @@ import { emitAudit, auditTime, errorStatus } from "../../audit.ts"
 import { extractFhirPath } from "../../fhir/transform/fhirpath.ts"
 import { extractResponseMode, resolveResponseMode } from "../../fhir/transform/compact.ts"
 import { applyResponsePipeline } from "../../fhir/transform/pipeline.ts"
+import { batchStatusNote } from "../../fhir/transform/response-notes.ts"
 import { validateBundleRequest } from "../guards/bundle.ts"
 import { readOnlyAnnotations, writeAnnotations } from "../annotations.ts"
+import { fhirOutputSchema } from "../output.ts"
 
 /** Registers the bundle tool on the MCP server. */
 export const addBundle = (
@@ -21,7 +23,7 @@ export const addBundle = (
 
    server.registerTool(
       "bundle",
-      { description, inputSchema, annotations },
+      { description, inputSchema, outputSchema: fhirOutputSchema, annotations },
       async (args: Record<string, unknown>) => {
          const
             t0 = Date.now(),
@@ -65,39 +67,36 @@ export const addBundle = (
                emitAudit({ ts: new Date().toISOString(), tool: "bundle", operation: "bundle", status: "error", durationMs: auditTime(t0), bundleType: type, bundleEntryCount: summary.readCount + summary.writeCount, bundleReadCount: summary.readCount, bundleWriteCount: summary.writeCount })
                return { content: [{ type: "text" as const, text: "Invalid responseMode — must be \"compact\" or \"full\"" }], isError: true }
             }
-            const { effectiveMode: rawMode, wasDefaulted } = resolved
-            const effectiveMode = wasDefaulted && !config.responseMode ? "full" as ResponseMode : rawMode
-            const pipeline = applyResponsePipeline({
-               result, bundleResponse: true, fhirpathExpr, effectiveMode, wasDefaulted,
-            })
+            const
+               { effectiveMode: rawMode, wasDefaulted } = resolved,
+               effectiveMode = wasDefaulted && !config.responseMode ? "full" as ResponseMode : rawMode,
+               entryCount = summary.readCount + summary.writeCount,
+               summaryNote = entryCount > 0
+                  ? `${type}: ${summary.readCount} read${summary.readCount !== 1 ? "s" : ""}, ${summary.writeCount} write${summary.writeCount !== 1 ? "s" : ""} (${summary.resourceTypes.join(", ")})`
+                  : `${type}: empty Bundle`,
+               pipeline = applyResponsePipeline({
+                  result, bundleResponse: true, fhirpathExpr, effectiveMode, wasDefaulted,
+                  extraNotes: [warning, summaryNote, batchStatusNote(result)].filter((n): n is string => !!n),
+               })
 
             if ("error" in pipeline) {
                emitAudit({ ts: new Date().toISOString(), tool: "bundle", operation: "bundle", status: "error", durationMs: auditTime(t0), httpStatus: 200, bundleType: type, bundleEntryCount: summary.readCount + summary.writeCount, bundleReadCount: summary.readCount, bundleWriteCount: summary.writeCount })
                return { content: [{ type: "text" as const, text: pipeline.error }], isError: true }
             }
 
-            const
-               entryCount = summary.readCount + summary.writeCount,
-               summaryNote = entryCount > 0
-                  ? `${type}: ${summary.readCount} read${summary.readCount !== 1 ? "s" : ""}, ${summary.writeCount} write${summary.writeCount !== 1 ? "s" : ""} (${summary.resourceTypes.join(", ")})`
-                  : `${type}: empty Bundle`,
-               prefix = [warning, summaryNote].filter(Boolean).join("\n") + "\n\n"
-
+            const env = pipeline.envelope
             log.debug(`🟢 ${logTag} OK (${entryCount} entries, ${auditTime(t0)}ms)`)
             emitAudit({
                ts: new Date().toISOString(), tool: "bundle", operation: "bundle",
-               status: pipeline.isError ? "truncated" : "ok", durationMs: auditTime(t0), httpStatus: 200,
+               status: env.truncated ? "truncated" : "ok", durationMs: auditTime(t0), httpStatus: 200,
                jsonBytes: Buffer.byteLength(pipeline.text, "utf8"),
                bundleType: type, bundleEntryCount: summary.readCount + summary.writeCount,
                bundleReadCount: summary.readCount, bundleWriteCount: summary.writeCount,
-               responseMode: pipeline.effectiveMode,
-               ...(pipeline.compacted && { compacted: true }),
-               ...(pipeline.fhirpathFiltered && { fhirpathFiltered: true, fhirpathMatchCount: pipeline.fhirpathMatchCount }),
+               responseMode: env.responseMode,
+               ...(env.compacted && { compacted: true }),
+               ...(env.fhirpathFiltered && { fhirpathFiltered: true, fhirpathMatchCount: env.fhirpathMatchCount }),
             })
-            return {
-               content: [{ type: "text" as const, text: `${prefix}${pipeline.text}` }],
-               ...(pipeline.isError && { isError: true }),
-            }
+            return { content: [{ type: "text" as const, text: pipeline.text }], structuredContent: env }
          } catch (err) {
             const { log: errLog, client } = formatFhirError(err)
             log.error(`🔴 ${logTag} ERR ${errLog} (${auditTime(t0)}ms)`)
