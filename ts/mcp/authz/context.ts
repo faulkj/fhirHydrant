@@ -29,4 +29,16 @@ export const getEffectiveScope = (): Map<string, Set<ScopePermission>> => {
    return !decision.admin && decision.scope.size === 0 ? DENY_ALL : decision.scope
 }
 
+/**
+ * Returns a stable key identifying the current caller's authorization surface, used to
+ * bind cached chunks to their creator. Empty string when authz is off (single global
+ * caller — chunks are shared as before).
+ */
+export const getCallerKey = (): string => {
+   const decision = store.getStore()?.decision
+   if (!decision) return ""
+   const scope = [...decision.scope].map(([r, p]) => `${r}.${[...p].sort().join("")}`).sort().join(",")
+   return `${decision.admin ? "a" : ""}|${scope}|${[...(decision.operations ?? [])].sort().join(",")}|${decision.bundle ? "b" : ""}|${decision.systemHistory ? "h" : ""}`
+}
+
 const DENY_ALL: Map<string, Set<ScopePermission>> = new Map([["\u0000deny", new Set<ScopePermission>()]])

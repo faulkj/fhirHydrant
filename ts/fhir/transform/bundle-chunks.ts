@@ -1,21 +1,24 @@
 import { randomUUID } from "crypto"
 import { log } from "../../log.ts"
+import { getCallerKey } from "../../mcp/authz/context.ts"
 
 const
    CHUNK_PREFIX = "urn:fhirhydrant:chunk:",
    MAX_STORED = 200,
-   store = new Map<string, string>()
+   store = new Map<string, { key: string, text: string }>()
 
 /** Returns true when the URL is a synthetic local chunk reference. */
 export const isChunkUrl = (url: string): boolean => url.startsWith(CHUNK_PREFIX)
 
-/** Retrieves and removes a stored chunk by its synthetic URL. Returns the pre-serialized text or undefined if expired/evicted. */
+/** Retrieves and removes a stored chunk by its synthetic URL, only for the caller that created it. Returns the pre-serialized text, or undefined if expired/evicted/foreign. */
 export const retrieveChunk = (url: string): string | undefined => {
    const
       id = url.slice(CHUNK_PREFIX.length),
-      text = store.get(id)
-   text !== undefined && store.delete(id)
-   return text
+      entry = store.get(id)
+   if (!entry) return undefined
+   if (entry.key !== getCallerKey()) return undefined
+   store.delete(id)
+   return entry.text
 }
 
 /**
@@ -42,14 +45,16 @@ export const tryChunkBundle = (
    if (!ranges || ranges.length < 2) return undefined
    if (ranges.length - 1 > MAX_STORED - store.size) return undefined
 
-   const ids = ranges.slice(1).map(() => randomUUID())
+   const
+      ids = ranges.slice(1).map(() => randomUUID()),
+      key = getCallerKey()
 
    for (let i = ids.length - 1; i >= 0; i--) {
       const
          nextUrl = i === ids.length - 1 ? serverNextUrl : `${CHUNK_PREFIX}${ids[i + 1]}`,
          [start, end] = ranges[i + 1],
          text = renderChunk(shell, entries.slice(start, end), nextUrl, prefix)
-      store.set(ids[i], text)
+      store.set(ids[i], { key, text })
    }
 
    const firstNextUrl = `${CHUNK_PREFIX}${ids[0]}`

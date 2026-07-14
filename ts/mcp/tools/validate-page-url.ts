@@ -23,3 +23,18 @@ export const validatePageUrl = (url: string): string => {
          .replace("{actual}", nextUrl.pathname))
    return nextUrl.toString()
 }
+
+/**
+ * Extracts the FHIR resource type a server-origin pagination URL targets (the first path
+ * segment after the configured base path), or undefined when none applies (e.g. a
+ * system-level `_history` or `_search` root). Used to gate pagination by caller scope.
+ */
+export const pageUrlResource = (validatedUrl: string): string | undefined => {
+   const
+      baseHref = config.fhirServerUrl.replace(/\/?$/, "/"),
+      basePath = new URL(baseHref).pathname.replace(/\/*$/, "/"),
+      { pathname } = new URL(validatedUrl, baseHref),
+      rest = pathname.startsWith(basePath) ? pathname.slice(basePath.length) : pathname.replace(/^\/+/, ""),
+      first = rest.split("/")[0] ?? ""
+   return /^[A-Z][A-Za-z]+$/.test(first) ? first : undefined
+}
