@@ -561,6 +561,31 @@ App Role values (with the default `FhirHydrant` prefix):
 Requires HTTP transport; `MCP_AUTHZ=entra` with `MCP_TRANSPORT=stdio` fails at
 startup. Missing or invalid bearer tokens receive `401`.
 
+### Adding an authorization provider
+
+Entra is the only shipped provider, but the authorization layer is
+provider-neutral. This is a **source extension**, not a runtime plugin: the npm
+package ships only `bin/server.js` (providers are bundled in), so adding one
+means forking or cloning the repo and rebuilding.
+
+The shared pipeline is provider-agnostic — a provider only maps an
+`Authorization` header to `{ subject, roles }`. The role vocabulary
+(`.Read`/`.Write`/`Operation.<key>`/`Bundle`/`SystemHistory.Read`/`Admin`) and
+`MCP_ROLE_PREFIX` handling are applied by `decideAuthz` for every provider.
+
+To add one (e.g. `auth0`) takes just two edits:
+
+1. Create `ts/mcp/authz/auth0.ts` exporting an `AuthzProvider` — implement
+   `validate(authorization)` to return `{ subject, roles }` (throw to reject),
+   and optionally `validateConfig()` to fail fast on missing provider env. Keep
+   all provider-specific env inside this module; do not add fields to `Config`.
+2. Add one entry to `ts/mcp/authz/registry.ts`:
+   `auth0: () => import("./auth0.ts").then((m) => m.auth0Provider)`.
+
+That's it. The `AuthzMode` type, the `MCP_AUTHZ` parser, and its error message
+all derive from the registry keys automatically, so `MCP_AUTHZ=auth0` just works
+with full type safety — no other file needs to change.
+
 ## Deployment Examples
 
 The [`examples/`](examples/) directory has standalone deployment examples for

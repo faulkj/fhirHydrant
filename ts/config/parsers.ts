@@ -1,3 +1,5 @@
+import { authzProviders } from "../mcp/authz/registry.ts"
+
 const VALID_FHIR_VERSIONS = new Set<FhirVersion>(["R4", "R4B", "R5"])
 
 /** Parses FHIR_VERSION into a validated FhirVersion, defaults to R4 when unset. */
@@ -57,11 +59,13 @@ export const parseAuthMode = (): "smart" | "none" => {
    return val as "smart" | "none"
 }
 
-/** Parses MCP_AUTHZ, defaults to "none". Names the authorization provider (e.g. "entra"). */
+/** Parses MCP_AUTHZ, defaults to "none". Names a registered authorization provider (e.g. "entra"). */
 export const parseMcpAuthz = (): AuthzMode => {
-   const val = (opt("MCP_AUTHZ") ?? "none").toLowerCase()
-   if (val !== "none" && val !== "entra")
-      throw new Error(`Invalid MCP_AUTHZ="${val}" — must be "none" or "entra"`)
+   const
+      valid = ["none", ...Object.keys(authzProviders)],
+      val = (opt("MCP_AUTHZ") ?? "none").toLowerCase()
+   if (!valid.includes(val))
+      throw new Error(`Invalid MCP_AUTHZ="${val}" — must be one of: ${valid.join(", ")}`)
    return val as AuthzMode
 }
 

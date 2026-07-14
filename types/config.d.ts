@@ -90,8 +90,8 @@ interface Config {
    mcpRolePrefix: string
 }
 
-/** Authorization provider selector — none disables, any other value names a registered provider. */
-type AuthzMode = "none" | "entra"
+/** Authorization provider selector — "none" disables; every other value is a key of the authzProviders registry (ts/mcp/authz/registry.ts), so adding a provider there extends this automatically. */
+type AuthzMode = "none" | keyof typeof import("../ts/mcp/authz/registry.ts").authzProviders
 
 /** The four FHIR write interactions that can be enabled via FHIR_WRITE_CAPABILITIES. */
 type WriteAction = "create" | "update" | "patch" | "delete"
