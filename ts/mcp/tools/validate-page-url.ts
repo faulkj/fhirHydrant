@@ -26,15 +26,20 @@ export const validatePageUrl = (url: string): string => {
 
 /**
  * Extracts the FHIR resource type a server-origin pagination URL targets (the first path
- * segment after the configured base path), or undefined when none applies (e.g. a
- * system-level `_history` or `_search` root). Used to gate pagination by caller scope.
+ * segment after whichever configured base/proxy prefix the URL matched), or undefined when
+ * none applies (e.g. a system-level `_history` or `_search` root). Strips the longest matching
+ * prefix so alternate FHIR_PAGINATION_PATHS proxy paths are handled, not just the primary base.
+ * Used to gate pagination by caller scope.
  */
 export const pageUrlResource = (validatedUrl: string): string | undefined => {
    const
       baseHref = config.fhirServerUrl.replace(/\/?$/, "/"),
       basePath = new URL(baseHref).pathname.replace(/\/*$/, "/"),
       { pathname } = new URL(validatedUrl, baseHref),
-      rest = pathname.startsWith(basePath) ? pathname.slice(basePath.length) : pathname.replace(/^\/+/, ""),
+      prefixes = [...(basePath.length > 1 ? [basePath] : []), ...config.paginationPaths]
+         .filter((p) => pathname.startsWith(p))
+         .sort((a, b) => b.length - a.length),
+      rest = prefixes.length ? pathname.slice(prefixes[0]!.length) : pathname.replace(/^\/+/, ""),
       first = rest.split("/")[0] ?? ""
    return /^[A-Z][A-Za-z]+$/.test(first) ? first : undefined
 }
