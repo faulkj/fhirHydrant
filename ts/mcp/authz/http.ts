@@ -27,7 +27,7 @@ export const handleAuthzRequest = async (
 
    setAuditUser(identity.subject)
    const decision = decideAuthz(identity.roles)
-   await withMcpContext({ decision, mutable: {} }, async () => {
+   await withMcpContext({ decision, subject: identity.subject, mutable: {} }, async () => {
       const
          { NodeStreamableHTTPServerTransport } = await import("@modelcontextprotocol/node"),
          transport = new NodeStreamableHTTPServerTransport({ sessionIdGenerator: undefined }),

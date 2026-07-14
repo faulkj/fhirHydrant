@@ -47,6 +47,8 @@ interface AuthzDecision {
  */
 interface McpRequestContext {
    decision: AuthzDecision
+   /** Validated caller subject (JWT `sub`/`oid`); binds cached chunks to the creating identity. */
+   subject: string | undefined
    mutable: {
       enabledOps?: OperationDefinition[]
       skippedOps?: Array<{ key: string, reason: string, gate: "metadata" | "scope" }>

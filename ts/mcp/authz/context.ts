@@ -30,15 +30,18 @@ export const getEffectiveScope = (): Map<string, Set<ScopePermission>> => {
 }
 
 /**
- * Returns a stable key identifying the current caller's authorization surface, used to
- * bind cached chunks to their creator. Empty string when authz is off (single global
- * caller — chunks are shared as before).
+ * Returns a stable key identifying the current caller, used to bind cached chunks to their
+ * creator. Leads with the validated subject so two callers with identical roles never share
+ * chunks; the permission fingerprint follows as defense-in-depth. Empty string when authz is
+ * off (single global caller — chunks are shared as before).
  */
 export const getCallerKey = (): string => {
-   const decision = store.getStore()?.decision
-   if (!decision) return ""
-   const scope = [...decision.scope].map(([r, p]) => `${r}.${[...p].sort().join("")}`).sort().join(",")
-   return `${decision.admin ? "a" : ""}|${scope}|${[...(decision.operations ?? [])].sort().join(",")}|${decision.bundle ? "b" : ""}|${decision.systemHistory ? "h" : ""}`
+   const ctx = store.getStore()
+   if (!ctx) return ""
+   const
+      { decision, subject } = ctx,
+      scope = [...decision.scope].map(([r, p]) => `${r}.${[...p].sort().join("")}`).sort().join(",")
+   return `${subject ?? "\u0000nosub"}|${decision.admin ? "a" : ""}|${scope}|${[...(decision.operations ?? [])].sort().join(",")}|${decision.bundle ? "b" : ""}|${decision.systemHistory ? "h" : ""}`
 }
 
 const DENY_ALL: Map<string, Set<ScopePermission>> = new Map([["\u0000deny", new Set<ScopePermission>()]])
