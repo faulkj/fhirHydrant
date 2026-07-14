@@ -10,7 +10,7 @@
    },
    "repository": {
       "type": "git",
-      "url": "git+https://github.com/faulkj/fhirhydrant.git"
+      "url": "git+https://github.com/faulkj/fhirHydrant.git"
    },
    "bugs": {
       "url": "https://github.com/faulkj/fhirHydrant/issues"
@@ -45,23 +45,23 @@
       "prepublishOnly": "npm run build",
       "start": "node bin/server.js",
       "dev": "node --env-file=.env --experimental-strip-types --watch ts/server.ts --dev",
-      "inspector": "npx @modelcontextprotocol/inspector"
+      "inspector": "npx @modelcontextprotocol/inspector --transport http --server-url http://localhost:5000/mcp"
    },
    "dependencies": {
-      "@modelcontextprotocol/express": "2.0.0-beta.2",
-      "@modelcontextprotocol/node": "2.0.0-beta.2",
-      "@modelcontextprotocol/server": "2.0.0-beta.2",
+      "@modelcontextprotocol/express": "2.0.0-beta.4",
+      "@modelcontextprotocol/node": "2.0.0-beta.4",
+      "@modelcontextprotocol/server": "2.0.0-beta.4",
       "express": "^5.2.1",
       "fhirclient": "^2.6.3",
-      "fhirpath": "^4.11.0",
+      "fhirpath": "^5.0.0",
       "fhirstarterjs": "^1.0.8",
       "zod": "^4.4.3"
    },
    "devDependencies": {
       "@types/express": "^5.0.6",
-      "@types/node": "^26.1.0",
+      "@types/node": "^26.1.1",
       "tsup": "^8.5.1",
-      "typescript": "^6.0.3"
+      "typescript": "^7.0.2"
    },
    "overrides": {
       "esbuild": "0.28.1",
