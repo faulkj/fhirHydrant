@@ -1,0 +1,12 @@
+{
+   "resource": "Binary",
+   "toolName": "binary",
+   "description": "Read or search a FHIR Binary resource — pure binary content such as clinical notes, lab documentation, clinical-reference documents, PDFs, and images, returned in its native format. Provide _id alone; Binary is retrieved by ID only (both read and search accept only _id, so search behaves like a read). The Binary FHIR ID is typically obtained from a DocumentReference (e.g. content.attachment.url) or Media reference. The FHIR representation returns contentType (MIME type, e.g. text/html or text/rtf) and data (base64-encoded content).",
+   "supportsDirectRead": true,
+   "searchParams": {
+      "_id": "Binary resource ID — the only supported parameter; both read and search accept _id only"
+   },
+   "requireOneOf": [
+      "_id"
+   ]
+}
