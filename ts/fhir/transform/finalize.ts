@@ -5,12 +5,13 @@ import { tryChunkBundle } from "./bundle-chunks.ts"
 
 /**
  * Serializes → measures → applies the byte limit to an envelope.
- * Over-limit Bundles are chunked (data preserved); otherwise data is dropped
- * and the envelope is marked truncated. Never returns isError — truncation is
- * a successful-but-partial result so the output schema still validates.
+ * Over-limit Bundles are chunked from the transformed envelope data (so chunks match the
+ * envelope's compacted/full shape); otherwise data is dropped and the envelope is marked
+ * truncated. Never returns isError — truncation is a successful-but-partial result so the
+ * output schema still validates.
  */
 export const finalizeEnvelope = (
-   envelope: FhirEnvelope, rawBundle?: unknown,
+   envelope: FhirEnvelope,
 ): { envelope: FhirEnvelope, text: string, isError: boolean } => {
    const
       text = serializeEnvelope(envelope),
@@ -18,9 +19,8 @@ export const finalizeEnvelope = (
    if (bytes <= config.fhirMaxResponseBytes)
       return { envelope, text, isError: false }
 
-   const chunkable = rawBundle ?? (envelope.isBundle ? envelope.data : undefined)
-   if (chunkable) {
-      const chunked = tryChunkBundle(chunkable, envelope, config.fhirMaxResponseBytes)
+   if (envelope.isBundle && envelope.data) {
+      const chunked = tryChunkBundle(envelope.data, envelope, config.fhirMaxResponseBytes)
       if (chunked)
          return { envelope: chunked.envelope, text: serializeEnvelope(chunked.envelope), isError: false }
    }

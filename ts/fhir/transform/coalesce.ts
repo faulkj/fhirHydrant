@@ -43,7 +43,7 @@ export const coalesce = async (
          prefetch: { pages: s.pages, upstreamEntries: s.entriesSeen, returnedEntries: s.entries.length },
          data: bundle,
       },
-      final = finalizeEnvelope(envelope, bundle)
+      final = finalizeEnvelope(envelope)
 
    return {
       envelope: final.envelope,

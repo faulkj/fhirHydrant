@@ -62,6 +62,6 @@ export const applyResponsePipeline = (opts: PipelineOpts): PipelineResult | { er
          data,
       },
 
-      final = finalizeEnvelope(envelope, filtered ? undefined : result)
+      final = finalizeEnvelope(envelope)
    return { envelope: final.envelope, text: final.text, isError: final.isError, stats }
 }
