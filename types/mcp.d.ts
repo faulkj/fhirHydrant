@@ -3,6 +3,8 @@ interface CoreToolParam {
    type: "string" | "boolean" | "number"
    optional?: boolean
    description: string
+   /** Fixed set of allowed string values — renders as an enum (dropdown) instead of freetext. Only valid with type "string". */
+   enum?: string[]
 }
 
 /** A single entry in config/core-tools.json. */
@@ -31,9 +33,16 @@ interface BundleStats {
    nextUrl: string | undefined
 }
 
-/** Handle returned by transport start functions; provides attach (bind server factory) and close operations. */
+/** A built MCP server plus the dynamic tool handles a transport must remove to re-register on change. */
+interface ServerBuild {
+   server: import("@modelcontextprotocol/server").McpServer
+   dynamicHandles: import("@modelcontextprotocol/server").RegisteredTool[]
+}
+
+/** Handle returned by transport start functions; provides attach (bind server factory), refresh (rebuild dynamic tools), and close operations. */
 interface TransportHandle {
    attach: (factory: ServerFactory) => Promise<void>
+   refresh: () => void
    close: () => Promise<void>
 }
 

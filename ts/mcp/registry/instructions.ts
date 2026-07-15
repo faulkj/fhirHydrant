@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs"
-import { config } from "../config/index.ts"
-import { log } from "../log.ts"
-import { resolveConfigFile } from "../fhir/model/config-paths.ts"
+import { config } from "../../config/index.ts"
+import { log, buildLog } from "../../log.ts"
+import { resolveConfigFile } from "../../fhir/model/config-paths.ts"
 import { getEnabledOperations } from "./operations.ts"
 import { isBundleEnabled } from "./bundle.ts"
 
@@ -17,7 +17,7 @@ export const buildInstructions = (): string => {
          included = loadManifest().filter((s) => !s.when || GATES[s.when]()),
          list = opsList(getEnabledOperations())
 
-      log.info(`📋 Instructions composed from: ${included.map((s) => s.file).join(", ") || "(none)"}`)
+      buildLog("instructions", `📋 Instructions composed from: ${included.map((s) => s.file).join(", ") || "(none)"}`)
 
       return included
          .map((s) => read(s.file).replace("{{OPERATIONS_LIST}}", list))

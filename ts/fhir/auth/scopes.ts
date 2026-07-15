@@ -28,6 +28,13 @@ export const parseGrantedScopes = (scope: string | undefined): Map<string, Set<S
    return map
 }
 
+/** Order-normalized signature of a granted scope string — same permissions in any token order yield the same value. */
+export const scopeSignature = (scope: string | undefined): string =>
+   [...parseGrantedScopes(scope)]
+      .map(([resource, perms]) => `${resource}.${[...perms].sort().join("")}`)
+      .sort()
+      .join(" ")
+
 /** Returns true when the scope map is permissive (empty) or explicitly grants access to the resource. */
 export const scopeAllowsResource = (resource: string, scopeMap: Map<string, Set<ScopePermission>>): boolean =>
    scopeMap.size === 0 || scopeMap.has(resource) || scopeMap.has("*")

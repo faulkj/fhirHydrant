@@ -491,10 +491,19 @@ Server-specific search behavior can still apply.
 
 In development (`NODE_ENV` is not `production`), the `config/resources/` folder,
 `search-controls.json`, and `operations.json` are watched. Invalid JSON keeps
-the last valid snapshot, scope changes restart auth, and behavioral changes are
-picked up on later tool calls. Adding/removing tools, operation schema changes,
-and visible param-name changes still require restart because MCP tool
-registration happens at startup. Production reads config once at startup.
+the last valid snapshot. A materially changed reload is applied transactionally:
+when the derived SMART scopes change, a replacement token is acquired before the
+new definitions and tool registrations are committed, so a failed acquisition
+leaves the running catalog untouched. Adding/removing tools, operation and
+param-name schema changes are re-registered live — no restart needed. Semantically
+unchanged saves cause no refresh. Production reads config once at startup, but a
+runtime `/metadata` change (via `capabilities(refresh=true)`) or a backend
+SMART-scope change on token refresh re-evaluates the available tools in every mode.
+
+One boundary is unavoidable: the tool list and schemas hot-refresh, but the server
+`instructions` are sent once during MCP `initialize` and cannot be replaced on an
+existing connection. A client must reconnect/reinitialize to receive changed
+instruction text.
 
 ## Transports
 

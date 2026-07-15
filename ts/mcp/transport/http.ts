@@ -4,8 +4,9 @@ import { log } from "../../log.ts"
 import { withAuditContext } from "../../audit.ts"
 import { getTokenResponse } from "../../fhir/auth/auth.ts"
 import { isMetadataAvailable } from "../../fhir/model/metadata.ts"
-import { getRegisteredToolCount } from "../resources.ts"
+import { getRegisteredToolCount } from "../registry/resources.ts"
 import { handleAuthzRequest } from "../authz/http.ts"
+import { serveStatelessRequest, logMcpRequest } from "./serve-request.ts"
 import { applyMcpCors, logFailedRequest } from "./http-cors.ts"
 
 /** Starts the Streamable HTTP MCP transport and returns a handle to attach a server and shut down the listener. */
@@ -13,15 +14,10 @@ export const startHttp = async (): Promise<TransportHandle> => {
    const
       { createMcpExpressApp } =
          await import("@modelcontextprotocol/express"),
-      { NodeStreamableHTTPServerTransport } =
-         await import("@modelcontextprotocol/node"),
       app = createMcpExpressApp({
          host: config.bindHost,
          jsonLimit: config.mcpJsonLimit,
          ...(config.allowedHosts ? { allowedHosts: config.allowedHosts } : {}),
-      }),
-      transport = new NodeStreamableHTTPServerTransport({
-         sessionIdGenerator: undefined,
       })
 
    log.debug(`🌐 HTTP bind host: ${config.bindHost}; allowed hosts: ${config.allowedHosts?.join(", ") ?? "not restricted"}`)
@@ -30,8 +26,7 @@ export const startHttp = async (): Promise<TransportHandle> => {
 
    let
       mcpReady = false,
-      serverFactory: ServerFactory | undefined,
-      connectedServer: import("@modelcontextprotocol/server").McpServer | undefined
+      serverFactory: ServerFactory | undefined
 
    app.get("/health", (_req: Req, res: Res) => {
       const token = getTokenResponse()
@@ -65,17 +60,16 @@ export const startHttp = async (): Promise<TransportHandle> => {
    app.post("/mcp", async (req: Req, res: Res) => {
       if (!mcpReady)
          return void res.status(503).json({ status: "starting" })
-      const
-         body = req.body as Record<string, unknown> | undefined,
-         method = body?.method as string | undefined
-      method && method !== "tools/call" && log.debug(`🔌 ${method}`)
+      logMcpRequest(req.body)
       const
          requestId = randomUUID(),
          user = config.auditUserHeader ? req.get(config.auditUserHeader)?.trim() || undefined : undefined
+      if (!serverFactory) return void res.status(503).json({ status: "starting" })
+      const factory = serverFactory
       await withAuditContext({ requestId, ...(user ? { user } : {}) }, () =>
-         config.authzEnabled && serverFactory
-            ? handleAuthzRequest(req.get("authorization"), req, res, req.body, serverFactory)
-            : transport.handleRequest(req, res, req.body))
+         config.authzEnabled
+            ? handleAuthzRequest(req.get("authorization"), req, res, req.body, factory)
+            : serveStatelessRequest(factory, req, res, req.body))
    })
 
    app.use((err: Error, _req: Req, res: Res, _next: Next) => {
@@ -100,19 +94,15 @@ export const startHttp = async (): Promise<TransportHandle> => {
    return {
       attach: async (factory) => {
          serverFactory = factory
-         if (config.authzEnabled) {
-            log.log(`🔒 MCP authz: ${config.mcpAuthz} — per-request server builds, Authorization required on /mcp`)
-            mcpReady = true
-            return
-         }
-         connectedServer = factory()
-         await connectedServer.connect(transport)
          mcpReady = true
+         config.authzEnabled
+            ? log.log(`🔒 MCP authz: ${config.mcpAuthz} — per-request server builds, Authorization required on /mcp`)
+            : factory() // warm-up build at startup: surfaces the registration summary and seeds /health count
       },
+      // Rebuild once (outside ALS) to recompute global count/skipped state for /health + capabilities; next POST rebuilds anyway.
+      refresh: () => void (!config.authzEnabled && serverFactory?.()),
       close: () =>
          new Promise<void>((resolve) => {
-            void transport.close()
-            void connectedServer?.close()
             httpServer.close(() => resolve())
             setTimeout(() => resolve(), 5000)
          }),

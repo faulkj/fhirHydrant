@@ -81,19 +81,23 @@ const parse = (): DefinitionsSnapshot => {
 
 let snapshot = parse()
 
-/**
- * Re-reads config files and rebuilds the snapshot.
- * Returns true on success. On failure, logs the error and retains the last valid snapshot.
- */
-export const reloadDefinitions = (): boolean => {
-   try {
-      snapshot = parse()
-      return true
-   } catch (err) {
-      log.error(
-         "📋 Reload failed — keeping last valid snapshot:",
-         err instanceof Error ? err.message : err,
-      )
-      return false
-   }
+/** Parses config into a candidate snapshot without committing it. Throws on invalid config. */
+export const parseDefinitions = (): DefinitionsSnapshot => parse()
+
+/** Normalized semantic signature of a snapshot (definitions + controls + scopes), excluding generated Zod objects. */
+export const definitionsSignature = (snap: DefinitionsSnapshot): string =>
+   JSON.stringify({
+      controls: Object.entries(snap.searchControls).sort(),
+      scopes: [...snap.scopes].sort(),
+      defs: [...snap.definitions]
+         .map((d) => ({ ...d, searchSchema: undefined }))
+         .sort((a, b) => a.toolName.localeCompare(b.toolName)),
+   })
+
+/** Signature of the currently committed snapshot. */
+export const committedDefinitionsSignature = (): string => definitionsSignature(snapshot)
+
+/** Commits a previously parsed candidate snapshot as the live definitions. */
+export const commitDefinitions = (candidate: DefinitionsSnapshot): void => {
+   snapshot = candidate
 }

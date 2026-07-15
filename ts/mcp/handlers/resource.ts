@@ -1,6 +1,5 @@
 import messages from "../../../config/messages/core.json" with { type: "json" }
 import { log } from "../../log.ts"
-import { getDefinitions } from "../../fhir/model/definitions.ts"
 import { scopeActions } from "../../fhir/auth/scopes.ts"
 import { getEffectiveScope } from "../authz/context.ts"
 import { emitAudit, auditTime } from "../../audit.ts"
@@ -10,14 +9,11 @@ import { validateResourceRequest } from "../guards/request.ts"
 import { isWriteOp, executeWrite } from "./write.ts"
 import { executeRead } from "./read-response.ts"
 
-/** Returns an async MCP tool handler bound to the given resource tool name. */
+/** Returns an async MCP tool handler bound to the given resource definition (captured generation). */
 export const makeHandler =
-   (toolName: string) => async (args: Record<string, unknown>) => {
-      const def = getDefinitions().find((d) => d.toolName === toolName)
-      if (!def)
-         return { content: [{ type: "text" as const, text: messages.toolNotFound.replace("{toolName}", toolName) }], isError: true }
-
+   (def: ResourceDefinition) => async (args: Record<string, unknown>) => {
       const
+         toolName = def.toolName,
          t0 = Date.now(),
          guard = validateResourceRequest(def, args, toolName, t0)
       if (!guard.ok) return guard.response

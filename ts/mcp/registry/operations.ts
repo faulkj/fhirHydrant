@@ -1,11 +1,11 @@
-import type { McpServer } from "@modelcontextprotocol/server"
-import { log } from "../log.ts"
-import { getOperations } from "../fhir/model/operations.ts"
-import { getTokenResponse } from "../fhir/auth/auth.ts"
-import { parseGrantedScopes } from "../fhir/auth/scopes.ts"
-import { getDecision, getMutable } from "./authz/context.ts"
-import { filterOperationsByMetadata, filterOperationsByScopes, getSkippedOperations as _getSkippedOperations } from "./guards/operate.ts"
-import { addOperate } from "./tools/operate.ts"
+import type { McpServer, RegisteredTool } from "@modelcontextprotocol/server"
+import { log, buildLog } from "../../log.ts"
+import { getOperations } from "../../fhir/model/operations.ts"
+import { getTokenResponse } from "../../fhir/auth/auth.ts"
+import { parseGrantedScopes } from "../../fhir/auth/scopes.ts"
+import { getDecision, getMutable } from "../authz/context.ts"
+import { filterOperationsByMetadata, filterOperationsByScopes, getSkippedOperations as _getSkippedOperations } from "../guards/operate.ts"
+import { addOperate } from "../tools/operate.ts"
 
 let enabledOps: OperationDefinition[] = []
 
@@ -34,15 +34,15 @@ export const resolveEnabledOperations = (): OperationDefinition[] => {
    return afterRoles
 }
 
-/** Registers the operate tool if at least one operation is enabled after gating. */
-export const registerOperations = (server: McpServer): void => {
-   const ops = resolveEnabledOperations()
+/** Registers the operate tool if at least one operation is enabled after gating; returns zero or one handle. */
+export const registerOperations = (server: McpServer): RegisteredTool[] => {
+   const ops = getEnabledOperations()
 
    if (ops.length === 0) {
       log.info("📋 No FHIR operations enabled — operate tool not registered")
-      return
+      return []
    }
 
-   log.info(`📋 Registering operate tool with ${ops.length} operation(s): ${ops.map((o) => o.key).join(", ")}`)
-   addOperate(server, ops)
+   buildLog("operate", `📋 Registering operate tool with ${ops.length} operation(s): ${ops.map((o) => o.key).join(", ")}`)
+   return [addOperate(server, ops)]
 }

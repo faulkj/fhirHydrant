@@ -1,5 +1,6 @@
 import { log } from "../../log.ts"
 import { setAuditUser } from "../../audit.ts"
+import { serveStatelessRequest } from "../transport/serve-request.ts"
 import { getAuthzProvider } from "./providers.ts"
 import { decideAuthz } from "./roles.ts"
 import { withMcpContext } from "./context.ts"
@@ -27,17 +28,7 @@ export const handleAuthzRequest = async (
 
    setAuditUser(identity.subject)
    const decision = decideAuthz(identity.roles)
-   await withMcpContext({ decision, subject: identity.subject, mutable: {} }, async () => {
-      const
-         { NodeStreamableHTTPServerTransport } = await import("@modelcontextprotocol/node"),
-         transport = new NodeStreamableHTTPServerTransport({ sessionIdGenerator: undefined }),
-         server = factory()
-      try {
-         await server.connect(transport)
-         await transport.handleRequest(req, res, body)
-      } finally {
-         await Promise.all([transport.close(), server.close()])
-      }
-   })
+   await withMcpContext({ decision, subject: identity.subject, mutable: {} }, () =>
+      serveStatelessRequest(factory, req, res, body))
    return true
 }

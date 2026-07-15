@@ -56,5 +56,5 @@ interface McpRequestContext {
    }
 }
 
-/** Builds a fresh McpServer for a single request (authz enabled) or once at startup (authz off). */
-type ServerFactory = () => import("@modelcontextprotocol/server").McpServer
+/** Builds a fresh server + dynamic handles for a single request (authz enabled) or once at startup (authz off) / per refresh. */
+type ServerFactory = () => ServerBuild

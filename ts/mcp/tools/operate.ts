@@ -1,14 +1,14 @@
-import type { McpServer } from "@modelcontextprotocol/server"
+import type { McpServer, RegisteredTool } from "@modelcontextprotocol/server"
 import { z } from "zod"
 import { config } from "../../config/index.ts"
 import { makeOperateHandler } from "../handlers/operate.ts"
 import { readOnlyAnnotations, writeAnnotations } from "../annotations.ts"
 import { fhirOutputSchema } from "../output.ts"
 
-/** Registers the operate MCP tool with a dynamic description built from the enabled catalog. */
+/** Registers the operate MCP tool with a dynamic description built from the enabled catalog; returns its handle. */
 export const addOperate = (
    server: McpServer, enabledOps: OperationDefinition[],
-): void => {
+): RegisteredTool => {
    const
       opSummaries = enabledOps.map((o) => {
          const
@@ -36,9 +36,9 @@ export const addOperate = (
    shape["body"] = z.string().optional().describe("FHIR JSON body for POST operations (e.g. resource to validate)")
    shape["fhirpath"] = z.string().optional().describe("FHIRPath expression for client-side projection of the response")
    if (config.responseMode !== "compact-locked")
-      shape["responseMode"] = z.string().optional().describe("Response shape: compact or full")
+      shape["responseMode"] = z.enum(["compact", "full"]).optional().describe("Response shape: compact or full")
 
-   server.registerTool(
+   return server.registerTool(
       "operate",
       { description, inputSchema: z.object(shape), outputSchema: fhirOutputSchema, annotations },
       makeOperateHandler(enabledOps),

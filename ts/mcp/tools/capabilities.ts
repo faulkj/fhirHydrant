@@ -10,7 +10,7 @@ import { formatFhirError } from "../../fhir/utils.ts"
 import { log } from "../../log.ts"
 import { emitAudit, auditTime, errorStatus } from "../../audit.ts"
 import { getEnabledActions } from "../validation.ts"
-import { getEnabledOperations, getSkippedOperations } from "../operations.ts"
+import { getEnabledOperations, getSkippedOperations } from "../registry/operations.ts"
 import { readOnlyAnnotations } from "../annotations.ts"
 import { capabilitiesOutputSchema } from "../output.ts"
 

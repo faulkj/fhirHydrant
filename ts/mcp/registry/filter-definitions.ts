@@ -1,7 +1,7 @@
-import { config } from "../config/index.ts"
-import { log } from "../log.ts"
-import { isMetadataAvailable, getResourceMeta } from "../fhir/model/metadata.ts"
-import { scopeAllowsResource } from "../fhir/auth/scopes.ts"
+import { config } from "../../config/index.ts"
+import { log } from "../../log.ts"
+import { isMetadataAvailable, getResourceMeta } from "../../fhir/model/metadata.ts"
+import { scopeAllowsResource } from "../../fhir/auth/scopes.ts"
 
 /** Filters definitions against cached /metadata. Returns surviving definitions and skipped-tool reasons. */
 export const filterByMetadata = (defs: ResourceDefinition[]): { definitions: ResourceDefinition[], skipped: CapabilitySummary["skippedTools"] } => {

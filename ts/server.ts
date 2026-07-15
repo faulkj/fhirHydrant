@@ -14,32 +14,20 @@ if ((process.env["MCP_TRANSPORT"] ?? "http").toLowerCase() === "stdio") {
    console.info = (...args: unknown[]) => console.error(...args)
 }
 
-import { readFileSync } from "node:fs"
-import { dirname, join } from "node:path"
-import { fileURLToPath } from "node:url"
-import { McpServer } from "@modelcontextprotocol/server"
 import { config } from "./config/index.ts"
 import { log } from "./log.ts"
+import { pkgVersion } from "./mcp/registry/server-catalog.ts"
 import { fhirVersionLabel } from "./fhir/transform/fhir-model.ts"
 import { initAuditSinks } from "./audit.ts"
-import { startAuth, stopAuth } from "./fhir/auth/auth.ts"
-import { fetchMetadata } from "./fhir/model/metadata.ts"
-import { registerAll } from "./mcp/resources.ts"
-import { registerCoreTools } from "./mcp/core-tools.ts"
-import { registerOperations, resolveEnabledOperations } from "./mcp/operations.ts"
-import { registerBundle } from "./mcp/bundle.ts"
-import { buildInstructions } from "./mcp/instructions.ts"
+import { startAuth, stopAuth, setScopeChangeHandler } from "./fhir/auth/auth.ts"
+import { fetchMetadata, setMetadataChangeHandler } from "./fhir/model/metadata.ts"
+import { buildServer } from "./mcp/registry/server-catalog.ts"
 import { validateAuthzConfig } from "./mcp/authz/providers.ts"
 import { startHttp } from "./mcp/transport/http.ts"
 import { startStdio } from "./mcp/transport/stdio.ts"
 import { startDefinitionsWatcher } from "./server-watcher.ts"
 
 const
-   { version: pkgVersion } = JSON.parse(
-      readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "package.json"), "utf8"),
-   ) as { version: string },
-   SERVER_INFO = { name: "fhirhydrant", version: pkgVersion },
-
    explicitServerUrl = process.env["FHIR_SERVER_URL"],
    explicitTermUrl = config.fhirTerminologyBaseUrl,
 
@@ -69,18 +57,7 @@ const
          && log.warn(`💡 FHIR_SERVER_URL contains a version segment that differs from FHIR_VERSION=${config.fhirVersion} — verify both are aligned`),
       explicitTermUrl && config.fhirVersion === "R5" && /\/r4(?:[\/?#]|$)/i.test(explicitTermUrl)
          && log.warn(`💡 FHIR_TERMINOLOGY_BASE_URL points to /r4 but FHIR_VERSION is R5 — consider using https://tx.fhir.org/r5`)
-   ),
-   makeServer = (): McpServer => {
-      resolveEnabledOperations()
-      const
-         instructions = buildInstructions() || undefined,
-         s = new McpServer(SERVER_INFO, { instructions })
-      registerAll(s)
-      registerCoreTools(s)
-      registerOperations(s)
-      registerBundle(s)
-      return s
-   }
+   )
 
 await validateAuthzConfig()
 
@@ -88,7 +65,7 @@ const selfHostJwks = config.authEnabled && config.transport !== "stdio" && !conf
 
 if (config.authEnabled && !selfHostJwks) await startAuth()
 
-const { attach, close } =
+const { attach, refresh, close } =
    config.transport === "stdio"
       ? await startStdio()
       : await startHttp()
@@ -97,9 +74,13 @@ if (selfHostJwks) await startAuth()
 
 if (config.metadataMode !== "off") await fetchMetadata()
 
-await attach(makeServer)
+await attach(buildServer)
 
-process.env["NODE_ENV"] !== "production" && startDefinitionsWatcher()
+// Install runtime change handlers AFTER attach so startup's initial fetch/token never triggers a refresh.
+setMetadataChangeHandler(refresh)
+setScopeChangeHandler(refresh)
+
+process.env["NODE_ENV"] !== "production" && startDefinitionsWatcher(refresh)
 
 let shutdownInProgress = false
 

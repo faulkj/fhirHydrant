@@ -13,3 +13,12 @@ export const log = Object.freeze({
    info: config.logLevel >= 2 ? tint("info", "\x1b[96m") : noop,
    debug: config.logLevel >= 3 ? (...args: unknown[]) => console.log(...args) : noop,
 })
+
+const lastBuildLog = new Map<string, string>()
+
+/** Logs a build-summary line at info only when its message changed since the last build for that key; identical rebuilds log at debug. */
+export const buildLog = (key: string, msg: string): void => {
+   lastBuildLog.get(key) === msg
+      ? log.debug(msg)
+      : (lastBuildLog.set(key, msg), log.info(msg))
+}

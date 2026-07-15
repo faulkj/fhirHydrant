@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/server"
+import type { McpServer, RegisteredTool } from "@modelcontextprotocol/server"
 import type { z } from "zod"
 import { config } from "../../config/index.ts"
 import { log } from "../../log.ts"
@@ -13,15 +13,15 @@ import { validateBundleRequest } from "../guards/bundle.ts"
 import { readOnlyAnnotations, writeAnnotations } from "../annotations.ts"
 import { fhirOutputSchema } from "../output.ts"
 
-/** Registers the bundle tool on the MCP server. */
+/** Registers the bundle tool on the MCP server; returns its handle. */
 export const addBundle = (
    server: McpServer, description: string, inputSchema: z.ZodObject<z.ZodRawShape>,
-): void => {
+): RegisteredTool => {
    const annotations = config.bundleWritesEnabled
       ? writeAnnotations(true, false)
       : readOnlyAnnotations
 
-   server.registerTool(
+   return server.registerTool(
       "bundle",
       { description, inputSchema, outputSchema: fhirOutputSchema, annotations },
       async (args: Record<string, unknown>) => {

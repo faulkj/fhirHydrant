@@ -2,6 +2,7 @@ import { config } from "../../config/index.ts"
 import { log } from "../../log.ts"
 import { createFhirClient } from "../auth/client.ts"
 import { withRetry } from "../utils.ts"
+import { metadataSignature } from "./metadata-signature.ts"
 
 const stringsFrom = (value: unknown, key?: string): string[] =>
    Array.isArray(value)
@@ -12,7 +13,14 @@ let
    cache: CapabilitySummary | null = null,
    resourceIndex = new Map<string, ResourceMeta>(),
    systemInteractions = new Set<string>(),
-   skipped: CapabilitySummary["skippedTools"] = []
+   skipped: CapabilitySummary["skippedTools"] = [],
+   signature = "",
+   onChange: (() => void) | undefined
+
+/** Registers the callback invoked after a fetched CapabilityStatement materially changes the gate-relevant surface. */
+export const setMetadataChangeHandler = (handler: () => void): void => {
+   onChange = handler
+}
 
 /** Fetches and caches the FHIR server's CapabilityStatement. Non-throwing. */
 export const fetchMetadata = async (): Promise<void> => {
@@ -70,6 +78,7 @@ export const fetchMetadata = async (): Promise<void> => {
          })
       }
 
+      const nextSignature = metadataSignature(summaryResources, [...sysInteractions])
       resourceIndex = newIndex
       systemInteractions = sysInteractions
       cache = {
@@ -81,6 +90,14 @@ export const fetchMetadata = async (): Promise<void> => {
          skippedTools: skipped,
       }
       log.info(`🏥 Loaded CapabilityStatement — ${summaryResources.length} resource types`)
+
+      if (nextSignature === signature) return
+      const first = signature === ""
+      signature = nextSignature
+      if (first || !onChange) return
+      // A failed refresh handler must not masquerade as a metadata fetch failure.
+      try { onChange() }
+      catch (err) { log.error("📋 Registration refresh failed after metadata change:", err instanceof Error ? err.message : err) }
    } catch (err) {
       log.warn(
          "🏥 Could not fetch CapabilityStatement — skipping metadata gating:",

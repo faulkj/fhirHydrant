@@ -1,16 +1,16 @@
-import type { McpServer } from "@modelcontextprotocol/server"
+import type { McpServer, RegisteredTool } from "@modelcontextprotocol/server"
 import * as z from "zod"
-import messages from "../../config/messages/write.json" with { type: "json" }
-import { config } from "../config/index.ts"
-import { log } from "../log.ts"
-import { getDefinitions, getSearchControls, buildShape } from "../fhir/model/definitions.ts"
-import { getResourceMeta, setSkippedTools } from "../fhir/model/metadata.ts"
-import { getEffectiveScope, getMutable } from "./authz/context.ts"
+import messages from "../../../config/messages/write.json" with { type: "json" }
+import { config } from "../../config/index.ts"
+import { log, buildLog } from "../../log.ts"
+import { getDefinitions, getSearchControls, buildShape } from "../../fhir/model/definitions.ts"
+import { getResourceMeta, setSkippedTools } from "../../fhir/model/metadata.ts"
+import { getEffectiveScope, getMutable } from "../authz/context.ts"
 import { filterByMetadata, filterByScopes } from "./filter-definitions.ts"
-import { getEnabledActions } from "./validation.ts"
-import { makeHandler } from "./handlers/resource.ts"
-import { readOnlyAnnotations, writeAnnotations } from "./annotations.ts"
-import { fhirOutputSchema } from "./output.ts"
+import { getEnabledActions } from "../validation.ts"
+import { makeHandler } from "../handlers/resource.ts"
+import { readOnlyAnnotations, writeAnnotations } from "../annotations.ts"
+import { fhirOutputSchema } from "../output.ts"
 
 let registeredCount = 0
 const
@@ -51,6 +51,9 @@ const augmentSchema = (
       hasHistory = actions.includes("history"),
       shape: Record<string, z.ZodTypeAny> = { ...buildShape(merged, def.resource, def.supportsDirectRead) }
 
+   if (shape["responseMode"]) shape["responseMode"] = z.enum(["compact", "full"]).optional().describe(merged["responseMode"]!)
+   if (shape["prefetch"]) shape["prefetch"] = z.boolean().optional().describe(merged["prefetch"]!)
+
    if (hasVread) {
       shape["_vid"] = z.string().optional().describe("Version id for vread — use with action=vread and _id")
       injected.push("_vid")
@@ -67,9 +70,7 @@ const augmentSchema = (
          hasVread ? "vread requires _id+_vid" : "",
          hasHistory ? "history optionally takes _id for instance history" : "",
       ].filter(Boolean).join(". ")
-      shape["action"] = z.enum(actions as [string, ...string[]])
-         .optional()
-         .describe(`Operation: ${actions.join(", ")}. ${hints}.`)
+      shape["action"] = z.enum(actions as [string, ...string[]]).optional().describe(`Operation: ${actions.join(", ")}. ${hints}.`)
       injected.push("action")
    }
    if (hasWrites) {
@@ -95,18 +96,19 @@ const augmentSchema = (
 /** Returns the number of resource tools registered after metadata + scope gating. */
 export const getRegisteredToolCount = (): number => registeredCount
 
-/** Registers an MCP tool for every ResourceDefinition in the current snapshot. */
-export const registerAll = (server: McpServer): void => {
+/** Registers an MCP tool for every ResourceDefinition in the current snapshot and returns their handles. */
+export const registerAll = (server: McpServer): RegisteredTool[] => {
    const
       controlParams = getSearchControls(),
       scopeMap = getEffectiveScope(),
       metaResult = filterByMetadata(getDefinitions()),
       scopeResult = filterByScopes(metaResult.definitions, scopeMap),
       skippedTools = [...metaResult.skipped, ...scopeResult.skipped],
-      mutable = getMutable()
+      mutable = getMutable(),
+      handles: RegisteredTool[] = []
 
    mutable ? (mutable.skippedTools = skippedTools) : setSkippedTools(skippedTools)
-   scopeMap.size > 0 && log.info(`🔑 Scope gate active — ${scopeResult.definitions.length}/${metaResult.definitions.length} resource(s) allowed`)
+   scopeMap.size > 0 && buildLog("scopeGate", `🔑 Scope gate active — ${scopeResult.definitions.length}/${metaResult.definitions.length} resource(s) allowed`)
 
    for (const def of scopeResult.definitions) {
       const
@@ -117,12 +119,13 @@ export const registerAll = (server: McpServer): void => {
             ? writeAnnotations(actions.includes("delete"), !actions.some((a) => a === "create" || a === "patch"))
             : readOnlyAnnotations
       injected.length && log.debug(`📋 ${def.resource}: injected ${injected.join(", ")}`)
-      server.registerTool(
+      handles.push(server.registerTool(
          def.toolName,
          { description, inputSchema: schema, outputSchema: fhirOutputSchema, annotations },
-         makeHandler(def.toolName),
-      )
+         makeHandler(def),
+      ))
    }
    if (!mutable) registeredCount = scopeResult.definitions.length
-   log.info(`📋 Registered ${scopeResult.definitions.length} resource tool(s)`)
+   buildLog("resourceCount", `📋 Registered ${scopeResult.definitions.length} resource tool(s)`)
+   return handles
 }

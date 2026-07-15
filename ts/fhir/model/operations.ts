@@ -55,16 +55,17 @@ export const getOperations = (): OperationDefinition[] => catalog
 export const getOperation = (key: string): OperationDefinition | undefined =>
    catalog.find((o) => o.key === key)
 
-/**
- * Re-reads operations.json and rebuilds the catalog.
- * Returns true on success, on failure, logs and retains the last valid catalog.
- */
-export const reloadOperations = (): boolean => {
-   try {
-      catalog = load()
-      return true
-   } catch (err) {
-      log.error("📋 Failed to reload operations:", err instanceof Error ? err.message : err)
-      return false
-   }
+/** Parses operations config into a candidate catalog without committing it. Throws on invalid config. */
+export const parseOperations = (): OperationDefinition[] => load()
+
+/** Normalized semantic signature of an operation catalog for change detection. */
+export const operationsSignature = (defs: OperationDefinition[]): string =>
+   JSON.stringify([...defs].sort((a, b) => a.key.localeCompare(b.key)))
+
+/** Signature of the currently committed operation catalog. */
+export const committedOperationsSignature = (): string => operationsSignature(catalog)
+
+/** Commits a previously parsed candidate catalog as the live operations. */
+export const commitOperations = (candidate: OperationDefinition[]): void => {
+   catalog = candidate
 }

@@ -1,11 +1,11 @@
-import type { McpServer } from "@modelcontextprotocol/server"
-import { config } from "../config/index.ts"
-import { log } from "../log.ts"
-import { isMetadataAvailable, getSystemInteractions } from "../fhir/model/metadata.ts"
-import { getDefinitions } from "../fhir/model/definitions.ts"
-import { getDecision } from "./authz/context.ts"
+import type { McpServer, RegisteredTool } from "@modelcontextprotocol/server"
+import { config } from "../../config/index.ts"
+import { log, buildLog } from "../../log.ts"
+import { isMetadataAvailable, getSystemInteractions } from "../../fhir/model/metadata.ts"
+import { getDefinitions } from "../../fhir/model/definitions.ts"
+import { getDecision } from "../authz/context.ts"
 import { loadCoreTools, buildSchema } from "./core-tools.ts"
-import { addBundle } from "./tools/bundle.ts"
+import { addBundle } from "../tools/bundle.ts"
 
 /** True when the bundle tool is enabled — capabilities configured, metadata-advertised (strict), and authz-permitted. */
 export const isBundleEnabled = (): boolean => {
@@ -17,12 +17,12 @@ export const isBundleEnabled = (): boolean => {
    return true
 }
 
-/** Registers the bundle tool if bundle capabilities are configured and metadata gates pass. */
-export const registerBundle = (server: McpServer): void => {
+/** Registers the bundle tool if bundle capabilities are configured and metadata gates pass; returns zero or one handle. */
+export const registerBundle = (server: McpServer): RegisteredTool[] => {
    if (!isBundleEnabled()) {
       config.bundleCapabilities.size > 0
-         && log.info(`📦 Bundle tool skipped — /metadata does not advertise ${[...config.bundleCapabilities].join(" or ")}`)
-      return
+         && buildLog("bundle", `📦 Bundle tool skipped — /metadata does not advertise ${[...config.bundleCapabilities].join(" or ")}`)
+      return []
    }
 
    const
@@ -42,6 +42,7 @@ export const registerBundle = (server: McpServer): void => {
          : "disabled",
       description = `Submit a FHIR ${types} Bundle. Resources: ${resourceSample}. Writes: ${writeState}.`
 
-   addBundle(server, description, schema)
-   log.info(`📦 Registered bundle (${types}, writes ${config.bundleWritesEnabled ? "enabled" : "disabled"})`)
+   const handle = addBundle(server, description, schema)
+   buildLog("bundle", `📦 Registered bundle (${types}, writes ${config.bundleWritesEnabled ? "enabled" : "disabled"})`)
+   return [handle]
 }

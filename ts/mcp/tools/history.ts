@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/server"
+import type { McpServer, RegisteredTool } from "@modelcontextprotocol/server"
 import type { z } from "zod"
 import { buildHistoryUrl } from "../../fhir/transform/shaping.ts"
 import { validateDateArgs } from "../validation.ts"
@@ -6,11 +6,11 @@ import { readOnlyAnnotations } from "../annotations.ts"
 import { fhirOutputSchema } from "../output.ts"
 import { executeRead } from "../handlers/read-response.ts"
 
-/** Registers the system-level _history core tool. */
+/** Registers the system-level _history core tool; returns its handle. */
 export const addSystemHistory = (
    server: McpServer, description: string, inputSchema: z.ZodObject<z.ZodRawShape>,
-): void => {
-   server.registerTool(
+): RegisteredTool => {
+   return server.registerTool(
       "system_history",
       { description, inputSchema, outputSchema: fhirOutputSchema, annotations: readOnlyAnnotations },
       async (args: Record<string, unknown>) => {

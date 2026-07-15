@@ -15,7 +15,8 @@
          "responseMode": {
             "type": "string",
             "optional": true,
-            "description": "Response shape: compact or full"
+            "description": "Response shape: compact or full",
+            "enum": ["compact", "full"]
          },
          "maxResults": {
             "type": "number",
@@ -23,7 +24,7 @@
             "description": "Target number of compact results — server stops fetching additional pages once this threshold is reached"
          },
          "prefetch": {
-            "type": "string",
+            "type": "boolean",
             "optional": true,
             "description": "Set to false to disable server-side page coalescing"
          }
@@ -31,12 +32,12 @@
    },
    {
       "name": "capabilities",
-      "description": "Returns a summary of the FHIR server's capabilities from /metadata (CapabilityStatement). Shows supported resource types, their interactions, search parameters, and any tools that were skipped. Call this before clinical queries to understand what the server supports. Set refresh=true to re-fetch /metadata from the server.",
+      "description": "Returns a summary of the FHIR server's capabilities from /metadata (CapabilityStatement). Shows supported resource types, their interactions, search parameters, and any tools that were skipped. Call this before clinical queries to understand what the server supports. The summary is cached; call with no arguments.",
       "params": {
          "refresh": {
             "type": "boolean",
             "optional": true,
-            "description": "Re-fetch /metadata from the server before returning the summary"
+            "description": "Force a live re-fetch of /metadata. Slow — leave off unless you need to pick up a fresh server capability change since startup. A materially changed CapabilityStatement re-evaluates which tools are available (no restart needed)."
          }
       }
    },
@@ -46,6 +47,7 @@
       "params": {
          "system": {
             "type": "string",
+            "enum": ["loinc", "snomed"],
             "description": "Target terminology system: \"loinc\" or \"snomed\""
          },
          "code": {
@@ -60,6 +62,7 @@
       "params": {
          "system": {
             "type": "string",
+            "enum": ["loinc", "snomed"],
             "description": "Target terminology system: \"loinc\" or \"snomed\""
          },
          "filter": {
@@ -94,6 +97,7 @@
          "responseMode": {
             "type": "string",
             "optional": true,
+            "enum": ["compact", "full"],
             "description": "Response shape: compact or full"
          }
       }
@@ -125,7 +129,8 @@
          "responseMode": {
             "type": "string",
             "optional": true,
-            "description": "Response shape: compact or full"
+            "description": "Response shape: compact or full",
+            "enum": ["compact", "full"]
          },
          "maxResults": {
             "type": "number",
@@ -133,7 +138,7 @@
             "description": "Target number of compact results — server stops fetching additional pages once this threshold is reached"
          },
          "prefetch": {
-            "type": "string",
+            "type": "boolean",
             "optional": true,
             "description": "Set to false to disable server-side page coalescing"
          }
