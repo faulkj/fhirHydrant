@@ -1,6 +1,7 @@
 {
    "resource": "Patient",
    "toolName": "patient",
+   "title": "Patient",
    "description": "Search for or read a FHIR Patient resource. For direct read, provide _id alone. For search, this tool enforces strict identification and accepts only one of these parameter sets: identifier (MRN, FHIR ID, or other system|value identifier); given + family + birthdate; or given + family + legal-sex (or gender) + telecom. A name fragment alone is never accepted.",
    "supportsDirectRead": true,
    "searchParams": {

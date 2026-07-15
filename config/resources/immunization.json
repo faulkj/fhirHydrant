@@ -1,6 +1,7 @@
 {
    "resource": "Immunization",
    "toolName": "immunization",
+   "title": "Immunization",
    "description": "Search for or read a FHIR Immunization resource covering vaccine administration history. For direct read, provide _id alone. For search, provide patient or identifier. Use vaccine-code for specific vaccines or date for time-based filtering.",
    "supportsDirectRead": true,
    "searchParams": {

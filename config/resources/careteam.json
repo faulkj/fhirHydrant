@@ -1,6 +1,7 @@
 {
    "resource": "CareTeam",
    "toolName": "careteam",
+   "title": "Care Team",
    "description": "Search for or read a FHIR CareTeam resource listing people and organizations involved in a patient's care. For direct read, provide _id alone. For search, provide patient, subject, identifier, encounter, or participant. Use status to filter active, inactive, or proposed teams.",
    "supportsDirectRead": true,
    "searchParams": {

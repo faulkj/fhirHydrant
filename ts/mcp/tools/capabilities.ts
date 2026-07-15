@@ -16,11 +16,11 @@ import { capabilitiesOutputSchema } from "../output.ts"
 
 /** Registers the capabilities tool for querying the FHIR server's CapabilityStatement. */
 export const addCapabilities = (
-   server: McpServer, description: string, inputSchema: z.ZodObject<z.ZodRawShape>,
+   server: McpServer, def: CoreToolDef, inputSchema: z.ZodObject<z.ZodRawShape>,
 ): void => {
    server.registerTool(
       "capabilities",
-      { description, inputSchema, outputSchema: capabilitiesOutputSchema, annotations: readOnlyAnnotations },
+      { title: def.title, description: def.description, inputSchema, outputSchema: capabilitiesOutputSchema, annotations: readOnlyAnnotations },
       async (args: Record<string, unknown>) => {
          const t0 = Date.now()
          try {

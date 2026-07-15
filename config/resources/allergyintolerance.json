@@ -1,6 +1,7 @@
 {
    "resource": "AllergyIntolerance",
    "toolName": "allergyintolerance",
+   "title": "Allergy Intolerance",
    "description": "Search for or read a FHIR AllergyIntolerance resource. For direct read, provide _id alone. For search, provide patient or identifier. Use category to filter by food, medication, environment, or biologic. Use clinical-status to filter active, inactive, or resolved allergies.",
    "supportsDirectRead": true,
    "searchParams": {

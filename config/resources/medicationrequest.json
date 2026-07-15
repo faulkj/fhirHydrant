@@ -1,6 +1,7 @@
 {
    "resource": "MedicationRequest",
    "toolName": "medicationrequest",
+   "title": "Medication Request",
    "description": "Search for or read a FHIR MedicationRequest resource (prescriptions and medication orders). For direct read, provide _id alone. For search, provide patient, subject, identifier, encounter, or requester. Filter by status (active, completed, stopped) or intent (order, plan, proposal).",
    "supportsDirectRead": true,
    "searchParams": {

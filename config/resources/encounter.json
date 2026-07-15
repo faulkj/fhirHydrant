@@ -1,6 +1,7 @@
 {
    "resource": "Encounter",
    "toolName": "encounter",
+   "title": "Encounter",
    "description": "Search for or read a FHIR Encounter resource. Provide an _id for direct read, or search by patient, status, class, or date.",
    "supportsDirectRead": true,
    "searchParams": {

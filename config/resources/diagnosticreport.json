@@ -1,6 +1,7 @@
 {
    "resource": "DiagnosticReport",
    "toolName": "diagnosticreport",
+   "title": "Diagnostic Report",
    "description": "Search for or read a FHIR DiagnosticReport resource including lab results, pathology, and imaging reports. For direct read, provide _id alone. For search, provide patient, subject, identifier, encounter, or based-on. If filtering by a plain-language report concept, resolve the code with code_search before using code, category, or type-style filters. Use category to filter by discipline (e.g. LAB, RAD). For individual values over time, prefer linked or direct Observation resources.",
    "supportsDirectRead": true,
    "searchParams": {

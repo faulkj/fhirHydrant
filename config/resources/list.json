@@ -1,6 +1,7 @@
 {
    "resource": "List",
    "toolName": "list",
+   "title": "List",
    "description": "Search for or read a FHIR List resource — a curated collection of resources. For direct read, provide _id alone. For search, code is ALWAYS required along with a scoping param. Use code=problems + patient for the problem list, code=medications + patient (+ optionally encounter) for medication reconciliation lists, code=pedigree-list + patient for family history, or code=patients + identifier (system|id format) for patient lists.",
    "supportsDirectRead": true,
    "searchParams": {

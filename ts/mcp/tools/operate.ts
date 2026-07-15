@@ -40,7 +40,7 @@ export const addOperate = (
 
    return server.registerTool(
       "operate",
-      { description, inputSchema: z.object(shape), outputSchema: fhirOutputSchema, annotations },
+      { title: "Execute Operation", description, inputSchema: z.object(shape), outputSchema: fhirOutputSchema, annotations },
       makeOperateHandler(enabledOps),
    )
 }

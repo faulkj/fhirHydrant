@@ -1,6 +1,7 @@
 {
    "resource": "AdverseEvent",
    "toolName": "adverseevent",
+   "title": "Adverse Event",
    "description": "Search for or read a FHIR AdverseEvent resource tracking harmful events in research contexts. For direct read, provide _id alone. IMPORTANT: Patient-only search is NOT supported — you MUST provide subject + study together, subject + research-subject, or research-subject alone. Do NOT attempt this resource unless you have a ResearchStudy or ResearchSubject FHIR ID. All ID values are raw FHIR IDs (not prefixed with resource type).",
    "supportsDirectRead": true,
    "searchParams": {

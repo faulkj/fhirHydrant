@@ -1,6 +1,7 @@
 {
    "resource": "Medication",
    "toolName": "medication",
+   "title": "Medication",
    "description": "Search for or read a FHIR Medication resource (drug catalog). For direct read, provide _id alone. For search, provide code, identifier, or another scoping param. This resource describes medication products — use MedicationRequest for prescriptions or MedicationStatement for reported usage.",
    "supportsDirectRead": true,
    "searchParams": {

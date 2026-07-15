@@ -1,6 +1,7 @@
 {
    "resource": "ServiceRequest",
    "toolName": "servicerequest",
+   "title": "Service Request",
    "description": "Search for or read a FHIR ServiceRequest resource (orders and referrals for procedures, diagnostics, therapies). For direct read, provide _id alone. For search, provide patient, subject, identifier, encounter, requester, based-on, or requisition. Use code to identify the service ordered and intent/status to filter.",
    "supportsDirectRead": true,
    "searchParams": {

@@ -42,7 +42,7 @@ export const registerBundle = (server: McpServer): RegisteredTool[] => {
          : "disabled",
       description = `Submit a FHIR ${types} Bundle. Resources: ${resourceSample}. Writes: ${writeState}.`
 
-   const handle = addBundle(server, description, schema)
+   const handle = addBundle(server, def, description, schema)
    buildLog("bundle", `📦 Registered bundle (${types}, writes ${config.bundleWritesEnabled ? "enabled" : "disabled"})`)
    return [handle]
 }

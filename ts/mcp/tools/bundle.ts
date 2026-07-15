@@ -15,7 +15,7 @@ import { fhirOutputSchema } from "../output.ts"
 
 /** Registers the bundle tool on the MCP server; returns its handle. */
 export const addBundle = (
-   server: McpServer, description: string, inputSchema: z.ZodObject<z.ZodRawShape>,
+   server: McpServer, def: CoreToolDef, description: string, inputSchema: z.ZodObject<z.ZodRawShape>,
 ): RegisteredTool => {
    const annotations = config.bundleWritesEnabled
       ? writeAnnotations(true, false)
@@ -23,7 +23,7 @@ export const addBundle = (
 
    return server.registerTool(
       "bundle",
-      { description, inputSchema, outputSchema: fhirOutputSchema, annotations },
+      { title: def.title, description, inputSchema, outputSchema: fhirOutputSchema, annotations },
       async (args: Record<string, unknown>) => {
          const
             t0 = Date.now(),

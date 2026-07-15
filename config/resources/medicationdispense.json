@@ -1,6 +1,7 @@
 {
    "resource": "MedicationDispense",
    "toolName": "medicationdispense",
+   "title": "Medication Dispense",
    "description": "Search for or read a FHIR MedicationDispense resource recording pharmacy dispensing events (outpatient pickups, inpatient ward stock, single-dose issues). For direct read, provide _id alone. For search, provide patient, subject, identifier, or context. Use status to filter completed, in-progress, or cancelled. Use whenhandedover or whenprepared for date filtering.",
    "supportsDirectRead": true,
    "searchParams": {

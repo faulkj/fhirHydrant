@@ -1,6 +1,7 @@
 [
    {
       "name": "paginate",
+      "title": "Fetch Next Page",
       "description": "Fetch the next page of FHIR Bundle results. A next link means more data exists — call this to continue retrieval. Do not construct pagination URLs manually — only use links returned by the FHIR server. When the task requires complete coverage of a date range or population, continue until no next link remains.",
       "params": {
          "url": {
@@ -32,6 +33,7 @@
    },
    {
       "name": "capabilities",
+      "title": "Server Capabilities",
       "description": "Returns a summary of the FHIR server's capabilities from /metadata (CapabilityStatement). Shows supported resource types, their interactions, search parameters, and any tools that were skipped. Call this before clinical queries to understand what the server supports. The summary is cached; call with no arguments.",
       "params": {
          "refresh": {
@@ -43,6 +45,7 @@
    },
    {
       "name": "terminology_lookup",
+      "title": "Terminology Lookup",
       "description": "Look up a single medical code in a terminology system and return its display name, version, and properties. Use this when you already have a specific code (e.g. LOINC 2160-0 or SNOMED 73211009) and need to know what it means. system accepts \"loinc\" or \"snomed\".",
       "params": {
          "system": {
@@ -58,6 +61,7 @@
    },
    {
       "name": "code_search",
+      "title": "Code Search",
       "description": "Search a terminology system for codes matching a text filter. After resolving the patient, use this before querying coded FHIR resources whenever the user provides a plain-language term, abbreviation, device name, or measurement name instead of a precise code. Do not skip this by using a broad category or type filter first. Returns matching code/display pairs. LOINC results support paging via offset — increment offset by count to retrieve subsequent pages. system accepts \"loinc\" or \"snomed\".",
       "params": {
          "system": {
@@ -83,6 +87,7 @@
    },
    {
       "name": "bundle",
+      "title": "Submit Bundle",
       "description": "Submit a FHIR batch or transaction Bundle to the server. Requires FHIR_BUNDLE_CAPABILITIES to be configured. Write entries require additional opt-in via FHIR_BUNDLE_WRITES_ENABLED.",
       "params": {
          "body": {
@@ -104,6 +109,7 @@
    },
    {
       "name": "system_history",
+      "title": "System History",
       "description": "Retrieve system-level change history from the FHIR server. Returns a Bundle of all resource versions across all types. Only available when the server advertises the system history interaction. Results may be paginated — a next link indicates more history is available.",
       "params": {
          "_since": {

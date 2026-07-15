@@ -11,11 +11,11 @@ import { terminologyLookupOutputSchema } from "../output.ts"
 
 /** Registers the terminology_lookup tool for CodeSystem/$lookup queries */
 export const addTerminologyLookup = (
-   server: McpServer, description: string, inputSchema: z.ZodObject<z.ZodRawShape>,
+   server: McpServer, def: CoreToolDef, inputSchema: z.ZodObject<z.ZodRawShape>,
 ): void => {
    server.registerTool(
       "terminology_lookup",
-      { description, inputSchema, outputSchema: terminologyLookupOutputSchema, annotations: readOnlyAnnotations },
+      { title: def.title, description: def.description, inputSchema, outputSchema: terminologyLookupOutputSchema, annotations: readOnlyAnnotations },
       async (args: Record<string, unknown>) => {
          const
             t0 = Date.now(),

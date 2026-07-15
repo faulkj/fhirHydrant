@@ -1,6 +1,7 @@
 {
    "resource": "Location",
    "toolName": "location",
+   "title": "Location",
    "description": "Search for or read a FHIR Location resource for physical places where services are provided. For direct read, provide _id alone. For search, provide identifier, name, organization, partof, address, address-city, or near. Use near with format latitude|longitude|distance|units (WGS84 datum, defaults to km) for proximity searches.",
    "supportsDirectRead": true,
    "searchParams": {

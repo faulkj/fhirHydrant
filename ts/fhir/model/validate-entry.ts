@@ -75,6 +75,7 @@ export const validateEntry = (
    return {
       resource: rt,
       toolName: name,
+      title: text(entry["title"]) ?? rt.replace(/([a-z])([A-Z])/g, "$1 $2"),
       description: desc,
       supportsDirectRead: entry["supportsDirectRead"] as boolean,
       searchParams:

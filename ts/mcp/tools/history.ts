@@ -8,11 +8,11 @@ import { executeRead } from "../handlers/read-response.ts"
 
 /** Registers the system-level _history core tool; returns its handle. */
 export const addSystemHistory = (
-   server: McpServer, description: string, inputSchema: z.ZodObject<z.ZodRawShape>,
+   server: McpServer, def: CoreToolDef, inputSchema: z.ZodObject<z.ZodRawShape>,
 ): RegisteredTool => {
    return server.registerTool(
       "system_history",
-      { description, inputSchema, outputSchema: fhirOutputSchema, annotations: readOnlyAnnotations },
+      { title: def.title, description: def.description, inputSchema, outputSchema: fhirOutputSchema, annotations: readOnlyAnnotations },
       async (args: Record<string, unknown>) => {
          const
             t0 = Date.now(),

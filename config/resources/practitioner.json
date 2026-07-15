@@ -1,6 +1,7 @@
 {
    "resource": "Practitioner",
    "toolName": "practitioner",
+   "title": "Practitioner",
    "description": "Search for or read a FHIR Practitioner resource. For direct read, provide _id alone. For search, provide at least one of: identifier, name, given + family, email, phone, or telecom. This resource represents healthcare providers — physicians, nurses, pharmacists, etc.",
    "supportsDirectRead": true,
    "searchParams": {

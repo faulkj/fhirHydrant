@@ -28,11 +28,11 @@ const
 
 /** Registers the code_search tool for LOINC/SNOMED ValueSet expansion */
 export const addCodeSearch = (
-   server: McpServer, description: string, inputSchema: z.ZodObject<z.ZodRawShape>,
+   server: McpServer, def: CoreToolDef, inputSchema: z.ZodObject<z.ZodRawShape>,
 ): void => {
    server.registerTool(
       "code_search",
-      { description, inputSchema, outputSchema: codeSearchOutputSchema, annotations: readOnlyAnnotations },
+      { title: def.title, description: def.description, inputSchema, outputSchema: codeSearchOutputSchema, annotations: readOnlyAnnotations },
       async (args: Record<string, unknown>) => {
          const
             t0 = Date.now(),

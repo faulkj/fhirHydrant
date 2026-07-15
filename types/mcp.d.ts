@@ -10,6 +10,7 @@ interface CoreToolParam {
 /** A single entry in config/core-tools.json. */
 interface CoreToolDef {
    name: string
+   title: string
    description: string
    params: Record<string, CoreToolParam>
 }

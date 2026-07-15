@@ -1,6 +1,7 @@
 {
    "resource": "PractitionerRole",
    "toolName": "practitionerrole",
+   "title": "Practitioner Role",
    "description": "Search for or read a FHIR PractitionerRole resource linking practitioners to organizations, locations, specialties, and services. For direct read, provide _id alone. For search, provide at least one scoping param such as practitioner, organization, location, role, specialty, or identifier.",
    "supportsDirectRead": true,
    "searchParams": {

@@ -1,6 +1,7 @@
 {
    "resource": "Appointment",
    "toolName": "appointment",
+   "title": "Appointment",
    "description": "Search for or read a FHIR Appointment resource for scheduled healthcare events. For direct read, provide _id alone. For search, provide patient, identifier, actor, practitioner, location, slot, or based-on. Use date for time filtering and status to find booked, arrived, or cancelled appointments.",
    "supportsDirectRead": true,
    "searchParams": {

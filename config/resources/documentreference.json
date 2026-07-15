@@ -1,6 +1,7 @@
 {
    "resource": "DocumentReference",
    "toolName": "documentreference",
+   "title": "Document Reference",
    "description": "Search for or read a FHIR DocumentReference resource indexing clinical documents, notes, PDFs, and images. For direct read, provide _id alone. For search, provide patient, subject, identifier, encounter, author, custodian, or relatesto. Use category or type to narrow results. For quantitative analysis, prefer structured resources before DocumentReference unless the user explicitly asks for narrative documentation.",
    "supportsDirectRead": true,
    "searchParams": {

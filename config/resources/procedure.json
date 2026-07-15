@@ -1,6 +1,7 @@
 {
    "resource": "Procedure",
    "toolName": "procedure",
+   "title": "Procedure",
    "description": "Search for or read a FHIR Procedure resource for surgical, diagnostic, and therapeutic procedures. For direct read, provide _id alone. For search, provide patient, subject, identifier, encounter, based-on, or part-of. Filter by code (SNOMED CT), date, or status.",
    "supportsDirectRead": true,
    "searchParams": {

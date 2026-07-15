@@ -26,11 +26,11 @@ const paginateScopeDenied = (validatedUrl: string): string | undefined => {
 
 /** Registers the paginate tool for fetching next-page Bundle results. */
 export const addPaginate = (
-   server: McpServer, description: string, inputSchema: z.ZodObject<z.ZodRawShape>,
+   server: McpServer, def: CoreToolDef, inputSchema: z.ZodObject<z.ZodRawShape>,
 ): void => {
    server.registerTool(
       "paginate",
-      { description, inputSchema, outputSchema: fhirOutputSchema, annotations: readOnlyAnnotations },
+      { title: def.title, description: def.description, inputSchema, outputSchema: fhirOutputSchema, annotations: readOnlyAnnotations },
       async (args: Record<string, unknown>) => {
          const t0 = Date.now()
          try {

@@ -43,12 +43,12 @@ export const registerStaticCoreTools = (server: McpServer): void => {
          ? Object.fromEntries(Object.entries(def("paginate").params).filter(([k]) => k !== "responseMode"))
          : def("paginate").params
 
-   addPaginate(server, def("paginate").description, buildSchema(paginateParams))
-   addCapabilities(server, def("capabilities").description, buildSchema(def("capabilities").params))
+   addPaginate(server, def("paginate"), buildSchema(paginateParams))
+   addCapabilities(server, def("capabilities"), buildSchema(def("capabilities").params))
 
    if (config.fhirTerminologyBaseUrl) {
-      addTerminologyLookup(server, def("terminology_lookup").description, buildSchema(def("terminology_lookup").params))
-      addCodeSearch(server, def("code_search").description, buildSchema(def("code_search").params))
+      addTerminologyLookup(server, def("terminology_lookup"), buildSchema(def("terminology_lookup").params))
+      addCodeSearch(server, def("code_search"), buildSchema(def("code_search").params))
       log.debug(`📋 Terminology tools enabled (→ ${config.fhirTerminologyBaseUrl})`)
    } else
       log.debug("📋 Terminology tools disabled — FHIR_TERMINOLOGY_BASE_URL not set")
@@ -74,5 +74,5 @@ export const registerSystemHistory = (server: McpServer): RegisteredTool[] => {
       ? Object.fromEntries(Object.entries(def("system_history").params).filter(([k]) => k !== "responseMode"))
       : def("system_history").params
    log.debug("📋 System history tool enabled")
-   return [addSystemHistory(server, def("system_history").description, buildSchema(historyParams))]
+   return [addSystemHistory(server, def("system_history"), buildSchema(historyParams))]
 }

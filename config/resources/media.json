@@ -1,6 +1,7 @@
 {
    "resource": "Media",
    "toolName": "media",
+   "title": "Media",
    "description": "Search for or read a FHIR Media resource (photos, videos, or audio recordings acquired in healthcare, such as clinical or diagnostic imaging). For direct read, provide _id alone. Media references are often returned by DiagnosticReport; content.url points to a Binary resource holding the actual image or recording data.",
    "supportsDirectRead": true,
    "searchParams": {

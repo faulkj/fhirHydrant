@@ -2,6 +2,7 @@
 interface ResourceDefinitionRaw {
    resource: string
    toolName: string
+   title: string
    description: string
    supportsDirectRead: boolean
    searchParams?: Record<string, string>
@@ -12,6 +13,7 @@ interface ResourceDefinitionRaw {
 interface ResourceDefinition {
    resource: string
    toolName: string
+   title: string
    description: string
    supportsDirectRead: boolean
    requireOneOf?: string[][]

@@ -74,9 +74,7 @@ const augmentSchema = (
       injected.push("action")
    }
    if (hasWrites) {
-      shape["body"] = z.string()
-         .optional()
-         .describe("Full FHIR resource JSON for create/update, or JSON Patch array (RFC 6902) for patch")
+      shape["body"] = z.string().optional().describe("Full FHIR resource JSON for create/update, or JSON Patch array (RFC 6902) for patch")
       injected.push("body")
    }
 
@@ -121,7 +119,7 @@ export const registerAll = (server: McpServer): RegisteredTool[] => {
       injected.length && log.debug(`📋 ${def.resource}: injected ${injected.join(", ")}`)
       handles.push(server.registerTool(
          def.toolName,
-         { description, inputSchema: schema, outputSchema: fhirOutputSchema, annotations },
+         { title: def.title, description, inputSchema: schema, outputSchema: fhirOutputSchema, annotations },
          makeHandler(def),
       ))
    }

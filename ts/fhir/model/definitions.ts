@@ -59,6 +59,7 @@ const parse = (): DefinitionsSnapshot => {
          return {
             resource: entry.resource,
             toolName: entry.toolName,
+            title: entry.title,
             description: entry.description,
             supportsDirectRead: entry.supportsDirectRead,
             requireOneOf: entry.requireOneOf,
