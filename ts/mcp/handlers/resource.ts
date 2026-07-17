@@ -69,5 +69,6 @@ export const makeHandler =
       return executeRead({
          url, tool: toolName, resource: def.resource, op, args, t0,
          isBundle: !isSingle, allowCoalesce: !isSingle, search, notes: extraNotes,
+         source: { resource: def.resource, operation: op, ...(directId && { id: directId }) },
       })
    }

@@ -2,7 +2,7 @@
    "resource": "Binary",
    "toolName": "binary",
    "title": "Binary",
-   "description": "Read or search a FHIR Binary resource — pure binary content such as clinical notes, lab documentation, clinical-reference documents, PDFs, and images, returned in its native format. Provide _id alone; Binary is retrieved by ID only (both read and search accept only _id, so search behaves like a read). The Binary FHIR ID is typically obtained from a DocumentReference (e.g. content.attachment.url) or Media reference. The FHIR representation returns contentType (MIME type, e.g. text/html or text/rtf) and data (base64-encoded content).",
+   "description": "Read or search a FHIR Binary resource — pure binary content such as clinical notes, lab documentation, clinical-reference documents, PDFs, and images. Provide _id alone; Binary is retrieved by ID only (both read and search accept only _id, so search behaves like a read). The Binary FHIR ID is typically obtained from a DocumentReference (e.g. content.attachment.url) or Media reference. Whether the server returns a native HTTP body (non-JSON Content-Type) or a JSON Binary resource (contentType + base64 data), the content is normalized into a single MCP embedded resource (text or base64 blob) with metadata; the bytes are never truncated by the JSON response limit. This normalization is generic across read, history, pagination, and named-operation responses, not only Binary.",
    "supportsDirectRead": true,
    "searchParams": {
       "_id": "Binary resource ID — the only supported parameter; both read and search accept _id only"

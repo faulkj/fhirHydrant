@@ -57,6 +57,7 @@ export const addPaginate = (
             return executeRead({
                url: validatedUrl, tool: "paginate", op: "paginate", args, t0,
                isBundle: true, allowCoalesce: true,
+               source: { operation: "paginate", ...(pageUrlResource(validatedUrl) && { resource: pageUrlResource(validatedUrl)! }) },
             })
          } catch (err) {
             // validatePageUrl throws on invalid URLs

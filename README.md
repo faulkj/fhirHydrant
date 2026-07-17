@@ -271,12 +271,13 @@ when the FHIR server advertises them.
 | --- | --- |
 | `_count` default/cap | No `_count` injected by default (server decides page size). Set `FHIR_DEFAULT_COUNT` to inject one; `FHIR_MAX_COUNT` caps explicit caller values (0 = no cap) |
 | Page coalescing | When compact mode is active, the server fetches multiple upstream pages sequentially, compacts each immediately, and returns one consolidated Bundle. Controlled by `maxResults`, `prefetch`, and `FHIR_PREFETCH_*` env vars |
-| Byte limit | `FHIR_MAX_RESPONSE_BYTES` limits every tool response; oversized Bundles are chunked transparently |
+| Byte limit | `FHIR_MAX_RESPONSE_BYTES` limits every model-facing JSON response; oversized Bundles are chunked transparently |
 | Auto-retry | Oversized search Bundles attempt local chunking first, then retry with smaller `_count` as a fallback |
 | FHIRPath | `fhirpath` filters the returned FHIR JSON locally and returns matching nodes as an array |
 | Compact mode | `responseMode=compact` strips common FHIR envelope noise and simplifies datatypes |
 | Full mode | `responseMode=full` returns raw FHIR JSON |
 | Locked compact | `FHIR_RESPONSE_MODE=compact-locked` hides `responseMode` from the tool schema |
+| Native artifacts | Non-JSON responses (documents, images, DICOM, RTF, HTML, XML, CSV, NDJSON, ZIP, octet-stream) and JSON FHIR Binary are normalized into a metadata envelope plus one MCP embedded text/blob resource. Capped by `FHIR_MAX_ARTIFACT_MB` (not the JSON limit), never chunked, and never passed through FHIRPath/compaction/coalescing. JSON-only shaping arguments are ignored with a note |
 
 Compact output is AI-oriented JSON, not canonical FHIR. It drops or simplifies
 FHIR noise and common datatypes such as `meta`, narrative, extensions,
@@ -399,7 +400,8 @@ See [.env.example](.env.example) for a complete sample.
 | `FHIR_METADATA_MODE` | `strict` | `strict`, `warn`, or `off` for `/metadata` validation |
 | `FHIR_DEFAULT_COUNT` | `0` | Default `_count` injected into searches when allowed; 0 = server decides |
 | `FHIR_MAX_COUNT` | `0` | Cap on explicit caller `_count` values; 0 = no cap |
-| `FHIR_MAX_RESPONSE_BYTES` | `262144` | Byte limit for tool responses; oversized Bundles are chunked |
+| `FHIR_MAX_RESPONSE_BYTES` | `262144` | Byte limit for model-facing JSON responses; oversized Bundles are chunked |
+| `FHIR_MAX_ARTIFACT_MB` | `16` | Separate byte ceiling (MiB) for native/binary artifact bodies; independent of the JSON limit (base64 transport ≈ +33%) |
 | `FHIR_REQUEST_TIMEOUT_MS` | `30000` | Per-attempt timeout for outgoing FHIR requests |
 | `MCP_JSON_LIMIT` | `4mb` | Max accepted MCP request body size (Express json limit string); raise if large write/bundle payloads are rejected |
 | `MCP_AUTHZ` | `none` | Authorization provider: `none` or `entra`. Gates tools per caller (HTTP + `Authorization: Bearer` only) |

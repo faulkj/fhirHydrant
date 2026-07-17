@@ -38,6 +38,8 @@ interface Config {
    fhirMaxCount: number
    /** FHIR_MAX_RESPONSE_BYTES — byte ceiling for a tool response before chunking. Defaults to 262144. */
    fhirMaxResponseBytes: number
+   /** Derived byte ceiling for a native/binary artifact body, from FHIR_MAX_ARTIFACT_MB (default 16 MiB). Independent of fhirMaxResponseBytes. */
+   fhirMaxArtifactBytes: number
    /** FHIR_AUDIT_SINK — active audit sinks (console, file, http); empty disables auditing. */
    auditSinks: AuditSinkName[]
    /** FHIR_AUDIT_FILE — path for the file audit sink. Defaults to ./audit.jsonl. */

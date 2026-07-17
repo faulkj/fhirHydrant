@@ -44,6 +44,12 @@ export const addBundle = (
 
          const { type, summary, warning } = guard
          const logTag = `Bundle.${type}`
+
+         const resolved = resolveResponseMode(explicit, undefined)
+         if (!resolved) {
+            emitAudit({ ts: new Date().toISOString(), tool: "bundle", operation: "bundle", status: "error", durationMs: auditTime(t0), bundleType: type, bundleEntryCount: summary.readCount + summary.writeCount, bundleReadCount: summary.readCount, bundleWriteCount: summary.writeCount })
+            return { content: [{ type: "text" as const, text: "Invalid responseMode — must be \"compact\" or \"full\"" }], isError: true }
+         }
          log.info(`🔥 ${logTag} → ${summary.readCount}R ${summary.writeCount}W`)
 
          try {
@@ -62,11 +68,6 @@ export const addBundle = (
                   config.fhirRequestTimeoutMs,
                )
 
-            const resolved = resolveResponseMode(explicit, undefined)
-            if (!resolved) {
-               emitAudit({ ts: new Date().toISOString(), tool: "bundle", operation: "bundle", status: "error", durationMs: auditTime(t0), bundleType: type, bundleEntryCount: summary.readCount + summary.writeCount, bundleReadCount: summary.readCount, bundleWriteCount: summary.writeCount })
-               return { content: [{ type: "text" as const, text: "Invalid responseMode — must be \"compact\" or \"full\"" }], isError: true }
-            }
             const
                { effectiveMode: rawMode, wasDefaulted } = resolved,
                effectiveMode = wasDefaulted && !config.responseMode ? "full" as ResponseMode : rawMode,

@@ -59,6 +59,7 @@ interface ReadOpts {
    allowCoalesce?: boolean
    search?: { url: string; countInjected: boolean; countCapped: boolean; countSkipped: boolean }
    notes?: string[]
+   source?: ArtifactSource
 }
 
 /** Result of pure client-side write-payload validation — blocking errors and non-blocking warnings. */

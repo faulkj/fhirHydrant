@@ -54,8 +54,12 @@ export const formatFhirError = (err: unknown): { log: string, client: string } =
       status = `${(err as Record<string, unknown>).statusCode} ${(err as Record<string, unknown>).statusText ?? ""}`.trim(),
       jsonMatch = raw.match(/\n\n(\{[\s\S]+\})$/),
       body = jsonMatch ? (() => { try { return JSON.parse(jsonMatch[1]) } catch { return null } })() : null
-   if (!body || body.resourceType !== "OperationOutcome" || !Array.isArray(body.issue))
-      return { log: status, client: status }
+   if (!body || body.resourceType !== "OperationOutcome" || !Array.isArray(body.issue)) {
+      // No OperationOutcome to mine — keep any human-readable message the error carries, but
+      // strip fhirclient's "URL:" line (may hold SMART query params) and any raw body block.
+      const detail = raw.split("\n\n")[0].split("\n").filter((l) => l.trim() && !/^url:/i.test(l.trim()) && l.trim() !== status).join(" ").trim()
+      return detail ? { log: `${status} — ${detail}`, client: `${status}\n${detail}` } : { log: status, client: status }
+   }
    const issues = (body.issue as Array<Record<string, unknown>>)
       .map((i) => [
          typeof i.severity === "string" ? i.severity : undefined,

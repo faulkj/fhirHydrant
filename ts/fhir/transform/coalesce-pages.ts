@@ -1,17 +1,18 @@
 import { config } from "../../config/index.ts"
 import { log } from "../../log.ts"
 import { withRetry } from "../utils.ts"
+import { normalizeFhirResponse } from "../response/normalize.ts"
 import { compact } from "./compact.ts"
 import { outcomeNote } from "./outcomes.ts"
 
 /**
  * Walks upstream FHIR pages, compacting and deduplicating entries until a
- * truncation limit is hit or pagination ends. Returns the accumulated state
- * for the caller to shape into an MCP response.
+ * truncation limit is hit or pagination ends. Follow-up pages are normalized
+ * and required to be JSON Bundles; a native/no-content page ends the walk.
  */
 export const coalescePages = async (
    firstResult: unknown,
-   client: { request: (opts: { url: string, signal?: AbortSignal }) => Promise<unknown> },
+   source: ArtifactSource,
    label: string,
    cap: number,
    start: number,
@@ -81,7 +82,12 @@ export const coalescePages = async (
 
       try {
          log.debug(`📦 ${label} fetching page ${pages + 1} → ${nextUrl}`)
-         current = await withRetry(label, (signal) => client.request({ url: nextUrl!, signal }), 3, config.fhirRequestTimeoutMs)
+         const page = await withRetry(label, (signal) => normalizeFhirResponse(nextUrl!, source, signal), 3, config.fhirRequestTimeoutMs)
+         if (page.kind !== "json" || (page.data as Record<string, unknown>)?.resourceType !== "Bundle") {
+            truncated = true, truncateReason = "nonBundlePage"
+            break
+         }
+         current = page.data
       } catch {
          truncated = true, truncateReason = "fetchError"
          break

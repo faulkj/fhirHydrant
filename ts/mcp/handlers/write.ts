@@ -64,18 +64,18 @@ export const executeWrite = async (
          return { content: [{ type: "text" as const, text: serializeEnvelope(envelope) }], structuredContent: envelope }
       }
 
-      log.info(`🔥 ${logTag} → ${op} ${def.resource}${id ? '/' + id : ''}`)
-      const result = await withRetry(`${def.resource} ${op}`, () => {
-         if (op === "create") return client.create(body)
-         if (op === "update") return client.update(body)
-         if (op === "delete") return client.delete(`${def.resource}/${id}`)
-         // patch
-         return client.patch(`${def.resource}/${id}`, body)
-      }, 3, config.fhirRequestTimeoutMs)
-
       const resolved = resolveResponseMode(extractResponseMode(args), undefined)
       if (!resolved)
          return { content: [{ type: "text" as const, text: "Invalid responseMode — must be \"compact\" or \"full\"" }], isError: true }
+
+      log.info(`🔥 ${logTag} → ${op} ${def.resource}${id ? '/' + id : ''}`)
+      const result = await withRetry(`${def.resource} ${op}`, (signal) => {
+         if (op === "create") return client.create(body, { signal })
+         if (op === "update") return client.update(body, { signal })
+         if (op === "delete") return client.delete(`${def.resource}/${id}`, { signal })
+         // patch
+         return client.patch(`${def.resource}/${id}`, body, { signal })
+      }, 3, config.fhirRequestTimeoutMs)
 
       // A returned resource is echoed through the canonical envelope; an empty response (typical delete) uses a no-data envelope.
       const note = messages.writeSucceeded.replace("{action}", op).replace("{resourceType}", def.resource)

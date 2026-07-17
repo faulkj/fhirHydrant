@@ -2,7 +2,7 @@ import messages from "../../../config/messages/core.json" with { type: "json" }
 import { applyFhirPath } from "./fhirpath.ts"
 import { compact } from "./compact.ts"
 import { bundleStats } from "./response-notes.ts"
-import { outcomeNote } from "./outcomes.ts"
+import { outcomeNote, fatalOutcome } from "./outcomes.ts"
 import { finalizeEnvelope } from "./finalize.ts"
 
 const detectResourceType = (data: unknown): string | undefined => {
@@ -15,6 +15,10 @@ const detectResourceType = (data: unknown): string | undefined => {
 export const applyResponsePipeline = (opts: PipelineOpts): PipelineResult | { error: string } => {
    const
       { result, bundleResponse, fhirpathExpr, effectiveMode, wasDefaulted, extraNotes } = opts,
+      fatal = fatalOutcome(result)
+   if (fatal) return { error: fatal }
+
+   const
       sourceBytes = Buffer.byteLength(JSON.stringify(result), "utf8"),
       stats = bundleResponse ? bundleStats(result, JSON.stringify(result)) : undefined
 

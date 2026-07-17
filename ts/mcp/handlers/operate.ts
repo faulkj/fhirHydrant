@@ -1,11 +1,12 @@
 import { config } from "../../config/index.ts"
 import { log } from "../../log.ts"
-import { createFhirClient } from "../../fhir/auth/client.ts"
 import { withRetry, formatFhirError } from "../../fhir/utils.ts"
 import { emitAudit, auditTime, errorStatus } from "../../audit.ts"
 import { extractFhirPath } from "../../fhir/transform/fhirpath.ts"
 import { extractResponseMode, resolveResponseMode } from "../../fhir/transform/compact.ts"
 import { applyResponsePipeline } from "../../fhir/transform/pipeline.ts"
+import { normalizeFhirResponse } from "../../fhir/response/normalize.ts"
+import { artifactResult, artifactError } from "../artifact-result.ts"
 import { validateOperateArgs } from "../guards/validate-operate.ts"
 
 /** Creates the handler function for the operate MCP tool. */
@@ -59,29 +60,39 @@ export const makeOperateHandler = (enabledOps: OperationDefinition[]) =>
          } catch { /* JSON syntax errors caught by guards/operate */ }
       }
 
+      const resolved = resolveResponseMode(explicit, undefined)
+      if (!resolved) {
+         emitAudit({ ts: new Date().toISOString(), tool: "operate", resource, operation: op.auditOperation as AuditEvent["operation"], status: "error", durationMs: auditTime(t0), httpStatus: 200 })
+         return { content: [{ type: "text" as const, text: "Invalid responseMode — must be \"compact\" or \"full\"" }], isError: true }
+      }
+      const
+         { effectiveMode: rawMode, wasDefaulted } = resolved,
+         effectiveMode = op.defaultResponseMode && wasDefaulted && !config.responseMode ? op.defaultResponseMode : rawMode
+
       try {
          const
-            client = createFhirClient(),
-            requestOpts: { url: string, method?: string, body?: string, headers?: Record<string, string>, signal?: AbortSignal } =
-               op.method === "POST"
-                  ? { url: fullUrl, method: "POST", ...(finalBody ? { body: finalBody, headers: { "Content-Type": "application/fhir+json" } } : {}) }
-                  : { url: fullUrl }
+            source: ArtifactSource = { resource: resource ?? undefined, operation: op.operation, ...(id && { id }) },
+            init = op.method === "POST"
+               ? { method: "POST", ...(finalBody ? { body: finalBody, headers: { "Content-Type": "application/fhir+json" } } : {}) }
+               : undefined,
+            normalized = await withRetry(
+               `${resource} ${op.operation}`,
+               (signal) => normalizeFhirResponse(fullUrl, source, signal, init),
+               3,
+               config.fhirRequestTimeoutMs,
+            )
 
-         const result = await withRetry(
-            `${resource} ${op.operation}`,
-            (signal) => client.request({ ...requestOpts, signal }),
-            3,
-            config.fhirRequestTimeoutMs,
-         )
-
-         const resolved = resolveResponseMode(explicit, undefined)
-         if (!resolved) {
+         if (normalized.kind === "error") {
             emitAudit({ ts: new Date().toISOString(), tool: "operate", resource, operation: op.auditOperation as AuditEvent["operation"], status: "error", durationMs: auditTime(t0), httpStatus: 200 })
-            return { content: [{ type: "text" as const, text: "Invalid responseMode — must be \"compact\" or \"full\"" }], isError: true }
+            return artifactError(normalized.code, normalized.message)
          }
-         const
-            { effectiveMode: rawMode, wasDefaulted } = resolved,
-            effectiveMode = op.defaultResponseMode && wasDefaulted && !config.responseMode ? op.defaultResponseMode : rawMode
+         if (normalized.kind === "artifact") {
+            if (fhirpathExpr || explicit) normalized.artifact.notes.push("Artifact response — JSON-only shaping arguments ignored.")
+            log.debug(`🟢 ${logTag} OK (artifact ${normalized.artifact.byteCount}B ${normalized.artifact.mimeType}, ${auditTime(t0)}ms)`)
+            emitAudit({ ts: new Date().toISOString(), tool: "operate", resource, operation: op.auditOperation as AuditEvent["operation"], status: "ok", durationMs: auditTime(t0), httpStatus: normalized.artifact.httpStatus })
+            return artifactResult(normalized.artifact)
+         }
+         const result = normalized.kind === "no-content" ? {} : normalized.data
          const pipeline = applyResponsePipeline({
             result, bundleResponse: op.bundleResponse, fhirpathExpr, effectiveMode, wasDefaulted,
          })

@@ -18,8 +18,25 @@ const
       jsonBytes: z.number().describe("Serialized byte size of the FHIR payload"),
    })
 
+/** Metadata-only structured envelope for a native/binary artifact result — payload lives in an embedded resource block. */
+export const artifactOutputSchema = z.object({
+   status: z.literal("ok").describe("Always ok — an artifact was produced"),
+   notes: z.array(z.string()).describe("Human-readable notes (e.g. ignored JSON-only shaping arguments)"),
+   artifact: z.object({
+      httpStatus: z.number().describe("Upstream HTTP status"),
+      resource: z.string().optional().describe("Source FHIR resource type when known"),
+      operation: z.string().optional().describe("Source FHIR operation when known"),
+      fhirId: z.string().optional().describe("Source FHIR resource id when known"),
+      mimeType: z.string().describe("Server-provided MIME type"),
+      filename: z.string().describe("Sanitized filename for the artifact"),
+      byteCount: z.number().describe("Actual decoded byte count of the content"),
+      uri: z.string().describe("Stable private artifact URI (no upstream credentials)"),
+      checksum: z.string().describe("Lowercase hex SHA-256 of the decoded bytes"),
+   }).describe("Artifact metadata — the content is delivered as an MCP embedded resource, not here"),
+})
+
 /** Canonical structured envelope returned by every FHIR-wrapping tool (resource, paginate, operate, bundle, system_history). */
-export const fhirOutputSchema = z.object({
+export const fhirJsonOutputSchema = z.object({
    status: z.enum(["ok", "truncated"]).describe("truncated = payload was too large and partially withheld"),
    responseMode: z.enum(["compact", "full"]).describe("Shape of data: compact (AI-oriented) or full (raw FHIR)"),
    compacted: z.boolean().describe("Whether compaction was applied to data"),
@@ -35,6 +52,9 @@ export const fhirOutputSchema = z.object({
    prefetch: prefetchSchema.optional().describe("Multi-page coalescing summary, when coalesced"),
    data: z.unknown().optional().describe("The shaped FHIR resource, Bundle, or FHIRPath node array; omitted when truncated"),
 })
+
+/** Output schema advertised by every FHIR-wrapping tool — a JSON envelope or a metadata-only artifact envelope. */
+export const fhirOutputSchema = z.union([fhirJsonOutputSchema, artifactOutputSchema])
 
 /** Structured output for the capabilities tool — the enriched CapabilityStatement summary. */
 export const capabilitiesOutputSchema = z.object({

@@ -32,6 +32,21 @@ export const outcomeNote = (result: unknown): string | undefined => {
    return `OperationOutcome: ${summary}${text ? ` — ${text}` : ""}`
 }
 
+/**
+ * Returns a diagnostic message when the result is a STANDALONE OperationOutcome carrying a
+ * fatal or error issue (i.e. the operation failed), else undefined. Bundle-embedded outcomes
+ * are informational and intentionally ignored here so a search is not failed by them.
+ */
+export const fatalOutcome = (result: unknown): string | undefined => {
+   if (!result || typeof result !== "object") return undefined
+   const r = result as Record<string, unknown>
+   if (r.resourceType !== "OperationOutcome" || !Array.isArray(r.issue)) return undefined
+   const bad = (r.issue as Record<string, unknown>[]).filter((i) => i?.severity === "fatal" || i?.severity === "error")
+   if (!bad.length) return undefined
+   const text = firstText(bad.find((i) => typeof i.diagnostics === "string" || typeof i.details === "object"))
+   return `FHIR server returned a ${bad.length > 1 ? "set of errors" : "fatal error"}${text ? `: ${text}` : ""}`
+}
+
 const collect = (oo: Record<string, unknown>, into: Record<string, unknown>[]): void => {
    Array.isArray(oo.issue) &&
       (oo.issue as Record<string, unknown>[]).forEach((i) => i && typeof i === "object" && into.push(i))

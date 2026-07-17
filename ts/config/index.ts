@@ -13,7 +13,12 @@ const
    { activeKey, retiredKeys } =
       authMode === "smart"
          ? parseKeys()
-         : { activeKey: { kid: "", privateKey: "" }, retiredKeys: [] }
+         : { activeKey: { kid: "", privateKey: "" }, retiredKeys: [] },
+   artifactBytes = (() => {
+      const mb = parsePositiveInt("FHIR_MAX_ARTIFACT_MB", 16)
+      if (mb > 8192) throw new Error(`Invalid FHIR_MAX_ARTIFACT_MB="${mb}" — must not exceed 8192 (8 GiB)`)
+      return mb * 1024 * 1024
+   })()
 
 const requireBaseUrl = (base: string | undefined): string => {
    if (!base) throw new Error("Missing required env var: FHIR_BASE_URL (or set FHIR_SERVER_URL to point at the FHIR API root directly)")
@@ -47,6 +52,7 @@ export const config: Config = {
    fhirDefaultCount: parseNonNegativeInt("FHIR_DEFAULT_COUNT", 0),
    fhirMaxCount: parseNonNegativeInt("FHIR_MAX_COUNT", 0),
    fhirMaxResponseBytes: parsePositiveInt("FHIR_MAX_RESPONSE_BYTES", 262144),
+   fhirMaxArtifactBytes: artifactBytes,
    auditSinks: parseAuditSinks(),
    auditFile: opt("FHIR_AUDIT_FILE") ?? "./audit.jsonl",
    auditHttpUrl: opt("FHIR_AUDIT_HTTP_URL")?.trim() || undefined,
@@ -86,3 +92,6 @@ if (config.auditSinks.includes("http") && !config.auditHttpUrl)
 
 if (config.authzEnabled && config.transport === "stdio")
    throw new Error(`MCP_AUTHZ=${config.mcpAuthz} requires HTTP transport — stdio has no per-request caller identity`)
+
+if (config.fhirMaxArtifactBytes < config.fhirMaxResponseBytes)
+   console.warn(`⚠️ FHIR_MAX_ARTIFACT_MB (${config.fhirMaxArtifactBytes} bytes) is below FHIR_MAX_RESPONSE_BYTES (${config.fhirMaxResponseBytes}) — artifacts are capped smaller than JSON responses`)

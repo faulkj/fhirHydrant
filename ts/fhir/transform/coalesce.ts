@@ -10,7 +10,7 @@ import { coalesceNote } from "./response-notes.ts"
  */
 export const coalesce = async (
    firstResult: unknown,
-   client: { request: (opts: { url: string, signal?: AbortSignal }) => Promise<unknown> },
+   source: ArtifactSource,
    label: string,
    maxResults?: number,
    t0?: number,
@@ -18,7 +18,7 @@ export const coalesce = async (
    const
       start = t0 ?? Date.now(),
       cap = maxResults ?? config.prefetchMaxEntries,
-      s = await coalescePages(firstResult, client, label, cap, start),
+      s = await coalescePages(firstResult, source, label, cap, start),
       bundle: Record<string, unknown> = { resourceType: "Bundle" }
 
    s.bundleType !== undefined && (bundle.type = s.bundleType)

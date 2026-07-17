@@ -32,3 +32,29 @@ Search responses are shaped to avoid overly broad clinical data retrieval. If
 patient, encounter, category, code, date, status, or a lower `_count` when that
 parameter is available. Do not treat a truncated response as evidence that no
 matching clinical data exists.
+
+## Native (non-JSON) artifact responses
+
+When a FHIR endpoint returns native content — a document, image, audio, video,
+DICOM, RTF, HTML, XML, CSV, NDJSON, ZIP, or `application/octet-stream` body, or a
+JSON FHIR Binary with base64 `data` — the response is normalized into an
+**artifact** result instead of the JSON envelope above. The artifact result has:
+
+- `structuredContent` with metadata only: `status`, `artifact.httpStatus`,
+  `artifact.resource`/`operation`/`fhirId` when known, `mimeType`, `filename`,
+  `byteCount` (actual decoded bytes), `uri` (a stable private
+  `fhirhydrant://artifact/...` identifier — never an upstream credentialed URL),
+  and `checksum` (SHA-256).
+- A concise text block describing the artifact for clients that do not render
+  embedded resources.
+- One MCP embedded resource content block carrying the actual bytes: `text` for
+  textual content, base64 `blob` otherwise. The payload is never duplicated in
+  `structuredContent` or the text block.
+
+Artifact bytes are capped by `FHIR_MAX_ARTIFACT_MB` (not the JSON response
+limit), are never chunked or truncated, and are never passed through FHIRPath,
+compaction, or Bundle coalescing. JSON-only shaping arguments (`fhirpath`,
+`responseMode`, `prefetch`, `maxResults`) supplied on a call that yields an
+artifact are ignored, and a note lists them. Retrieve `DocumentReference` or
+`Media` metadata first, then call the referenced Binary; attachments are not
+dereferenced automatically.
