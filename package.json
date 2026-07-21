@@ -55,7 +55,7 @@
       "express": "^5.2.1",
       "fhirclient": "^2.6.3",
       "fhirpath": "^5.0.0",
-      "fhirstarterjs": "^1.0.8",
+      "fhirstarterjs": "^1.0.9",
       "jose": "^6.2.3",
       "zod": "^4.4.3"
    },
