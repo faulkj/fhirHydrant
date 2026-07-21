@@ -1,0 +1,36 @@
+name: Publish to npm
+
+on:
+   workflow_dispatch: # manual "Run workflow" button (publish without a tag)
+   push:
+      tags:
+         - "v*" # auto-publish on version tags (for when you start tagging at 1.0)
+
+jobs:
+   publish:
+      runs-on: ubuntu-latest
+      # Only run for tags on YOUR repo (never on forks).
+      if: github.repository == 'faulkj/fhirHydrant'
+      permissions:
+         id-token: write # required for Trusted Publishing (OIDC) + provenance
+         contents: read
+      steps:
+         - name: Checkout
+           uses: actions/checkout@v7
+
+         - name: Setup Node
+           uses: actions/setup-node@v7
+           with:
+              node-version: 24
+              registry-url: "https://registry.npmjs.org"
+
+         - name: Update npm (Trusted Publishing needs >= 11.5.1)
+           run: npm install -g npm@latest
+
+         - name: Install dependencies
+           run: npm ci
+
+         - name: Publish
+           run: npm publish
+           env:
+              NPM_CONFIG_PROVENANCE: true
