@@ -1,7 +1,9 @@
-import messages from "../../../config/messages/core.json" with { type: "json" }
+import { loadMessages } from "../../config/text.ts"
 import { config } from "../../config/index.ts"
 import { serializeEnvelope } from "./serialize.ts"
 import { tryChunkBundle } from "./bundle-chunks.ts"
+
+const messages = loadMessages("core")
 
 /**
  * Serializes → measures → applies the byte limit to an envelope.

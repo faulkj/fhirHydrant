@@ -1,13 +1,16 @@
-import messages from "../../../config/messages/write.json" with { type: "json" }
+import { loadMessages } from "../../config/text.ts"
 import { config } from "../../config/index.ts"
 import { withRetry, formatFhirError } from "../../fhir/utils.ts"
 
-const fatalIssues = (outcome: Record<string, unknown>): string[] => {
-   if (!outcome || outcome["resourceType"] !== "OperationOutcome" || !Array.isArray(outcome["issue"])) return []
-   return (outcome["issue"] as Array<Record<string, unknown>>)
-      .filter((i) => i["severity"] === "fatal" || i["severity"] === "error")
-      .map((i) => String((i["details"] as Record<string, unknown>)?.["text"] ?? i["diagnostics"] ?? i["code"] ?? "error"))
-}
+const
+   messages = loadMessages("write"),
+
+   fatalIssues = (outcome: Record<string, unknown>): string[] => {
+      if (!outcome || outcome["resourceType"] !== "OperationOutcome" || !Array.isArray(outcome["issue"])) return []
+      return (outcome["issue"] as Array<Record<string, unknown>>)
+         .filter((issue) => issue["severity"] === "fatal" || issue["severity"] === "error")
+         .map((issue) => String((issue["details"] as Record<string, unknown>)?.["text"] ?? issue["diagnostics"] ?? issue["code"] ?? "error"))
+   }
 
 /** Runs server-side `$validate` for a create/update; returns a failure message when the server reports fatal/error issues. */
 export const serverValidate = async (

@@ -1,3 +1,23 @@
+import { loadMessages } from "../../config/text.ts"
+
+const
+   messages = loadMessages("core"),
+
+   collect = (oo: Record<string, unknown>, into: Record<string, unknown>[]): void => {
+      Array.isArray(oo.issue) &&
+         (oo.issue as Record<string, unknown>[]).forEach((issue) => issue && typeof issue === "object" && into.push(issue))
+   },
+
+   firstText = (issue: Record<string, unknown> | undefined): string | undefined => {
+      if (!issue) return undefined
+      const
+         diag = typeof issue.diagnostics === "string" ? issue.diagnostics : undefined,
+         details = issue.details as Record<string, unknown> | undefined,
+         detailText = typeof details?.text === "string" ? details.text : undefined,
+         text = (diag ?? detailText)?.trim()
+      return text ? (text.length > 160 ? `${text.slice(0, 157)}...` : text) : undefined
+   }
+
 /**
  * Scans a raw FHIR response for OperationOutcome issues (warning/info/error) and
  * builds a one-line note. Detects standalone OperationOutcome resources and Bundle
@@ -29,7 +49,9 @@ export const outcomeNote = (result: unknown): string | undefined => {
    const
       summary = Object.entries(counts).map(([sev, n]) => `${n} ${sev}`).join(", "),
       text = firstText(first)
-   return `OperationOutcome: ${summary}${text ? ` — ${text}` : ""}`
+   return messages.outcomeNote
+      .replace("{summary}", summary)
+      .replace("{detail}", text ? ` — ${text}` : "")
 }
 
 /**
@@ -44,20 +66,6 @@ export const fatalOutcome = (result: unknown): string | undefined => {
    const bad = (r.issue as Record<string, unknown>[]).filter((i) => i?.severity === "fatal" || i?.severity === "error")
    if (!bad.length) return undefined
    const text = firstText(bad.find((i) => typeof i.diagnostics === "string" || typeof i.details === "object"))
-   return `FHIR server returned a ${bad.length > 1 ? "set of errors" : "fatal error"}${text ? `: ${text}` : ""}`
-}
-
-const collect = (oo: Record<string, unknown>, into: Record<string, unknown>[]): void => {
-   Array.isArray(oo.issue) &&
-      (oo.issue as Record<string, unknown>[]).forEach((i) => i && typeof i === "object" && into.push(i))
-}
-
-const firstText = (issue: Record<string, unknown> | undefined): string | undefined => {
-   if (!issue) return undefined
-   const
-      diag = typeof issue.diagnostics === "string" ? issue.diagnostics : undefined,
-      details = issue.details as Record<string, unknown> | undefined,
-      detailText = typeof details?.text === "string" ? details.text : undefined,
-      text = (diag ?? detailText)?.trim()
-   return text ? (text.length > 160 ? `${text.slice(0, 157)}...` : text) : undefined
+   return (bad.length > 1 ? messages.outcomeErrors : messages.outcomeFatal)
+      .replace("{detail}", text ? `: ${text}` : "")
 }

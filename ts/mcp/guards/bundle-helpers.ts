@@ -1,4 +1,6 @@
-import messages from "../../../config/messages/bundle.json" with { type: "json" }
+import { loadMessages } from "../../config/text.ts"
+
+const messages = loadMessages("bundle")
 
 /** Set of write-type Bundle entry actions. */
 export const WRITE_ACTIONS = new Set<ToolAction>(["create", "update", "patch", "delete"])

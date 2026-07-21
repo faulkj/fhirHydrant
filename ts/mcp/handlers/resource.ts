@@ -1,4 +1,4 @@
-import messages from "../../../config/messages/core.json" with { type: "json" }
+import { loadMessages } from "../../config/text.ts"
 import { log } from "../../log.ts"
 import { scopeActions } from "../../fhir/auth/scopes.ts"
 import { getEffectiveScope } from "../authz/context.ts"
@@ -8,6 +8,8 @@ import { checkRuntimeCapability } from "../validation.ts"
 import { validateResourceRequest } from "../guards/request.ts"
 import { isWriteOp, executeWrite } from "./write.ts"
 import { executeRead } from "./read-response.ts"
+
+const messages = loadMessages("core")
 
 /** Returns an async MCP tool handler bound to the given resource definition (captured generation). */
 export const makeHandler =
@@ -26,7 +28,7 @@ export const makeHandler =
       if (!scopeAllowed.has(scopeAction as ToolAction)) {
          log.debug(`🔑 ${def.resource}.${op} scope blocked — not permitted by granted scopes`)
          emitAudit({ ts: new Date().toISOString(), tool: toolName, resource: def.resource, operation: op, status: "blocked", durationMs: auditTime(t0), scopeBlocked: true })
-         return { content: [{ type: "text" as const, text: `🔑 ${op} not permitted by granted scopes for ${def.resource}` }], isError: true }
+         return { content: [{ type: "text" as const, text: messages.scopeDeniedResource.replace("{op}", op).replace("{resource}", def.resource) }], isError: true }
       }
 
       if (isWriteOp(op)) return executeWrite(toolName, def, op, args, t0, guard.parsedBody)

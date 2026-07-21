@@ -1,4 +1,4 @@
-import messages from "../../../config/messages/write.json" with { type: "json" }
+import { loadMessages } from "../../config/text.ts"
 import { config } from "../../config/index.ts"
 import { log } from "../../log.ts"
 import { createFhirClient } from "../../fhir/auth/client.ts"
@@ -11,6 +11,8 @@ import { serializeEnvelope } from "../../fhir/transform/serialize.ts"
 import { serverValidate } from "./write-validate.ts"
 
 const
+   messages = loadMessages("write"),
+   coreMessages = loadMessages("core"),
    WRITE_OPS = new Set<WriteAction>(["create", "update", "patch", "delete"]),
    SERVER_VALIDATE_OPS = new Set<WriteAction>(["create", "update"]),
 
@@ -66,7 +68,7 @@ export const executeWrite = async (
 
       const resolved = resolveResponseMode(extractResponseMode(args), undefined)
       if (!resolved)
-         return { content: [{ type: "text" as const, text: "Invalid responseMode — must be \"compact\" or \"full\"" }], isError: true }
+         return { content: [{ type: "text" as const, text: coreMessages.invalidResponseMode }], isError: true }
 
       log.info(`🔥 ${logTag} → ${op} ${def.resource}${id ? '/' + id : ''}`)
       const result = await withRetry(`${def.resource} ${op}`, (signal) => {

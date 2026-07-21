@@ -443,8 +443,7 @@ different version.
 
 ## Customizing Tools And Messages
 
-Most of `config/` is customizable without source changes (the exception is
-`messages/*.json`, which are compiled in — see below).
+Everything under `config/` is customizable without source changes.
 
 Config is resolved as a **partial overlay**: for each file, a `./config/<file>`
 in the current working directory (if present) overrides the packaged default,
@@ -452,23 +451,35 @@ and anything you omit falls back to the built-in default. So npm installs work
 out of the box, and to customize you drop a `./config` folder next to where you
 launch the server containing **only** the files you want to change.
 
-- A file you provide (e.g. `./config/search-controls.json`) overrides just that
-  packaged file; same for a resource of the same name (e.g.
-  `./config/resources/patient.json` overrides the built-in Patient).
-- A new resource file (e.g. `./config/resources/myresource.json`) adds a tool.
-- The overlay can override and add, but **cannot remove** a packaged resource. To
-  ship a strictly minimal catalog, remove the packaged `config/resources/` files
-  (see the compose example).
-- `messages/*.json` are compiled in and are not overlayable at runtime.
+There are two overlay granularities:
+
+- **Whole-file** (`resources/*.json`, `operations.json`, `search-controls.json`,
+  `core-tools.json`, `instructions/*`): a file you provide replaces the packaged
+  file entirely. A new resource file (e.g. `./config/resources/myresource.json`)
+  adds a tool. The overlay can override and add, but **cannot remove** a packaged
+  resource — to ship a strictly minimal catalog, remove the packaged
+  `config/resources/` files (see the compose example).
+- **Per-key** (`messages/*.json`): a
+  local file overrides only the individual keys it contains; every other key
+  falls back to the packaged default. So you can retune a single description or
+  message without copying the whole file. Unknown keys, empty values, and
+  malformed JSON **fail fast at startup** to catch typos.
+
+`messages/*.json` files are read once at process startup. Changing them requires
+a server restart (and, for tool schemas or instructions, a client reconnect) to
+take effect. Development hot reload for resources, search controls, and
+operations is described below.
 
 | File | Purpose |
 | --- | --- |
 | `resources/*.json` | FHIR resource tools (one file per resource): search params, direct-read behavior, and `requireOneOf` rules |
-| `operations.json` | Named operation catalog for `operate` |
-| `search-controls.json` | Descriptions for `_count`, `_sort`, `_summary`, `_elements`, `_include`, `_revinclude`, `fhirpath`, `responseMode`, `maxResults`, and `prefetch` |
+| `operations.json` | Named operation catalog for `operate` (per-operation descriptions and notes) |
+| `search-controls.json` | Descriptions for `_count`, `_sort`, `_summary`, `_elements`, `_include`, `_revinclude`, `_lastUpdated`, `fhirpath`, `responseMode`, `maxResults`, and `prefetch` |
+| `messages/output-schema.json` | Descriptions for every tool `outputSchema` field (per-key overlay) |
+| `messages/input-schema.json` | Descriptions for generated resource input params (`_id`, `_vid`, `_since`, `_at`, `action`, `body`) and the `operate` tool's title and params (per-key overlay) |
 | `instructions/manifest.json` | Ordered list of instruction fragments to compose, each with an optional `when` gate (`terminology`, `writes`, `operations`, `bundle`). Custom builds reorder, add, or remove sections by editing this file. |
 | `instructions/*.md` | Instruction fragments referenced by the manifest. Gated sections are included only when their feature is enabled; the `{{OPERATIONS_LIST}}` token is replaced with the live operation catalog. |
-| `messages/*.json` | User-facing messages, errors, and response notes (split by domain: core, write, operations, terminology, bundle) |
+| `messages/*.json` | User-facing messages, errors, and response notes (per-key overlay, split by domain: core, write, operations, terminology, bundle, artifact) |
 | `core-tools.json` | Built-in tool descriptions and param hints |
 
 ### Resource Definition Schema

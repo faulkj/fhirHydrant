@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/server"
 import type { z } from "zod"
-import messages from "../../../config/messages/terminology.json" with { type: "json" }
+import { loadMessages } from "../../config/text.ts"
 import { log } from "../../log.ts"
 import { formatFhirError } from "../../fhir/utils.ts"
 import { emitAudit, auditTime, errorStatus } from "../../audit.ts"
@@ -10,6 +10,7 @@ import { readOnlyAnnotations } from "../annotations.ts"
 import { codeSearchOutputSchema } from "../output.ts"
 
 const
+   messages = loadMessages("terminology"),
    text = (s: string) => ({ type: "text" as const, text: s }),
 
    toResults = (page: string[]): Array<{ code: string, display: string }> =>

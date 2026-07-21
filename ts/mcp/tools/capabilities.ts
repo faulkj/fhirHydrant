@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/server"
 import type { z } from "zod"
-import messages from "../../../config/messages/core.json" with { type: "json" }
+import { loadMessages } from "../../config/text.ts"
 import { fetchMetadata, getCapabilitySummary } from "../../fhir/model/metadata.ts"
 import { getDefinitions } from "../../fhir/model/definitions.ts"
 import { getTokenResponse } from "../../fhir/auth/auth.ts"
@@ -13,6 +13,8 @@ import { getEnabledActions } from "../validation.ts"
 import { getEnabledOperations, getSkippedOperations } from "../registry/operations.ts"
 import { readOnlyAnnotations } from "../annotations.ts"
 import { capabilitiesOutputSchema } from "../output.ts"
+
+const messages = loadMessages("core")
 
 /** Registers the capabilities tool for querying the FHIR server's CapabilityStatement. */
 export const addCapabilities = (

@@ -1,10 +1,12 @@
 import { config } from "../../config/index.ts"
+import { loadMessages } from "../../config/text.ts"
 import { rawFhirRequest } from "../auth/client.ts"
 import { drainBody, decodeBase64, asUtf8, checksum } from "./body.ts"
 import { preserveMime, baseType, isTextualType, resolveFilename } from "./media.ts"
 import { outcomeNote } from "../transform/outcomes.ts"
 
 const
+   messages = loadMessages("artifact"),
    JSON_TYPE = /[/+]json\b/i,
 
    outcomeText = (data: unknown): string | undefined => outcomeNote(data),
@@ -19,7 +21,7 @@ const
    buildArtifact = (bytes: Uint8Array, mime: string, disposition: string | null, status: number, source: ArtifactSource): FhirArtifact => {
       const
          text = isTextualType(mime) ? asUtf8(bytes) : undefined,
-         notes = isTextualType(mime) && text === undefined ? ["Content declared textual but bytes are not valid UTF-8; returned as binary."] : [],
+         notes = isTextualType(mime) && text === undefined ? [messages.artifactInvalidUtf8Note] : [],
          sum = checksum(bytes)
       return {
          bytes, mimeType: mime, isText: text !== undefined, filename: resolveFilename(disposition, mime, source),

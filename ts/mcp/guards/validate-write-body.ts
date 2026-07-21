@@ -1,4 +1,6 @@
-import messages from "../../../config/messages/write.json" with { type: "json" }
+import { loadMessages } from "../../config/text.ts"
+
+const messages = loadMessages("write")
 
 /**
  * Pure client-side structural validation for write payloads. No config/audit/log

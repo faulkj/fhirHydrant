@@ -1,4 +1,4 @@
-import messages from "../../../config/messages/operations.json" with { type: "json" }
+import { loadMessages } from "../../config/text.ts"
 import { config } from "../../config/index.ts"
 import { getResourceMeta, isMetadataAvailable } from "../../fhir/model/metadata.ts"
 import { scopeAllowsResource } from "../../fhir/auth/scopes.ts"
@@ -6,6 +6,7 @@ import { getTokenResponse } from "../../fhir/auth/auth.ts"
 import { parseGrantedScopes } from "../../fhir/auth/scopes.ts"
 
 const
+   messages = loadMessages("operations"),
    RESOURCE_TYPE_RE = /^[A-Z][a-zA-Z]+$/,
    FHIR_ID_RE = /^[A-Za-z0-9\-.]{1,64}$/
 
@@ -34,14 +35,14 @@ export const validateOperateArgs = (
    const resource = resourceType ?? op.resource!
 
    if (!RESOURCE_TYPE_RE.test(resource))
-      return err(`Invalid resourceType "${resource}" — must be a valid FHIR resource type name`)
+      return err(messages.operationInvalidResourceType.replace("{resource}", resource))
 
    if (id && !FHIR_ID_RE.test(id))
-      return err(`Invalid id "${id}" — must be a valid FHIR resource id (1-64 alphanumeric/dash/dot characters)`)
+      return err(messages.operationInvalidId.replace("{id}", id))
 
    if (!op.resource) {
       if (isMetadataAvailable() && config.metadataMode === "strict" && !getResourceMeta(resource))
-         return err(`${resource} is not available on this FHIR server (not in /metadata)`)
+         return err(messages.operationResourceUnavailable.replace("{resource}", resource))
       const scopeMap = parseGrantedScopes(getTokenResponse().scope)
       if (scopeMap.size > 0 && !scopeAllowsResource(resource, scopeMap))
          return err((messages.operationScopeBlocked as string)

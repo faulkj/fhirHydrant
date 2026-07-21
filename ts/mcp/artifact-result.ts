@@ -1,11 +1,13 @@
 import { checksum } from "../fhir/response/body.ts"
+import { loadMessages } from "../config/text.ts"
 
 const
-   ARTIFACT_ERROR: Record<ArtifactFailureCode, string> = {
-      "over-limit": "Artifact exceeds the configured FHIR_MAX_ARTIFACT_MB limit and was not returned. Increase the limit or retrieve a smaller resource.",
-      "malformed-base64": "The FHIR Binary contained invalid or non-canonical base64 data and could not be decoded.",
-      "unreadable-body": "The response body could not be read.",
-      "unsupported-body": "The response body type is not supported.",
+   messages = loadMessages("artifact"),
+   ERROR_KEY: Record<ArtifactFailureCode, keyof typeof messages> = {
+      "over-limit": "artifactOverLimit",
+      "malformed-base64": "artifactMalformedBase64",
+      "unreadable-body": "artifactUnreadableBody",
+      "unsupported-body": "artifactUnsupportedBody",
    },
 
    artifactUri = (a: FhirArtifact): string => {
@@ -16,13 +18,13 @@ const
    metadataText = (env: ArtifactEnvelope): string => {
       const a = env.artifact
       return [
-         `FHIR artifact (${a.mimeType}, ${a.byteCount} bytes)`,
-         `filename: ${a.filename}`,
-         a.fhirId ? `id: ${a.fhirId}` : undefined,
-         `uri: ${a.uri}`,
-         `sha256: ${a.checksum}`,
+         messages.artifactHeading.replace("{mimeType}", a.mimeType).replace("{byteCount}", String(a.byteCount)),
+         messages.artifactFilenameLine.replace("{filename}", a.filename),
+         a.fhirId ? messages.artifactIdLine.replace("{fhirId}", a.fhirId) : undefined,
+         messages.artifactUriLine.replace("{uri}", a.uri),
+         messages.artifactChecksumLine.replace("{checksum}", a.checksum),
          ...env.notes,
-         "The content is attached as an MCP embedded resource; it is not duplicated here.",
+         messages.artifactAttachedNote,
       ].filter(Boolean).join("\n")
    }
 
@@ -59,6 +61,6 @@ export const artifactResult = (a: FhirArtifact) => {
 
 /** Maps a categorized artifact failure to a client-facing MCP error result. */
 export const artifactError = (code: ArtifactFailureCode, detail: string) => ({
-   content: [{ type: "text" as const, text: `${ARTIFACT_ERROR[code]} (${detail})` }],
+   content: [{ type: "text" as const, text: `${messages[ERROR_KEY[code]]} (${detail})` }],
    isError: true as const,
 })

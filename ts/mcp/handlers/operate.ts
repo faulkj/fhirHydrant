@@ -1,4 +1,5 @@
 import { config } from "../../config/index.ts"
+import { message } from "../../config/text.ts"
 import { log } from "../../log.ts"
 import { withRetry, formatFhirError } from "../../fhir/utils.ts"
 import { emitAudit, auditTime, errorStatus } from "../../audit.ts"
@@ -52,7 +53,7 @@ export const makeOperateHandler = (enabledOps: OperationDefinition[]) =>
             const parsed = JSON.parse(finalBody)
             if (parsed.resourceType !== "Parameters" || !Array.isArray(parsed.parameter)) {
                emitAudit({ ts: new Date().toISOString(), tool: "operate", resource, operation: op.auditOperation as AuditEvent["operation"], status: "blocked", durationMs: auditTime(t0), validationBlocked: true })
-               return { content: [{ type: "text" as const, text: "$match body must be a FHIR Parameters resource with a parameter array" }], isError: true }
+               return { content: [{ type: "text" as const, text: message("operations", "operationMatchBodyInvalid") }], isError: true }
             }
             if (!parsed.parameter.some((p: Record<string, unknown>) => p.name === "onlyCertainMatches"))
                parsed.parameter.push({ name: "onlyCertainMatches", valueBoolean: true })
@@ -63,7 +64,7 @@ export const makeOperateHandler = (enabledOps: OperationDefinition[]) =>
       const resolved = resolveResponseMode(explicit, undefined)
       if (!resolved) {
          emitAudit({ ts: new Date().toISOString(), tool: "operate", resource, operation: op.auditOperation as AuditEvent["operation"], status: "error", durationMs: auditTime(t0), httpStatus: 200 })
-         return { content: [{ type: "text" as const, text: "Invalid responseMode — must be \"compact\" or \"full\"" }], isError: true }
+         return { content: [{ type: "text" as const, text: message("core", "invalidResponseMode") }], isError: true }
       }
       const
          { effectiveMode: rawMode, wasDefaulted } = resolved,
@@ -87,7 +88,7 @@ export const makeOperateHandler = (enabledOps: OperationDefinition[]) =>
             return artifactError(normalized.code, normalized.message)
          }
          if (normalized.kind === "artifact") {
-            if (fhirpathExpr || explicit) normalized.artifact.notes.push("Artifact response — JSON-only shaping arguments ignored.")
+            if (fhirpathExpr || explicit) normalized.artifact.notes.push(message("artifact", "artifactIgnoredShapingGeneric"))
             log.debug(`🟢 ${logTag} OK (artifact ${normalized.artifact.byteCount}B ${normalized.artifact.mimeType}, ${auditTime(t0)}ms)`)
             emitAudit({ ts: new Date().toISOString(), tool: "operate", resource, operation: op.auditOperation as AuditEvent["operation"], status: "ok", durationMs: auditTime(t0), httpStatus: normalized.artifact.httpStatus })
             return artifactResult(normalized.artifact)

@@ -6,5 +6,10 @@
    "bundleEntryBlocked": "Entry {index}: {reason}",
    "bundleEntryUnsupported": "Entry {index}: unsupported request shape — only relative REST paths (Resource/id or Resource?query) are allowed in v1",
    "bundleWritesDisabled": "Entry {index}: write operation \"{action}\" requires FHIR_BUNDLE_WRITES_ENABLED=true",
-   "bundleWriteNotAllowed": "Entry {index}: write operation \"{action}\" is not in FHIR_WRITE_CAPABILITIES"
+   "bundleWriteNotAllowed": "Entry {index}: write operation \"{action}\" is not in FHIR_WRITE_CAPABILITIES",
+   "bundleBodyRequired": "body parameter is required and must be a JSON string",
+   "bundleSummaryReads": "{type}: {reads} read{readPlural}, {writes} write{writePlural} ({resourceTypes})",
+   "bundleSummaryEmpty": "{type}: empty Bundle",
+   "bundleNotBundleDetail": "resourceType is not Bundle",
+   "bundleEntryScopeBlocked": "\"{action}\" not permitted by granted scopes for {resourceType}"
 }

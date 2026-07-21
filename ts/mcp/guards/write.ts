@@ -1,8 +1,10 @@
-import messages from "../../../config/messages/write.json" with { type: "json" }
+import { loadMessages } from "../../config/text.ts"
 import { config } from "../../config/index.ts"
 import { log } from "../../log.ts"
 import { getEnabledActions } from "../validation.ts"
 import { validateWriteBody } from "./validate-write-body.ts"
+
+const messages = loadMessages("write")
 
 /** Validates a write-action request: checks capability gates, _id, body presence/shape, and resourceType. */
 export const validateWriteRequest = (
@@ -38,7 +40,7 @@ export const validateWriteRequest = (
             return block(messages.writePatchInvalidFormat, action, { validationBlocked: true })
       } else {
          if (!parsedBody || typeof parsedBody !== "object" || Array.isArray(parsedBody))
-            return block(messages.writeInvalidBody.replace("{error}", "expected a JSON object"), action, { validationBlocked: true })
+            return block(messages.writeInvalidBody.replace("{error}", messages.writeExpectedObjectDetail), action, { validationBlocked: true })
          const body = parsedBody as Record<string, unknown>
          if (body.resourceType !== def.resource)
             return block(messages.writeResourceTypeMismatch

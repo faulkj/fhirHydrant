@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/server"
 import type { z } from "zod"
-import messages from "../../../config/messages/terminology.json" with { type: "json" }
+import { loadMessages } from "../../config/text.ts"
 import { config } from "../../config/index.ts"
 import { log } from "../../log.ts"
 import { withRetry, formatFhirError } from "../../fhir/utils.ts"
@@ -8,6 +8,8 @@ import { emitAudit, auditTime, errorStatus } from "../../audit.ts"
 import { resolveSystem, txFetch } from "../../fhir/terminology/systems.ts"
 import { readOnlyAnnotations } from "../annotations.ts"
 import { terminologyLookupOutputSchema } from "../output.ts"
+
+const messages = loadMessages("terminology")
 
 /** Registers the terminology_lookup tool for CodeSystem/$lookup queries */
 export const addTerminologyLookup = (

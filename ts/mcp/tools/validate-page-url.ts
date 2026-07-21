@@ -1,6 +1,8 @@
-import messages from "../../../config/messages/core.json" with { type: "json" }
+import { loadMessages } from "../../config/text.ts"
 import { config } from "../../config/index.ts"
 import { isChunkUrl } from "../../fhir/transform/bundle-chunks.ts"
+
+const messages = loadMessages("core")
 
 /** Validates a pagination URL against the configured FHIR server origin and path prefixes. Chunk URLs bypass validation. */
 export const validatePageUrl = (url: string): string => {

@@ -1,0 +1,22 @@
+{
+   "resource.directId": "{resource} resource ID — performs direct read when provided alone",
+   "resource.vid": "Version id for vread — use with action=vread and _id",
+   "resource.since": "Only include versions created at or after this date/dateTime (history)",
+   "resource.at": "Only include versions current at this instant (history)",
+   "resource.body": "Full FHIR resource JSON for create/update, or JSON Patch array (RFC 6902) for patch",
+   "resource.action": "Operation: {actions}. {hints}.",
+   "resource.actionHintDefault": "Omit for search/read",
+   "resource.actionHintVread": "vread requires _id+_vid",
+   "resource.actionHintHistory": "history optionally takes _id for instance history",
+   "operate.title": "Execute Operation",
+   "operate.descriptionPrefix": "Invoke a FHIR named operation. Available operations: ",
+   "operate.descriptionSuffix": ". Call capabilities for full parameter details.",
+   "operate.anyResource": "any resource",
+   "operate.operation": "Operation catalog key (e.g. everything, lastn, validate, docref). Leading $ is optional.",
+   "operate.resourceType": "FHIR resource type — required for polymorphic operations like $validate",
+   "operate.id": "Resource ID — required for instance-level operations like $everything",
+   "operate.params": "Operation parameters as key-value pairs",
+   "operate.body": "FHIR JSON body for POST operations (e.g. resource to validate)",
+   "operate.fhirpath": "FHIRPath expression for client-side projection of the response",
+   "operate.responseMode": "Response shape: compact or full"
+}

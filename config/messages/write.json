@@ -18,5 +18,6 @@
    "writeActionCreate": "Use action=create with body containing full FHIR {resourceType} JSON to create a new resource.",
    "writeActionUpdate": "Use action=update with _id and body containing the complete FHIR {resourceType} JSON to replace an existing resource.",
    "writeActionPatch": "Use action=patch with _id and body containing a JSON Patch array (RFC 6902) to partially update a {resourceType}.",
-   "writeActionDelete": "Use action=delete with _id to delete a {resourceType}."
+   "writeActionDelete": "Use action=delete with _id to delete a {resourceType}.",
+   "writeExpectedObjectDetail": "expected a JSON object"
 }

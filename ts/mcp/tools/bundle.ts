@@ -1,6 +1,7 @@
 import type { McpServer, RegisteredTool } from "@modelcontextprotocol/server"
 import type { z } from "zod"
 import { config } from "../../config/index.ts"
+import { loadMessages } from "../../config/text.ts"
 import { log } from "../../log.ts"
 import { createFhirClient } from "../../fhir/auth/client.ts"
 import { withRetry, formatFhirError } from "../../fhir/utils.ts"
@@ -12,6 +13,10 @@ import { batchStatusNote } from "../../fhir/transform/response-notes.ts"
 import { validateBundleRequest } from "../guards/bundle.ts"
 import { readOnlyAnnotations, writeAnnotations } from "../annotations.ts"
 import { fhirOutputSchema } from "../output.ts"
+
+const
+   coreMessages = loadMessages("core"),
+   bundleMessages = loadMessages("bundle")
 
 /** Registers the bundle tool on the MCP server; returns its handle. */
 export const addBundle = (
@@ -33,7 +38,7 @@ export const addBundle = (
 
          if (!rawBody) {
             emitAudit({ ts: new Date().toISOString(), tool: "bundle", operation: "bundle", status: "blocked", durationMs: auditTime(t0), validationBlocked: true })
-            return { content: [{ type: "text" as const, text: "body parameter is required and must be a JSON string" }], isError: true }
+            return { content: [{ type: "text" as const, text: bundleMessages.bundleBodyRequired }], isError: true }
          }
 
          const guard = validateBundleRequest(rawBody)
@@ -48,7 +53,7 @@ export const addBundle = (
          const resolved = resolveResponseMode(explicit, undefined)
          if (!resolved) {
             emitAudit({ ts: new Date().toISOString(), tool: "bundle", operation: "bundle", status: "error", durationMs: auditTime(t0), bundleType: type, bundleEntryCount: summary.readCount + summary.writeCount, bundleReadCount: summary.readCount, bundleWriteCount: summary.writeCount })
-            return { content: [{ type: "text" as const, text: "Invalid responseMode — must be \"compact\" or \"full\"" }], isError: true }
+            return { content: [{ type: "text" as const, text: coreMessages.invalidResponseMode }], isError: true }
          }
          log.info(`🔥 ${logTag} → ${summary.readCount}R ${summary.writeCount}W`)
 
@@ -73,8 +78,14 @@ export const addBundle = (
                effectiveMode = wasDefaulted && !config.responseMode ? "full" as ResponseMode : rawMode,
                entryCount = summary.readCount + summary.writeCount,
                summaryNote = entryCount > 0
-                  ? `${type}: ${summary.readCount} read${summary.readCount !== 1 ? "s" : ""}, ${summary.writeCount} write${summary.writeCount !== 1 ? "s" : ""} (${summary.resourceTypes.join(", ")})`
-                  : `${type}: empty Bundle`,
+                  ? bundleMessages.bundleSummaryReads
+                     .replace("{type}", type)
+                     .replace("{reads}", String(summary.readCount))
+                     .replace("{readPlural}", summary.readCount !== 1 ? "s" : "")
+                     .replace("{writes}", String(summary.writeCount))
+                     .replace("{writePlural}", summary.writeCount !== 1 ? "s" : "")
+                     .replace("{resourceTypes}", summary.resourceTypes.join(", "))
+                  : bundleMessages.bundleSummaryEmpty.replace("{type}", type),
                pipeline = applyResponsePipeline({
                   result, bundleResponse: true, fhirpathExpr, effectiveMode, wasDefaulted,
                   extraNotes: [warning, summaryNote, batchStatusNote(result)].filter((n): n is string => !!n),

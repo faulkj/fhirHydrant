@@ -1,0 +1,15 @@
+{
+   "artifactOverLimit": "Artifact exceeds the configured FHIR_MAX_ARTIFACT_MB limit and was not returned. Increase the limit or retrieve a smaller resource.",
+   "artifactMalformedBase64": "The FHIR Binary contained invalid or non-canonical base64 data and could not be decoded.",
+   "artifactUnreadableBody": "The response body could not be read.",
+   "artifactUnsupportedBody": "The response body type is not supported.",
+   "artifactHeading": "FHIR artifact ({mimeType}, {byteCount} bytes)",
+   "artifactFilenameLine": "filename: {filename}",
+   "artifactIdLine": "id: {fhirId}",
+   "artifactUriLine": "uri: {uri}",
+   "artifactChecksumLine": "sha256: {checksum}",
+   "artifactAttachedNote": "The content is attached as an MCP embedded resource; it is not duplicated here.",
+   "artifactInvalidUtf8Note": "Content declared textual but bytes are not valid UTF-8; returned as binary.",
+   "artifactIgnoredShaping": "Artifact response — JSON-only shaping arguments ignored: {ignored}.",
+   "artifactIgnoredShapingGeneric": "Artifact response — JSON-only shaping arguments ignored."
+}

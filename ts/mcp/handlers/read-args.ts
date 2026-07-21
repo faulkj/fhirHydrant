@@ -1,3 +1,7 @@
+import { loadMessages } from "../../config/text.ts"
+
+const messages = loadMessages("artifact")
+
 /** Extracts and removes the maxResults arg, returning a positive integer or undefined. */
 export const extractMaxResults = (args: Record<string, unknown>): number | undefined => {
    const raw = args["maxResults"]
@@ -25,5 +29,5 @@ export const ignoredShapingNote = (
       !prefetchEnabled ? "prefetch" : undefined,
       maxResults !== undefined ? "maxResults" : undefined,
    ].filter(Boolean)
-   return ignored.length ? `Artifact response — JSON-only shaping arguments ignored: ${ignored.join(", ")}.` : undefined
+   return ignored.length ? messages.artifactIgnoredShaping.replace("{ignored}", ignored.join(", ")) : undefined
 }

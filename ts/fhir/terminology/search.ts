@@ -1,4 +1,5 @@
 import { config } from "../../config/index.ts"
+import { loadMessages } from "../../config/text.ts"
 import { log } from "../../log.ts"
 import { withRetry } from "../utils.ts"
 import { txFetch } from "./systems.ts"
@@ -6,6 +7,7 @@ import { LOINC_FETCH_SIZE, cacheKey, cacheGet, cacheSet } from "./cache.ts"
 import { scoreLoinc, scoreSnomed } from "./score.ts"
 
 const
+   messages = loadMessages("terminology"),
    LP_LA = /^L[AP]\d/,
    disp = (item: string) => item.split(" - ").slice(1).join(" - "),
 
@@ -57,7 +59,7 @@ export const loincSearch = async (vsUrl: string, filter: string, offset: number,
             const code = String(c.code ?? "")
             if (LP_LA.test(code) || entry.codes.has(code)) continue
             entry.codes.add(code)
-            entry.items.push(`${code} - ${c.display ?? "(no display)"}`)
+            entry.items.push(`${code} - ${c.display ?? messages.terminologyNoDisplay}`)
          }
 
          if (contains.length < LOINC_FETCH_SIZE) entry.exhausted = true
@@ -108,7 +110,7 @@ export const snomedSearch = async (vsUrl: string, filter: string, offset: number
       contains = expandContains(raw),
       exp = (raw as Record<string, unknown>).expansion as Record<string, unknown> | undefined,
       total = typeof exp?.total === "number" ? exp!.total as number : undefined,
-      page = contains.map(c => `${c.code} - ${c.display ?? "(no display)"}`)
+      page = contains.map(c => `${c.code} - ${c.display ?? messages.terminologyNoDisplay}`)
          .sort((a, b) => scoreSnomed(disp(b), filter) - scoreSnomed(disp(a), filter))
 
    return { page, total }

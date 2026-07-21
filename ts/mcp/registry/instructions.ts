@@ -1,9 +1,12 @@
 import { existsSync, readFileSync } from "node:fs"
 import { config } from "../../config/index.ts"
+import { loadMessages } from "../../config/text.ts"
 import { log, buildLog } from "../../log.ts"
 import { resolveConfigFile } from "../../fhir/model/config-paths.ts"
 import { getEnabledOperations } from "./operations.ts"
 import { isBundleEnabled } from "./bundle.ts"
+
+const messages = loadMessages("core")
 
 /**
  * Composes the server instructions from the fragments listed in
@@ -76,10 +79,11 @@ const
 
    opsList = (ops: OperationDefinition[]): string =>
       ops
-         .map((o) => {
-            const
-               target = o.resource ?? "any resource",
-               summary = o.description.split(/(?<=[.!?])\s/)[0]
-            return `- **${o.operation}** — ${target} ${o.level.join("/")}-level ${o.method}. ${summary}`
-         })
+         .map((o) =>
+            messages.instructionsOpEntry
+               .replace("{operation}", o.operation)
+               .replace("{target}", o.resource ?? messages.instructionsAnyResource)
+               .replace("{level}", o.level.join("/"))
+               .replace("{method}", o.method)
+               .replace("{summary}", o.description.split(/(?<=[.!?])\s/)[0]))
          .join("\n")

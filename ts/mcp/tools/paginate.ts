@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/server"
 import type { z } from "zod"
-import messages from "../../../config/messages/core.json" with { type: "json" }
+import { loadMessages } from "../../config/text.ts"
 import { log } from "../../log.ts"
 import { emitAudit, auditTime } from "../../audit.ts"
 import { isChunkUrl, retrieveChunk } from "../../fhir/transform/bundle-chunks.ts"
@@ -12,17 +12,20 @@ import { readOnlyAnnotations } from "../annotations.ts"
 import { fhirOutputSchema } from "../output.ts"
 import { executeRead } from "../handlers/read-response.ts"
 
-const paginateScopeDenied = (validatedUrl: string): string | undefined => {
-   const decision = getDecision()
-   if (!decision) return undefined
-   const resource = pageUrlResource(validatedUrl)
-   if (!resource)
-      return decision.admin ? undefined : "🔑 pagination of system-level endpoints requires the Admin role"
-   const allowed = scopeActions(resource, getEffectiveScope())
-   return allowed.has("search") || allowed.has("read")
-      ? undefined
-      : `🔑 paginate not permitted by granted scopes for ${resource}`
-}
+const
+   messages = loadMessages("core"),
+
+   paginateScopeDenied = (validatedUrl: string): string | undefined => {
+      const decision = getDecision()
+      if (!decision) return undefined
+      const resource = pageUrlResource(validatedUrl)
+      if (!resource)
+         return decision.admin ? undefined : messages.scopeDeniedPaginateSystem
+      const allowed = scopeActions(resource, getEffectiveScope())
+      return allowed.has("search") || allowed.has("read")
+         ? undefined
+         : messages.scopeDeniedPaginate.replace("{resource}", resource)
+   }
 
 /** Registers the paginate tool for fetching next-page Bundle results. */
 export const addPaginate = (
@@ -40,7 +43,7 @@ export const addPaginate = (
                const envelope = retrieveChunk(validatedUrl)
                if (!envelope) {
                   emitAudit({ ts: new Date().toISOString(), tool: "paginate", operation: "paginate", status: "error", durationMs: auditTime(t0) })
-                  return { content: [{ type: "text" as const, text: (messages as Record<string, string>)["paginationChunkExpired"] ?? "Chunk expired. Re-fetch the original server page URL." }], isError: true }
+                  return { content: [{ type: "text" as const, text: messages.paginationChunkExpired }], isError: true }
                }
                log.debug("🟢 Paginate (chunk)")
                emitAudit({ ts: new Date().toISOString(), tool: "paginate", operation: "paginate", status: "ok", durationMs: auditTime(t0) })

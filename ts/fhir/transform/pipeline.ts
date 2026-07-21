@@ -1,15 +1,18 @@
-import messages from "../../../config/messages/core.json" with { type: "json" }
+import { loadMessages } from "../../config/text.ts"
 import { applyFhirPath } from "./fhirpath.ts"
 import { compact } from "./compact.ts"
 import { bundleStats } from "./response-notes.ts"
 import { outcomeNote, fatalOutcome } from "./outcomes.ts"
 import { finalizeEnvelope } from "./finalize.ts"
 
-const detectResourceType = (data: unknown): string | undefined => {
-   if (!data || typeof data !== "object" || Array.isArray(data)) return undefined
-   const rt = (data as Record<string, unknown>).resourceType
-   return typeof rt === "string" ? rt : undefined
-}
+const
+   messages = loadMessages("core"),
+
+   detectResourceType = (data: unknown): string | undefined => {
+      if (!data || typeof data !== "object" || Array.isArray(data)) return undefined
+      const rt = (data as Record<string, unknown>).resourceType
+      return typeof rt === "string" ? rt : undefined
+   }
 
 /** Builds the canonical response envelope from a FHIR result, applying FHIRPath, compact, notes, and byte limit. */
 export const applyResponsePipeline = (opts: PipelineOpts): PipelineResult | { error: string } => {

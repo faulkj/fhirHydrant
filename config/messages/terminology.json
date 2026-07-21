@@ -5,5 +5,6 @@
    "terminologySearchNoResults": "No matches found in {system} for \"{filter}\"",
    "terminologyNoMoreResults": "No more results in {system} for \"{filter}\" at offset {offset}",
    "terminologyInvalidOffset": "Invalid offset \"{offset}\" — must be a non-negative integer",
-   "terminologyError": "Terminology service error: {message}"
+   "terminologyError": "Terminology service error: {message}",
+   "terminologyNoDisplay": "(no display)"
 }

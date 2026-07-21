@@ -1,7 +1,9 @@
-import messages from "../../config/messages/core.json" with { type: "json" }
+import { loadMessages } from "../config/text.ts"
 import { config } from "../config/index.ts"
 import { isMetadataAvailable, getResourceMeta } from "../fhir/model/metadata.ts"
 import { scopeActions } from "../fhir/auth/scopes.ts"
+
+const messages = loadMessages("core")
 
 /** Returns actions available for a definition, considering write config, /metadata, and granted SMART scopes. */
 export const getEnabledActions = (

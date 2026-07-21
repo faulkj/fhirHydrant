@@ -27,5 +27,20 @@
    "vreadMissingVid": "vread action requires both _id and _vid",
    "vreadInvalidVid": "_vid value \"{value}\" is not a valid FHIR version id",
    "vreadNotAdvertised": "{resourceType} does not advertise vread interaction in /metadata",
-   "historyNotAdvertised": "{resourceType} does not advertise {form} history interaction in /metadata"
+   "historyNotAdvertised": "{resourceType} does not advertise {form} history interaction in /metadata",
+   "invalidResponseMode": "Invalid responseMode — must be \"compact\" or \"full\"",
+   "readRequiresId": "read action requires _id",
+   "scopeDeniedResource": "🔑 {op} not permitted by granted scopes for {resource}",
+   "scopeDeniedPaginate": "🔑 paginate not permitted by granted scopes for {resource}",
+   "scopeDeniedPaginateSystem": "🔑 pagination of system-level endpoints requires the Admin role",
+   "streamsUnsupported": "Server-initiated streams not supported in stateless mode",
+   "instructionsOpEntry": "- **{operation}** — {target} {level}-level {method}. {summary}",
+   "instructionsAnyResource": "any resource",
+   "outcomeNote": "OperationOutcome: {summary}{detail}",
+   "outcomeFatal": "FHIR server returned a fatal error{detail}",
+   "outcomeErrors": "FHIR server returned a set of errors{detail}",
+   "batchStatus": "status: {counts}",
+   "coalesceSummary": "Prefetched {pages} page{pagePlural} ({upstream} upstream → {returned} compact)",
+   "coalesceServerTotal": "server total={total}",
+   "coalesceStopped": "stopped: {reason}"
 }

@@ -1,10 +1,12 @@
-import messages from "../../../config/messages/bundle.json" with { type: "json" }
+import { loadMessages } from "../../config/text.ts"
 import { config } from "../../config/index.ts"
 import { getDefinitions } from "../../fhir/model/definitions.ts"
 import { isMetadataAvailable, getSystemInteractions, getResourceMeta } from "../../fhir/model/metadata.ts"
 import { getTokenResponse } from "../../fhir/auth/auth.ts"
 import { parseGrantedScopes, scopeActions } from "../../fhir/auth/scopes.ts"
 import { WRITE_ACTIONS, WRITE_INTERACTION, err, unsupported, blocked, resolveAction } from "./bundle-helpers.ts"
+
+const messages = loadMessages("bundle")
 
 /** Validates a raw Bundle body string against all preflight gates. */
 export const validateBundleRequest = (body: string): BundleGuardResult => {
@@ -15,7 +17,7 @@ export const validateBundleRequest = (body: string): BundleGuardResult => {
 
    const b = parsed as Record<string, unknown>
    if (b.resourceType !== "Bundle")
-      return err(messages.bundleInvalidBody.replace("{error}", "resourceType is not Bundle"))
+      return err(messages.bundleInvalidBody.replace("{error}", messages.bundleNotBundleDetail))
 
    const type = String(b.type ?? "").toLowerCase() as BundleType
    if (type !== "batch" && type !== "transaction")
@@ -88,7 +90,7 @@ export const validateBundleRequest = (body: string): BundleGuardResult => {
       if (!action) return unsupported(i)
 
       const allowed = scopeActions(resourceType, scopeMap)
-      if (!allowed.has(action)) return blocked(i, `"${action}" not permitted by granted scopes for ${resourceType}`)
+      if (!allowed.has(action)) return blocked(i, messages.bundleEntryScopeBlocked.replace("{action}", action).replace("{resourceType}", resourceType))
 
       const metaWarn = (...interactions: string[]) => {
          if (!isMetadataAvailable() || config.metadataMode === "off") return undefined

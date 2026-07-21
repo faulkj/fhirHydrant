@@ -3,6 +3,7 @@ import * as z from "zod"
 import { validateResources } from "./validate-definitions.ts"
 import { loadResourceFiles } from "./resource-files.ts"
 import { resolveConfigFile } from "./config-paths.ts"
+import { inputDescription } from "./input-descriptions.ts"
 import { config } from "../../config/index.ts"
 import { log } from "../../log.ts"
 
@@ -25,7 +26,7 @@ export const buildShape = (
       Object.entries(params).map(([key, desc]) => [key, z.string().optional().describe(desc)]),
    )
    if (supportsDirectRead && !shape["_id"]) {
-      shape["_id"] = z.string().optional().describe(`${resource} resource ID — performs direct read when provided alone`)
+      shape["_id"] = z.string().optional().describe(inputDescription("resource.directId").replace("{resource}", resource))
       log.warn(`📋 "${resource}": auto-injected _id for supportsDirectRead`)
    }
    return shape

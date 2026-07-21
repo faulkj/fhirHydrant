@@ -1,4 +1,6 @@
-import messages from "../../../config/messages/core.json" with { type: "json" }
+import { loadMessages } from "../../config/text.ts"
+
+const messages = loadMessages("core")
 
 /** Parses Bundle stats from a FHIR response — shared between response notes and audit. */
 export const bundleStats = (result: unknown, json: string): BundleStats | undefined => {
@@ -32,7 +34,7 @@ export const batchStatusNote = (result: unknown): string | undefined => {
          code = typeof resp?.status === "string" ? resp.status.split(" ")[0] : "unknown"
       counts[code] = (counts[code] ?? 0) + 1
    }
-   return `status: ${Object.entries(counts).map(([code, n]) => `${n}x${code}`).join(", ")}`
+   return messages.batchStatus.replace("{counts}", Object.entries(counts).map(([code, n]) => `${n}x${code}`).join(", "))
 }
 
 /** Builds a summary note for a coalesced multi-page fetch. */
@@ -40,10 +42,14 @@ export const coalesceNote = (
    pages: number, upstream: number, returned: number, hasMore: boolean, reason?: string, serverTotal?: number,
 ): string => {
    const parts = [
-      `Prefetched ${pages} page${pages > 1 ? "s" : ""} (${upstream} upstream → ${returned} compact)`,
-      serverTotal !== undefined ? `server total=${serverTotal}` : undefined,
-      reason ? `stopped: ${reason}` : undefined,
-      hasMore ? (messages as Record<string, string>)["coalescePartial"]?.replace("{returned}", String(returned)) : undefined,
+      messages.coalesceSummary
+         .replace("{pages}", String(pages))
+         .replace("{pagePlural}", pages > 1 ? "s" : "")
+         .replace("{upstream}", String(upstream))
+         .replace("{returned}", String(returned)),
+      serverTotal !== undefined ? messages.coalesceServerTotal.replace("{total}", String(serverTotal)) : undefined,
+      reason ? messages.coalesceStopped.replace("{reason}", reason) : undefined,
+      hasMore ? messages.coalescePartial.replace("{returned}", String(returned)) : undefined,
    ].filter(Boolean)
    return parts.join(". ")
 }

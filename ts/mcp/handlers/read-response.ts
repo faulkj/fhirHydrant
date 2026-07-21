@@ -1,4 +1,4 @@
-import messages from "../../../config/messages/core.json" with { type: "json" }
+import { loadMessages } from "../../config/text.ts"
 import { config } from "../../config/index.ts"
 import { log } from "../../log.ts"
 import { withRetry, formatFhirError } from "../../fhir/utils.ts"
@@ -12,6 +12,8 @@ import { normalizeFhirResponse } from "../../fhir/response/normalize.ts"
 import { artifactResult, artifactError } from "../artifact-result.ts"
 import { extractMaxResults, extractPrefetch, ignoredShapingNote } from "./read-args.ts"
 
+const messages = loadMessages("core")
+
 /** Shared FHIR fetch → transform → audit execution. Returns an MCP tool response. */
 export const executeRead = async (opts: ReadOpts) => {
    const
@@ -24,7 +26,7 @@ export const executeRead = async (opts: ReadOpts) => {
 
    const resolved = resolveResponseMode(explicit, !isBundle ? "unused" : undefined)
    if (!resolved)
-      return { content: [{ type: "text" as const, text: "Invalid responseMode — must be \"compact\" or \"full\"" }], isError: true }
+      return { content: [{ type: "text" as const, text: messages.invalidResponseMode }], isError: true }
    const { effectiveMode, wasDefaulted } = resolved
 
    let

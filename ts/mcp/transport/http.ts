@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { config } from "../../config/index.ts"
+import { loadMessages } from "../../config/text.ts"
 import { log } from "../../log.ts"
 import { withAuditContext } from "../../audit.ts"
 import { getTokenResponse } from "../../fhir/auth/auth.ts"
@@ -8,6 +9,8 @@ import { getRegisteredToolCount } from "../registry/resources.ts"
 import { handleAuthzRequest } from "../authz/http.ts"
 import { serveStatelessRequest, logMcpRequest } from "./serve-request.ts"
 import { applyMcpCors, logFailedRequest } from "./http-cors.ts"
+
+const messages = loadMessages("core")
 
 /** Starts the Streamable HTTP MCP transport and returns a handle to attach a server and shut down the listener. */
 export const startHttp = async (): Promise<TransportHandle> => {
@@ -55,7 +58,7 @@ export const startHttp = async (): Promise<TransportHandle> => {
    })
 
    // GET opens a server→client notification stream — not supported in stateless mode
-   app.get("/mcp", (_req: Req, res: Res) => res.status(405).json({ error: "Server-initiated streams not supported in stateless mode" }))
+   app.get("/mcp", (_req: Req, res: Res) => res.status(405).json({ error: messages.streamsUnsupported }))
 
    app.post("/mcp", async (req: Req, res: Res) => {
       if (!mcpReady)

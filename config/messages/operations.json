@@ -5,5 +5,9 @@
    "operationMissingRequiredParam": "Operation {operation} requires at least one of: {keys}",
    "operationMissingResourceType": "Operation {operation} requires a resourceType parameter (polymorphic operation)",
    "operationInvalidBody": "Operation {operation} body is not valid JSON: {error}",
-   "operationScopeBlocked": "Operation {operation} not permitted by granted scopes for {resource}"
+   "operationScopeBlocked": "Operation {operation} not permitted by granted scopes for {resource}",
+   "operationInvalidResourceType": "Invalid resourceType \"{resource}\" — must be a valid FHIR resource type name",
+   "operationInvalidId": "Invalid id \"{id}\" — must be a valid FHIR resource id (1-64 alphanumeric/dash/dot characters)",
+   "operationResourceUnavailable": "{resource} is not available on this FHIR server (not in /metadata)",
+   "operationMatchBodyInvalid": "$match body must be a FHIR Parameters resource with a parameter array"
 }
