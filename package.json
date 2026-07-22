@@ -48,15 +48,15 @@
       "inspector": "npx @modelcontextprotocol/inspector --transport http --server-url http://localhost:5000/mcp"
    },
    "dependencies": {
-      "@modelcontextprotocol/express": "2.0.0-beta.4",
-      "@modelcontextprotocol/node": "2.0.0-beta.4",
-      "@modelcontextprotocol/server": "2.0.0-beta.4",
+      "@modelcontextprotocol/express": "2.0.0-beta.5",
+      "@modelcontextprotocol/node": "2.0.0-beta.5",
+      "@modelcontextprotocol/server": "2.0.0-beta.5",
       "content-disposition": "^2.0.1",
       "express": "^5.2.1",
       "fhirclient": "^2.6.3",
       "fhirpath": "^5.0.0",
       "fhirstarterjs": "^1.0.9",
-      "jose": "^6.2.3",
+      "jose": "^6.2.4",
       "zod": "^4.4.3"
    },
    "devDependencies": {
