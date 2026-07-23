@@ -44,7 +44,7 @@ export const startHttp = async (): Promise<TransportHandle> => {
    })
 
    if (config.authEnabled && !config.fhirJwksUrl) {
-      const { jwksHandler } = await import("../../fhir/auth/jwks.ts")
+      const { jwksHandler } = await import("../../fhir/auth/auth.ts")
       app.get("/jwks", jwksHandler)
       log.log(`🔑 Serving JWKS at http://${config.bindHost === "127.0.0.1" ? "localhost" : config.bindHost}:${config.port}/jwks`)
    } else if (config.authEnabled)

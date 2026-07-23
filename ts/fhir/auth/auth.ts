@@ -1,13 +1,14 @@
-import fhirStarter from "fhirstarterjs"
+import fhirStarter from "@fhirstarter/backend"
 import { config } from "../../config/index.ts"
 import { log } from "../../log.ts"
 import { getRequestedScopes } from "../model/definitions.ts"
 import { scopeSignature } from "./scopes.ts"
 
 let
-   starter: InstanceType<typeof fhirStarter> | undefined,
+   starter: Provider | undefined,
    unsubscribe: (() => void) | undefined,
-   onScopeChange: (() => void) | undefined
+   onScopeChange: (() => void) | undefined,
+   jwksJson: string | undefined
 
 const NO_AUTH_TOKEN: TokenResponse = { token_type: "bearer", access_token: undefined, expires_in: undefined }
 
@@ -16,17 +17,18 @@ export const setScopeChangeHandler = (handler: () => void): void => {
    onScopeChange = handler
 }
 
-const makeStarter = (scopes: string[]): InstanceType<typeof fhirStarter> =>
-   new fhirStarter({
+const makeStarter = (scopes: string[]): Provider =>
+   fhirStarter({
       clientId: config.fhirClientId,
       privateKey: config.fhirActiveKey.privateKey,
       tokenEndpointUrl: config.fhirTokenEndpoint,
       scopes,
       keyId: config.fhirActiveKey.kid,
+      retiredKeys: config.fhirRetiredKeys.map(({ privateKey, kid }) => ({ key: privateKey, keyId: kid })),
       ...(config.fhirJwksUrl && { jwksUrl: config.fhirJwksUrl }),
    })
 
-const subscribeScopeWatch = (active: InstanceType<typeof fhirStarter>): (() => void) => {
+const subscribeScopeWatch = (active: Provider): (() => void) => {
    let signature = scopeSignature(active.tokenResponse().scope)
    return active.onRefresh(() => {
       const next = scopeSignature(active.tokenResponse().scope)
@@ -83,3 +85,9 @@ export const replaceAuth = async (scopes: string[], commit: () => void): Promise
 
 /** Returns the getter-backed token response object. Reflects the current valid token, or an unauthenticated token when auth is disabled. */
 export const getTokenResponse = (): TokenResponse => starter?.tokenResponse() ?? NO_AUTH_TOKEN
+
+/** Express GET handler serving the provider-derived JWKS (active + retired keys). Cached after the first request. */
+export const jwksHandler = async (_req: Req, res: Res): Promise<void> => {
+   jwksJson ??= JSON.stringify(await makeStarter(getRequestedScopes()).getJwks())
+   res.set("Cache-Control", "public, max-age=3600").type("application/json").send(jwksJson)
+}

@@ -29,7 +29,7 @@ interface DefinitionsSnapshot {
 }
 
 /** Return shape of validateResources. */
-interface ValidationResult {
+interface ResourceValidationResult {
    entries: ResourceDefinitionRaw[]
    errors: string[]
 }

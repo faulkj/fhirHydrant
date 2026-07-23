@@ -1,7 +1,7 @@
 import { validateEntry } from "./validate-entry.ts"
 
 /** Validates the assembled config/resources/ array and returns cleaned entries + errors. */
-export const validateResources = (raw: unknown): ValidationResult => {
+export const validateResources = (raw: unknown): ResourceValidationResult => {
    const errors: string[] = []
 
    if (!Array.isArray(raw))

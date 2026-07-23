@@ -1,4 +1,4 @@
-import fhirStarter from "fhirstarterjs"
+import fhirStarter from "@fhirstarter/backend"
 import { get, opt } from "./parsers.ts"
 
 const
@@ -12,7 +12,7 @@ const
       try {
          return { kid: deriveKid(pem), privateKey: pem }
       } catch (e) {
-         throw new Error(`${envVar}: ${(e as Error).message} — ensure the value is a base64-encoded RSA PKCS#8 PEM`)
+         throw new Error(`${envVar}: ${(e as Error).message} — ensure the value is a base64-encoded PKCS#8 PEM (RSA or EC P-384)`)
       }
    }
 

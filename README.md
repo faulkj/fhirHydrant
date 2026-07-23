@@ -48,7 +48,7 @@ be expanded, trimmed, or replaced through config files without source changes.
 - Node.js >= 24
 - A supported FHIR server
 - For SMART auth (default): a SMART Backend Services client registration and an
-  RSA-2048 private key whose public key is available through JWKS
+  RSA-2048 or EC P-384 private key whose public key is available through JWKS
 
 To run against a public, unauthenticated FHIR test server, set `FHIR_AUTH=none`
 and skip the client and key entirely (see [Unauthenticated Access](#unauthenticated-access)).
@@ -97,9 +97,9 @@ For desktop MCP clients, stdio is usually the simplest transport:
 }
 ```
 
-`FHIR_ACTIVE_KEY` is your RSA PKCS#8 private key, base64-encoded. The `kid` is
-derived automatically at startup via a truncated JWK Thumbprint and logged to
-the console.
+`FHIR_ACTIVE_KEY` is your PKCS#8 private key (RSA or EC P-384), base64-encoded.
+The `kid` is derived automatically at startup via a truncated JWK Thumbprint and
+logged to the console.
 
 #### Unauthenticated Access
 
@@ -354,14 +354,15 @@ fhirHydrant uses SMART Backend Services: client credentials plus a signed JWT
 assertion. This is backend FHIR access, not browser-based SMART standalone
 launch; there is no interactive redirect/login flow in the MCP path.
 
-`FHIR_ACTIVE_KEY` holds the raw RSA PKCS#8 signing key. In HTTP mode, the
-built-in `/jwks` endpoint exposes public keys for the active key plus any
-retired keys when `FHIR_JWKS_URL` is unset. The `kid` for each key is derived
-automatically via a truncated RFC 7638 JWK Thumbprint (first 12 base64url chars
-of SHA-256 over canonical RSA public JWK members) and logged at startup.
+`FHIR_ACTIVE_KEY` holds the raw PKCS#8 signing key (RSA, signed RS384, or EC
+P-384, signed ES384). In HTTP mode, the built-in `/jwks` endpoint exposes public
+keys for the active key plus any retired keys when `FHIR_JWKS_URL` is unset. The
+`kid` for each key is derived automatically via a truncated RFC 7638 JWK
+Thumbprint (first 12 base64url chars of SHA-256 over the canonical public JWK
+members) and logged at startup.
 
 Key rotation workflow:
-1. Generate a new RSA key.
+1. Generate a new key (RSA-2048 or EC P-384).
 2. Add the new PEM to `FHIR_RETIRED_KEYS` and redeploy so JWKS includes both.
 3. Register the new kid (logged at startup) with your auth server.
 4. Move the new PEM to `FHIR_ACTIVE_KEY` and move the old PEM to
@@ -381,7 +382,7 @@ See [.env.example](.env.example) for a complete sample.
 | --- | --- |
 | `FHIR_BASE_URL` | Base URL used to derive the FHIR server URL and token URL. Optional when `FHIR_SERVER_URL` is set (and, for smart auth, `FHIR_TOKEN_URL`) |
 | `FHIR_CLIENT_ID` | SMART Backend Services client ID (not needed when `FHIR_AUTH=none`) |
-| `FHIR_ACTIVE_KEY` | Base64-encoded RSA PKCS#8 PEM signing key (not needed when `FHIR_AUTH=none`) |
+| `FHIR_ACTIVE_KEY` | Base64-encoded PKCS#8 PEM signing key, RSA or EC P-384 (not needed when `FHIR_AUTH=none`) |
 
 ### Optional
 
